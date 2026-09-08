@@ -1,11 +1,11 @@
 // render.js — ombres, cibles de rendu (MSAA/HDR), reflets planaires, SSAO, eau, bloom, image finale, qualité adaptative, boucle render().
 // Propriétaire : GAMEPLAY (Claude Code) pour la structure ; DESIGN pour les réglages visuels (voir shaders.js).
 // ---------- ombres : carte statique cuite une fois + copie par image pour les objets mobiles ----------
-const shadowSize=2048;
+const shadowSize=gl.getParameter(gl.MAX_TEXTURE_SIZE)>=4096?4096:2048;
 function depthTex(){const t=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,t);gl.texImage2D(gl.TEXTURE_2D,0,gl.DEPTH_COMPONENT24,shadowSize,shadowSize,0,gl.DEPTH_COMPONENT,gl.UNSIGNED_INT,null);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.NEAREST);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.NEAREST);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);return t;}
 function depthFbo(t){const f=gl.createFramebuffer();gl.bindFramebuffer(gl.FRAMEBUFFER,f);gl.framebufferTexture2D(gl.FRAMEBUFFER,gl.DEPTH_ATTACHMENT,gl.TEXTURE_2D,t,0);gl.drawBuffers([gl.NONE]);gl.readBuffer(gl.NONE);if(gl.checkFramebufferStatus(gl.FRAMEBUFFER)!==gl.FRAMEBUFFER_COMPLETE)throw Error('Shadow framebuffer incomplete');return f;}
 const shadowStatic=depthTex(),shadowStaticFbo=depthFbo(shadowStatic),shadowTexture=depthTex(),shadowFbo=depthFbo(shadowTexture);
-const lightVP=matmul(ortho(-24,24,-24,24,1,105),lookAt([-25,47,30],[0,6,0]));
+const lightDir=norm([-25,47,30]),lightCenter=[WORLD.x0+WORLD.size/2,5,WORLD.z0+WORLD.size/2];const lightVP=matmul(ortho(-72,72,-72,72,1,260),lookAt(add(lightCenter,mul(lightDir,120)),lightCenter));
 gl.bindFramebuffer(gl.FRAMEBUFFER,shadowStaticFbo);gl.enable(gl.DEPTH_TEST);gl.disable(gl.CULL_FACE);gl.viewport(0,0,shadowSize,shadowSize);gl.clear(gl.DEPTH_BUFFER_BIT);
 gl.useProgram(depthProgram);gl.uniformMatrix4fv(depthLoc.uVP,false,lightVP);gl.uniformMatrix4fv(depthLoc.uBones,false,I4);gl.uniform1i(depthLoc.uMode,0);
 gl.bindVertexArray(solid.vao);gl.enable(gl.POLYGON_OFFSET_FILL);gl.polygonOffset(1.1,1.8);gl.drawArrays(gl.TRIANGLES,0,solid.count);gl.disable(gl.POLYGON_OFFSET_FILL);gl.bindVertexArray(null);gl.bindFramebuffer(gl.FRAMEBUFFER,null);
@@ -43,8 +43,8 @@ document.addEventListener('visibilitychange',()=>{visible=!document.hidden;if(vi
 canvas.addEventListener('webglcontextlost',e=>{e.preventDefault();visible=false;if(playing)saveGame(true);$('#error').hidden=false;});
 canvas.addEventListener('webglcontextrestored',()=>location.reload());
 const dbg=$('#debug');
-function drawDebug(){const c=dbg.getContext('2d');const img=c.createImageData(HN,HN);for(let iz=0;iz<HN;iz++)for(let ix=0;ix<HN;ix++){const i=iz*HN+ix,h=H[i],o=(iz*HN+ix)*4;let r,g,b;if(h<=SEA){r=30;g=90;b=160;}else{const v=clamp((h+1)/16,0,1)*255;r=g=b=v;if(reach[i]){g=Math.min(255,v+90);r*=.55;b*=.55;}}img.data[o]=r;img.data[o+1]=g;img.data[o+2]=b;img.data[o+3]=255;}c.putImageData(img,0,0);
-const dot=(x,z,col)=>{c.fillStyle=col;c.fillRect((x+16)/HS-2,(z+16)/HS-2,5,5);};dot(player.x,player.z,'#f00');for(const n of npcs)dot(n.x,n.z,n.cat?'#fa0':'#fff');for(const s of shellSpots)if(!game.shells.has(s.id))dot(s.x,s.z,'#f0f');}
+function drawDebug(){if(dbg.width!==HN){dbg.width=HN;dbg.height=HN;}const c=dbg.getContext('2d');const img=c.createImageData(HN,HN);for(let iz=0;iz<HN;iz++)for(let ix=0;ix<HN;ix++){const i=iz*HN+ix,h=H[i],o=(iz*HN+ix)*4;let r,g,b;if(h<=SEA){r=30;g=90;b=160;}else{const v=clamp((h+1)/16,0,1)*255;r=g=b=v;if(reach[i]){g=Math.min(255,v+90);r*=.55;b*=.55;}}img.data[o]=r;img.data[o+1]=g;img.data[o+2]=b;img.data[o+3]=255;}c.putImageData(img,0,0);
+const dot=(x,z,col)=>{c.fillStyle=col;c.fillRect((x-WORLD.x0)/HS-2,(z-WORLD.z0)/HS-2,5,5);};dot(player.x,player.z,'#f00');for(const n of npcs)dot(n.x,n.z,n.cat?'#fa0':'#fff');for(const s of shellSpots)if(!game.shells.has(s.id))dot(s.x,s.z,'#f0f');}
 function drawStatic(m,mode){gl.uniform1i(locations.uMode,mode);gl.bindVertexArray(m.vao);gl.drawArrays(gl.TRIANGLES,0,m.count);}
 function fsQuad(){gl.bindVertexArray(null);gl.drawArrays(gl.TRIANGLES,0,3);}
 let projM,invProjM,reflVP=null;
@@ -60,7 +60,7 @@ function bindTex(unit,tex,loc){gl.activeTexture(gl.TEXTURE0+unit);gl.bindTexture
 function render(time){if(!visible)return;const rawDt=(time-lastTime)/1000||.016;let dt=Math.min(.05,rawDt);lastTime=time;const t=time*.001;
 update(dt,t);
 if(auto&&!drag)goal.theta+=dt*.10;
-if(cam.mode==='follow')goal.target=[player.x,player.y+1.05,player.z];
+if(cam.mode==='follow')goal.target=[player.x,player.y+1.05,player.z];else if(cam.mode==='voyage'){goal.target=[voyage.x,1.3,voyage.z];goal.theta=voyage.heading+PI+.75;goal.phi=1.18;goal.r=10;}
 const easing=1-Math.exp(-dt*(cam.mode==='follow'?9:7));
 for(let k of['theta','phi','r'])current[k]+=(goal[k]-current[k])*easing;
 current.target=current.target.map((v,i)=>v+(goal.target[i]-v)*easing);
@@ -103,6 +103,6 @@ if(frameCount===2){window.azuraBoot?.ready();showStart();}
 if(frameCount>60&&Q.auto&&rawDt<.25&&document.visibilityState==='visible'){perfAcc+=rawDt;perfN++;if(perfN>=150){const avg=perfAcc/perfN;perfAcc=0;perfN=0;if(avg>1/24&&Q.level>1){Q.level--;applyQuality();toast('Qualité graphique ajustée pour rester fluide ('+qualityLabel()+')');}}}
 requestAnimationFrame(render);}
 
-window.__AZURA__={triangles:solid.count/3,vertices:solid.count,views:Object.keys(presets),seed:1729,reachCount,blocked,player,npcs,crabs,shellSpots,noteSpots,digSpot,fishSpot,lanterns,game,H,reach,HN,HS,cellH,reachAt:(x,z)=>reach[cellIndex(x,z)],teleport:(x,z)=>{const p=snap(x,z);player.x=p[0];player.z=p[1];player.y=cellH(p[0],p[1]);},talk:id=>talkTo(npcs.find(n=>n.id===id)),start:()=>startGame(loadSave()),save:saveGame,setClock:v=>{game.clock=v;},interact,stars,Q,applyQuality,HDR,dayF:()=>dayF,step:(dt=.016)=>update(dt,performance.now()*.001),look:(theta,phi,r,target)=>{cam.mode='cine';goal={theta,phi,r,target:[...target]};Object.assign(current,structuredClone(goal));},closeDialog:()=>{while(dialog)advance();}};
+window.__AZURA__={triangles:solid.count/3,vertices:solid.count,views:Object.keys(presets),seed:1729,reachCount,blocked,islands,voyage,startVoyage,currentIsland,player,npcs,crabs,shellSpots,noteSpots,digSpot,fishSpot,lanterns,game,H,reach,HN,HS,cellH,reachAt:(x,z)=>reach[cellIndex(x,z)],teleport:(x,z)=>{const p=snap(x,z);player.x=p[0];player.z=p[1];player.y=cellH(p[0],p[1]);},talk:id=>talkTo(npcs.find(n=>n.id===id)),start:()=>startGame(loadSave()),save:saveGame,setClock:v=>{game.clock=v;},interact,stars,Q,applyQuality,HDR,dayF:()=>dayF,step:(dt=.016)=>update(dt,performance.now()*.001),look:(theta,phi,r,target)=>{cam.mode='cine';goal={theta,phi,r,target:[...target]};Object.assign(current,structuredClone(goal));},closeDialog:()=>{while(dialog)advance();}};
 refreshHUD();
 requestAnimationFrame(render);

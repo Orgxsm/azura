@@ -2,7 +2,7 @@
 // Propriétaire : GAMEPLAY (Claude Code).
 // ---------- état du jeu ----------
 const SAVE_KEY='azura-save-v1',DAY=540;
-const game={name:'',shells:new Set(),notes:new Set(),quests:{shells:0,cat:0,crabs:0,bread:0,treasure:0,fish:0,notes:0},log:[],discovered:{},playtime:0,clock:DAY*.1,catFollow:false,crabsCaught:0,fish:0,delivered:{},dug:false,fireworksUntil:-1,finale:false};
+const game={name:'',shells:new Set(),notes:new Set(),quests:{shells:0,cat:0,crabs:0,bread:0,treasure:0,fish:0,notes:0},log:[],discovered:{},playtime:0,clock:DAY*.1,catFollow:false,crabsCaught:0,fish:0,delivered:{},dug:false,fireworksUntil:-1,finale:false,island:'azura'};
 let playing=false,dialog=null,dirty=false,lastSave=0,minigame=null;
 const NAMES={tomas:'Tomas',anae:'Anaé',lila:'Lila',oro:'Oro',pia:'Pia',marco:'Marco',bastien:'Bastien',cat:'Pistache'};
 function makeEntity(id,mesh,x,z,o={}){const e=Object.assign({id,mesh,x,z,y:0,heading:PI,phase:0,amp:0,speed:0,bones:new Float32Array(16*6),look:0},o);e.scale=o.scale||1;e.y=cellH(x,z);return e;}
@@ -22,7 +22,7 @@ const shellSpots=[[-3,10.8],[-1.2,11.4],[1.4,11.6],[3.5,10.9],[4.9,9.5],[-4.7,9.
 const noteSpots=[[-3.6,12.6],[-4.4,4.1],[2.2,-4.1]].map((p,i)=>{const [x,z]=snap(p[0],p[1]);return{id:i,x,z,y:cellH(x,z)};});
 const digSpot=(()=>{const [x,z]=snap(-9.2,3.6);return{x,z,y:cellH(x,z)};})();
 const fishSpot=(()=>{const [x,z]=snap(-4.2,15.9);return{x,z,y:cellH(x,z)};})();
-const places=[{id:'village',name:'Le village',x:-2.5,z:3,r:3.5,minY:3},{id:'port',name:'La crique',x:-4.2,z:14.5,r:2.4,minY:0},{id:'summit',name:'Le belvédère',x:1.7,z:-5,r:2.5,minY:9.4}];
+const places=[{id:'village',name:'Le village',x:-2.5,z:3,r:3.5,minY:3},{id:'port',name:'La crique',x:-4.2,z:14.5,r:2.4,minY:0},{id:'summit',name:'Le belvédère',x:1.7,z:-5,r:2.5,minY:9.4},{id:'phare',name:"La crique du Phare",x:35.5,z:-8,r:4,minY:.3}];
 const gulls=Array.from({length:6},(_,i)=>({cx:range(-4,3),cz:range(6,14),R:range(4,9),h:range(9,17),w:range(.16,.3)*(i%2?1:-1),ph:range(0,TAU),bones:new Float32Array(48)}));
 const crabs=[[-3,10.6],[0,11.2],[2.6,10.9],[4.2,9.6],[-4.6,8.8],[1.2,8.7]].map((p,i)=>{const [x,z]=snap(p[0],p[1]);return{id:i,x,z,y:cellH(x,z),heading:Math.random()*TAU,phase:0,amp:0,speed:0,scale:1,state:'idle',t:Math.random()*3,home:[x,z],maxH:1.2,bones:new Float32Array(48),hidden:false,crab:true};});
 const lanterns=[[-3.3,10.8],[-4.6,15.6],[-2.0,3.5],[4.3,4.1],[1.4,-.1],[2.4,-4.1],[5.0,10.3],[-5.6,8.9],[-8.6,3.0]].map(p=>{const [x,z]=snap(p[0],p[1],2);return{x,z,y:cellH(x,z),bones:new Float32Array(16)};});
@@ -34,11 +34,11 @@ const boats={moored:{x:-6,y:.53,z:14.1,rot:-.13,bones:new Float32Array(16)},sail
 const chestBones=new Float32Array(32),crossBones=new Float32Array(16);
 
 // ---------- sauvegarde ----------
-function saveGame(silent){const d={v:2,name:game.name,x:player.x,z:player.z,heading:player.heading,cam:{theta:goal.theta,phi:goal.phi,r:goal.r},shells:[...game.shells],notes:[...game.notes],quests:game.quests,log:game.log,discovered:game.discovered,playtime:game.playtime,clock:game.clock,catFollow:game.catFollow,crabsCaught:game.crabsCaught,fish:game.fish,delivered:game.delivered,dug:game.dug,finale:game.finale,cat:[cat.x,cat.z],said:Object.fromEntries(npcs.map(n=>[n.id,n.said])),savedAt:Date.now()};
+function saveGame(silent){const d={v:2,name:game.name,x:player.x,z:player.z,heading:player.heading,cam:{theta:goal.theta,phi:goal.phi,r:goal.r},shells:[...game.shells],notes:[...game.notes],quests:game.quests,log:game.log,discovered:game.discovered,playtime:game.playtime,clock:game.clock,catFollow:game.catFollow,crabsCaught:game.crabsCaught,fish:game.fish,delivered:game.delivered,dug:game.dug,finale:game.finale,island:game.island,cat:[cat.x,cat.z],said:Object.fromEntries(npcs.map(n=>[n.id,n.said])),savedAt:Date.now()};
 try{localStorage.setItem(SAVE_KEY,JSON.stringify(d));}catch(e){if(!silent)toast("Sauvegarde impossible sur ce navigateur");return;}dirty=false;lastSave=performance.now();if(!silent)toast('Partie sauvegardée ✓');}
 function loadSave(){try{const d=JSON.parse(localStorage.getItem(SAVE_KEY));return d&&(d.v===1||d.v===2)?d:null;}catch(e){return null;}}
 function clearSave(){try{localStorage.removeItem(SAVE_KEY);}catch(e){}}
-function applySave(d){const [x,z]=snap(d.x,d.z);player.x=x;player.z=z;player.y=cellH(x,z);player.heading=d.heading||PI;game.name=d.name||'';game.shells=new Set(d.shells||[]);game.notes=new Set(d.notes||[]);Object.assign(game.quests,d.quests||{});game.log=d.log||Object.keys(game.quests).filter(k=>game.quests[k]>0);game.discovered=d.discovered||{};game.playtime=d.playtime||0;game.clock=d.clock??DAY*.1;game.catFollow=!!d.catFollow;game.crabsCaught=d.crabsCaught||0;game.fish=d.fish||0;game.delivered=d.delivered||{};game.dug=!!d.dug;game.finale=!!d.finale;
+function applySave(d){const [x,z]=snap(d.x,d.z);player.x=x;player.z=z;player.y=cellH(x,z);player.heading=d.heading||PI;game.name=d.name||'';game.shells=new Set(d.shells||[]);game.notes=new Set(d.notes||[]);Object.assign(game.quests,d.quests||{});game.log=d.log||Object.keys(game.quests).filter(k=>game.quests[k]>0);game.discovered=d.discovered||{};game.playtime=d.playtime||0;game.clock=d.clock??DAY*.1;game.catFollow=!!d.catFollow;game.crabsCaught=d.crabsCaught||0;game.fish=d.fish||0;game.delivered=d.delivered||{};game.dug=!!d.dug;game.finale=!!d.finale;game.island=d.island||'azura';
 if(d.cat){const [cx,cz]=snap(d.cat[0],d.cat[1]);cat.x=cx;cat.z=cz;cat.y=cellH(cx,cz);}
 if(game.quests.cat===2){cat.home=[anae.home[0]+.6,anae.home[1]+.4];}
 for(const n of npcs)n.said=(d.said||{})[n.id]||0;
@@ -46,7 +46,7 @@ if(d.cam){goal.theta=d.cam.theta;goal.phi=clamp(d.cam.phi,.35,1.46);goal.r=clamp
 function fmtTime(s){const m=Math.round(s/60);return m<1?'moins d\'une minute':m<60?m+' min':Math.floor(m/60)+' h '+(m%60)+' min';}
 const doneCount=q=>Object.values(q).filter(v=>v===2).length;
 function stars(){return Object.keys(game.discovered).length+doneCount(game.quests);}
-const TOTAL=10;
+const TOTAL=11;
 
 // ---------- jour / nuit ----------
 let dayF=1,duskF=0;
@@ -67,7 +67,7 @@ fish:()=>game.fish>=3?"Apporte les 3 poissons à Anaé pour sa soupe.":`Pêche 3
 notes:()=>game.notes.size>=3?"Rapporte les partitions à Bastien, sur la terrasse du haut.":`Retrouve les 3 partitions de Bastien (${game.notes.size}/3). Le vent les a dispersées.`};
 function objective(){const active=game.log.filter(id=>game.quests[id]===1);if(active.length)return active.slice(-2).reverse().map(id=>'• '+questTexts[id]()).join('\n');
 const q=game.quests;if(q.shells===0)return"Explore l'île et parle aux habitants. Tomas t'attend sur le ponton.";const todo=[['cat','Anaé, dans le village, a besoin d\'aide.'],['crabs','Lila, sur la plage, a une idée de jeu.'],['bread','Pia, près du ponton, sort son pain du four.'],['treasure','Marco, sur la plage, a trouvé quelque chose.'],['fish','Reparle à Tomas : il a une canne à te prêter.'],['notes','Bastien joue de la guitare sur la terrasse du haut. Va l\'écouter.']].filter(([k])=>q[k]===0);
-if(todo.length)return todo[0][1];const disc=Object.keys(game.discovered).length;if(disc<3)return`Découvre tous les lieux de l'île (${disc}/3). Il reste ${places.filter(p=>!game.discovered[p.id]).map(p=>p.name.toLowerCase()).join(', ')}.`;
+if(todo.length)return todo[0][1];const disc=Object.keys(game.discovered).length;if(disc<places.length)return`Découvre tous les lieux de l'archipel (${disc}/${places.length}). Il reste ${places.filter(p=>!game.discovered[p.id]).map(p=>p.name.toLowerCase()).join(', ')}.`;
 return stars()>=TOTAL?"Tu as tout découvert. Va saluer Oro au belvédère, puis profite de la fête !":"Continue d'explorer.";}
 function inventory(){const it=[];const bread=game.quests.bread===1?3-Object.keys(game.delivered).length:0;if(bread>0)it.push(`🍞 ×${bread}`);if(game.quests.fish>=1)it.push('🎣 canne');if(game.fish>0&&game.quests.fish===1)it.push(`🐟 ×${game.fish}`);if(game.quests.treasure===1)it.push('🗺️ carte');if(game.dug)it.push('⚓ ancre d\'or');if(game.notes.size&&game.quests.notes===1)it.push(`🎵 ×${game.notes.size}`);return it.join('  ');}
 function refreshHUD(){stats.textContent=`🐚 ${game.shells.size}/12 · ⭐ ${stars()}/${TOTAL} · ${dayIcon()}`;questText.textContent=objective();const inv=inventory();invEl.hidden=!inv;invEl.textContent=inv;}
@@ -88,7 +88,7 @@ if(q.shells===1)return wrap({lines:["Huit coquillages ! Tu as l'œil, toi.","Voi
 if(q.fish===0)return wrap({lines:["Tiens, prends ma vieille canne. Anaé prépare une soupe pour la fête du village et il lui manque du poisson.","Va au bout du ponton et appuie sur E quand le curseur passe dans la zone verte. Trois poissons, et elle sera aux anges."],end:()=>startQuest('fish')});
 if(q.fish===1&&game.fish<3)return wrap({lines:[`Alors, ça mord ? Tu as ${game.fish} poisson${game.fish>1?'s':''}. Le bout du ponton, c'est là que ça mord le mieux.`]});
 if(q.fish===1)return wrap({lines:["Trois beaux poissons ! File les porter à Anaé avant que les mouettes s'en mêlent."]});
-return wrap({lines:[pick(["Belle journée pour la pêche, non ?","Les mouettes me volent la moitié de mes prises.","Le vieux Oro dit qu'il voit le continent depuis le belvédère. Moi, je vois surtout des nuages.","La nuit, la mer devient toute noire et les lanternes s'allument. C'est mon moment préféré."])]});
+return wrap({lines:[pick(["Mon voilier t'attend au bout du ponton : place-toi devant lui et appuie sur E, il te mènera à l'Île du Phare.","Belle journée pour la pêche, non ?","Les mouettes me volent la moitié de mes prises.","Le vieux Oro dit qu'il voit le continent depuis le belvédère. Moi, je vois surtout des nuages.","La nuit, la mer devient toute noire et les lanternes s'allument. C'est mon moment préféré."])]});
 case'anae':if(q.fish===1&&game.fish>=3)return wrap({lines:["Trois poissons ! Ma soupe sera la meilleure de la fête.","Tiens, goûte : une louche pour toi, et ma reconnaissance éternelle."],end:()=>finishQuest('fish','La soupe d\'Anaé est sauvée')});
 if(q.cat===0)return wrap({lines:[`Ah, une nouvelle tête ! Tu t'appelles ${me}, c'est ça ? Mon chat Pistache a encore filé.`,"Il adore traîner sur les hauteurs, près des maisons du haut. Ramène-le-moi, veux-tu ?"],end:()=>startQuest('cat')});
 if(q.cat===1&&!game.catFollow)return wrap({lines:["Pistache doit être quelque part au-dessus du village. Approche-toi de lui et appelle-le, il te suivra."]});
@@ -120,13 +120,15 @@ function talkTo(n){const d=linesFor(n);if(!d)return;n.talking=true;say(n.cat?'Pi
 function nearThing(){let best=null,bd=1.8;for(const n of npcs){if(n.cat&&!(game.quests.cat===1&&!game.catFollow)&&game.quests.cat!==2)continue;const d=Math.hypot(n.x-player.x,n.z-player.z);if(d<bd&&Math.abs(n.y-player.y)<1.2){bd=d;best={type:'npc',n,label:n.cat?(game.quests.cat===2?'Caresser Pistache':'Appeler Pistache'):'Parler à '+n.name,btn:n.cat?'Câlin':'Parler'};}}
 if(game.quests.crabs===1&&game.crabsCaught<3)for(const c of crabs){if(c.hidden)continue;const d=Math.hypot(c.x-player.x,c.z-player.z);if(d<Math.min(bd,1.0)){bd=d;best={type:'crab',c,label:'Attraper le crabe',btn:'Hop !'};}}
 if(game.quests.treasure===1&&!game.dug){const d=Math.hypot(digSpot.x-player.x,digSpot.z-player.z);if(d<Math.min(bd,1.3)){bd=d;best={type:'dig',label:'Creuser ici',btn:'Creuser'};}}
+const dockIsl=nearDock();if(dockIsl){const dest=islands.find(i=>i.id!==dockIsl.id);if(dest){bd=1.7;best={type:'boat',dest,label:'Embarquer pour '+dest.name,btn:'Embarquer'};}}
 if(game.quests.fish>=1){const d=Math.hypot(fishSpot.x-player.x,fishSpot.z-player.z);if(d<Math.min(bd,1.4)&&Math.abs(fishSpot.y-player.y)<.6){bd=d;best={type:'fish',label:'Pêcher',btn:'Pêcher'};}}
 return best;}
 function interact(){if(minigame){fishingHit();return;}if(dialog){advance();return;}if(!playing||!panel.hidden)return;const th=nearThing();if(!th)return;
 if(th.type==='npc')talkTo(th.n);
 else if(th.type==='crab'){th.c.hidden=true;game.crabsCaught++;sfx('catch');toast(`🦀 Crabe attrapé ! ${game.crabsCaught}/3`);dirty=true;refreshHUD();if(game.crabsCaught>=3)setTimeout(()=>toast('Retourne voir Lila !'),1500);}
 else if(th.type==='dig'){game.dug=true;sfx('dig');setTimeout(()=>{toast('⚓ Une ancre d\'or ! Le trésor de Marco est réel.');finishQuest('treasure','Le trésor est découvert');},700);}
-else if(th.type==='fish')startFishing();}
+else if(th.type==='fish')startFishing();
+else if(th.type==='boat'){if(game.quests.shells<2){toast('Le voilier est à Tomas : rends-lui d\'abord service pour gagner sa confiance.');return;}startVoyage(th.dest.id);}}
 
 // ---------- mini-jeu de pêche ----------
 const fishingEl=$('#fishing'),cursorEl=fishingEl.querySelector('.cursor'),zoneEl=fishingEl.querySelector('.zone');
@@ -134,6 +136,19 @@ function startFishing(){const speed=1.1+Math.min(game.fish,6)*.22,zw=Math.max(.1
 function updateFishing(dt){if(!minigame)return;minigame.pos+=minigame.dir*minigame.speed*dt;if(minigame.pos>1){minigame.pos=1;minigame.dir=-1;}if(minigame.pos<0){minigame.pos=0;minigame.dir=1;}cursorEl.style.left=(minigame.pos*100)+'%';}
 function fishingHit(){const m=minigame;minigame=null;fishingEl.hidden=true;if(m.pos>=m.zx&&m.pos<=m.zx+m.zw){sfx('catch');if(game.quests.fish===1&&game.fish<3){game.fish++;toast(`🐟 Poisson attrapé ! ${game.fish}/3`);if(game.fish>=3)setTimeout(()=>toast('Porte-les à Anaé, dans le village.'),1600);}else toast('🐟 Un beau poisson ! Tu le relâches.');dirty=true;refreshHUD();}else{sfx('fail');toast('Raté ! Il s\'est échappé…');}}
 function cancelFishing(){minigame=null;fishingEl.hidden=true;}
+
+// ---------- archipel : île courante, pontons, voyage en voilier ----------
+const voyage={active:false,x:0,z:0,heading:0,t:0};
+function currentIsland(){let best=islands[0],bd=1e9;for(const i of islands){const d=Math.hypot(player.x-i.center[0],player.z-i.center[1]);if(d<bd){bd=d;best=i;}}return best;}
+function dockSeaEnd(isl){const d=isl.dock,len=d.len||5;return[d.x+Math.sin(d.heading)*len/2,d.y,d.z+Math.cos(d.heading)*len/2];}
+function nearDock(){if(voyage.active)return null;const isl=currentIsland(),e=dockSeaEnd(isl);return Math.hypot(e[0]-player.x,e[2]-player.z)<1.7&&Math.abs(e[1]-player.y)<.9?isl:null;}
+function dockOffshore(isl){const d=isl.dock,e=dockSeaEnd(isl);return[e[0]+Math.sin(d.heading)*8,e[2]+Math.cos(d.heading)*8];}
+function voyagePos(t){const {a,b,c1,c2}=voyage,u=1-t,w0=u*u*u,w1=3*u*u*t,w2=3*u*t*t,w3=t*t*t;return[w0*a[0]+w1*c1[0]+w2*c2[0]+w3*b[0],w0*a[2]+w1*c1[1]+w2*c2[1]+w3*b[2]];}
+function startVoyage(toId){const from=currentIsland(),to=islands.find(i=>i.id===toId);if(!to||to===from||voyage.active)return;const a=dockSeaEnd(from),b=dockSeaEnd(to),c1=dockOffshore(from),c2=dockOffshore(to);const dist=Math.hypot(c1[0]-a[0],c1[1]-a[2])+Math.hypot(c2[0]-c1[0],c2[1]-c1[1])+Math.hypot(b[0]-c2[0],b[2]-c2[1]);
+Object.assign(voyage,{active:true,from,to,a,b,c1,c2,t:0,dur:Math.max(8,dist/5.5),x:a[0],z:a[2],heading:from.dock.heading});cam.mode='voyage';promptEl.hidden=true;actionBtn.hidden=true;sfx('cast');toast(`Cap sur ${to.name} !`);dirty=true;}
+function updateVoyage(dt){if(!voyage.active)return;voyage.t+=dt/voyage.dur;const s=Math.min(1,voyage.t),e=s*s*(3-2*s);const p=voyagePos(e),q=voyagePos(Math.min(1,e+.012));if(Math.hypot(q[0]-p[0],q[1]-p[1])>1e-4)voyage.heading=turnToward(voyage.heading,Math.atan2(q[0]-p[0],q[1]-p[1]),dt*2.5);voyage.x=p[0];voyage.z=p[1];
+player.x=voyage.x-Math.sin(voyage.heading)*.35;player.z=voyage.z-Math.cos(voyage.heading)*.35;player.y=.44+Math.sin(performance.now()*.0014)*.06;player.heading=voyage.heading;player.amp+=(0-player.amp)*.2;player.look=0;
+if(voyage.t>=1){voyage.active=false;const to=voyage.to,[x,z]=snap(to.landing[0],to.landing[1],3);player.x=x;player.z=z;player.y=cellH(x,z);player.heading=to.dock.heading+PI;game.island=to.id;cam.mode='follow';goal.theta=player.heading+PI;goal.r=9;goal.phi=1.1;toast(`Bienvenue sur ${to.name}.`);refreshHUD();dirty=true;saveGame(true);}}
 
 // ---------- caméra ----------
 const presets={village:{theta:.13,phi:1.14,r:38,target:[0,7,1.6]},port:{theta:-.27,phi:1.27,r:24,target:[-.3,3.7,5.5]},summit:{theta:.46,phi:1.12,r:22,target:[.4,11,-4.7]}};
@@ -191,7 +206,10 @@ if(h<=SEA){const deep=clamp(-h/4,0,1);r=20+40*(1-deep);g=140-50*deep;b=170-20*de
 else if(h<1.3){r=240;g=222;b=170;}
 else{const v=clamp((h-1)/13,0,1);r=150+70*v;g=140+65*v;b=118+60*v;if(blocked[i]){r=205;g=110;b=60;}else if(!reach[i]){r*=.82;g*=.82;b*=.8;}}
 img.data[o]=r;img.data[o+1]=g;img.data[o+2]=b;img.data[o+3]=255;}c.putImageData(img,0,0);}
-function drawMap(){const c=mapEl.getContext('2d');c.clearRect(0,0,HN,HN);c.drawImage(mapBase,0,0);const P=(x,z)=>[(x+16)/HS,(z+16)/HS];const dot=(x,z,col,r=5)=>{const [px,pz]=P(x,z);c.fillStyle=col;c.beginPath();c.arc(px,pz,r,0,TAU);c.fill();};
+function mapRegion(){if(voyage.active)return{cx:WORLD.x0+WORLD.size/2,cz:WORLD.z0+WORLD.size/2,R:WORLD.size/2};const i=currentIsland();return{cx:i.center[0],cz:i.center[1],R:i.r+6};}
+function drawMap(){const c=mapEl.getContext('2d'),M=mapEl.width,{cx,cz,R}=mapRegion();c.clearRect(0,0,M,M);c.drawImage(mapBase,(cx-R-WORLD.x0)/HS,(cz-R-WORLD.z0)/HS,2*R/HS,2*R/HS,0,0,M,M);const P=(x,z)=>[(x-(cx-R))/(2*R)*M,(z-(cz-R))/(2*R)*M];const dot=(x,z,col,r=5)=>{const [px,pz]=P(x,z);c.fillStyle=col;c.beginPath();c.arc(px,pz,r,0,TAU);c.fill();};
+for(const isl of islands){const e=dockSeaEnd(isl);dot(e[0],e[2],'#7ae7ff',4);}
+if(voyage.active)dot(voyage.x,voyage.z,'#fff',5);
 if(game.quests.shells===1)for(const s of shellSpots)if(!game.shells.has(s.id))dot(s.x,s.z,'#ff9fc4',4);
 if(game.quests.notes===1)for(const s of noteSpots)if(!game.notes.has(s.id))dot(s.x,s.z,'#c9a0ff',4);
 if(game.quests.treasure===1&&!game.dug)dot(digSpot.x,digSpot.z,'#ffd166',5);
@@ -209,6 +227,7 @@ else $('#new').onclick=()=>startGame(null);
 $('#name').addEventListener('keydown',e=>{if(e.key==='Enter')$('#new').click();});}
 function startGame(save){if(save)applySave(save);else{game.name=($('#name').value||'').trim().slice(0,14);goal.theta=player.heading+PI;goal.phi=1.1;goal.r=9;Object.assign(current,structuredClone(goal));}
 cam.mode='follow';playing=true;refreshHUD();const l=$('#loading');l.style.opacity=0;l.style.pointerEvents='none';setTimeout(()=>l.remove(),650);gesture();
+if(!save)game.island='azura';
 setTimeout(()=>toast(save?`Bon retour sur Azura${game.name?', '+game.name:''} !`:`Bienvenue sur Azura${game.name?', '+game.name:''}. Marche jusqu'au ponton pour rencontrer Tomas.`),700);}
 
 // ---------- animation / déplacement ----------
@@ -231,11 +250,11 @@ groundEntity(c,dt);}
 const drawList=[];
 function update(dt,t){
 if(playing)game.playtime+=dt;updateClock(dt);
-let ix=0,iy=0;if(playing&&!dialog&&!minigame&&panel.hidden){ix=(keys.right?1:0)-(keys.left?1:0)+stickVec[0];iy=(keys.up?1:0)-(keys.down?1:0)+stickVec[1];}
+let ix=0,iy=0;if(playing&&!dialog&&!minigame&&panel.hidden&&!voyage.active){ix=(keys.right?1:0)-(keys.left?1:0)+stickVec[0];iy=(keys.up?1:0)-(keys.down?1:0)+stickVec[1];}
 let mag=Math.hypot(ix,iy);if(mag>1){ix/=mag;iy/=mag;mag=1;}
 if(mag>.08){if(cam.mode!=='follow')setView('play');const f=norm([current.target[0]-eye[0],0,current.target[2]-eye[2]]),r=[-f[2],0,f[0]];const px=player.x,pz=player.z;moveEntity(player,f[0]*iy+r[0]*ix,f[2]*iy+r[2]*ix,(keys.run||mag>.97&&stickId!==null?4.3:2.7)*Math.min(1,mag*1.3),dt);if(Math.hypot(player.x-px,player.z-pz)>0)dirty=true;}
 else{idleEntity(player,dt);player.look=Math.sin(t*.5)*.25*(1-player.amp);}
-groundEntity(player,dt);
+if(voyage.active)updateVoyage(dt);else groundEntity(player,dt);
 for(const n of npcs)npcThink(n,dt,t);
 for(const c of crabs)crabThink(c,dt,t);
 updateFishing(dt);
@@ -260,7 +279,7 @@ if(game.dug){const root=T(digSpot.x,digSpot.y,digSpot.z);setBone(chestBones,0,ro
 for(const g of gulls){const a=t*g.w+g.ph,dir=Math.sign(g.w),x=g.cx+Math.cos(a)*g.R,z=g.cz+Math.sin(a)*g.R,y=g.h+Math.sin(t*.7+g.ph)*.8,heading=Math.atan2(-Math.sin(a)*dir,Math.cos(a)*dir);const glide=Math.sin(t*.45+g.ph)>.2?.12:1,flap=Math.sin(t*9+g.ph)*.6*glide;
 const root=mm(T(x,y,z),RY(heading),RZ(-dir*.25));setBone(g.bones,0,root);setBone(g.bones,1,mm(root,RZ(flap)));setBone(g.bones,2,mm(root,RZ(-flap)));drawList.push({mesh:gullMesh,bones:g.bones,n:3,mode:4});}
 {const b=boats.moored;setBone(b.bones,0,mm(T(b.x,b.y+Math.sin(t*1.1)*.05,b.z),RY(b.rot),RX(Math.sin(t*1.3+1)*.03),RZ(Math.sin(t*.9)*.05)));drawList.push({mesh:mooredBoat,bones:b.bones,n:1,mode:4});
-const s=boats.sail;s.a=t*.04;const x=Math.cos(s.a)*19,z=-1.3+Math.sin(s.a)*17.5,heading=Math.atan2(-Math.sin(s.a)*19,Math.cos(s.a)*17.5);const root=mm(T(x,.5+Math.sin(t*1.4)*.08,z),RY(heading),RZ(.06+Math.sin(t*.8)*.04),RX(Math.sin(t*1.1)*.03));setBone(s.bones,0,root);setBone(s.bones,1,mm(root,RY(.35+Math.sin(t*2.6)*.06)));drawList.push({mesh:sailBoat,bones:s.bones,n:2,mode:4});}
+const s=boats.sail;let x,z,heading,heel=.06;if(voyage.active){x=voyage.x;z=voyage.z;heading=voyage.heading;heel=.12;}else{s.a=t*.04;x=Math.cos(s.a)*19;z=-1.3+Math.sin(s.a)*17.5;heading=Math.atan2(-Math.sin(s.a)*19,Math.cos(s.a)*17.5);}const root=mm(T(x,.5+Math.sin(t*1.4)*.08,z),RY(heading),RZ(heel+Math.sin(t*.8)*.04),RX(Math.sin(t*1.1)*.03));setBone(s.bones,0,root);setBone(s.bones,1,mm(root,RY(.35+Math.sin(t*2.6)*.06)));drawList.push({mesh:sailBoat,bones:s.bones,n:2,mode:4});}
 {const b=flagBones;setBone(b,0,mm(T(...flagBase),RY(.6+Math.sin(t*.3)*.25)));drawList.push({mesh:flagMesh,bones:b,n:1,mode:3});}
 chimneys.forEach((c,ci)=>{const b=smokeBones[ci];for(let k=0;k<6;k++){const life=(t*.22+k/6+ci*.37)%1,sc=Math.sin(life*PI)*(.5+life*1.6);setBone(b,k,mm(T(c[0]+Math.sin(life*4+k+ci)*.18+life*life*1.2,c[1]+life*2.6,c[2]+Math.cos(life*3+k)*.15+life*.5),SC(Math.max(.01,sc))));}drawList.push({mesh:smokeMesh,bones:b,n:6,mode:2,noShadow:true});});
 for(const l of lanterns){setBone(l.bones,0,mm(T(l.x,l.y,l.z),RY(Math.atan2(-l.x,-l.z))));drawList.push({mesh:lanternMesh,bones:l.bones,n:1,mode:4});drawList.push({mesh:lanternGlow,bones:l.bones,n:1,mode:7,noShadow:true});}
