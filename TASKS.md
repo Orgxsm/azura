@@ -21,12 +21,12 @@ Emplacements proposés (x, z en mètres, la mer à y = 0) :
 - [ ] Polish visuel libre : ce qui te semble améliorer le rendu (ciel, eau, matériaux), en petits commits.
 
 ### Claude (gameplay / fonctionnalités)
-- [ ] `world.js` : étendre la carte de hauteur et les ombres à tout l'archipel (cascade ou une carte par île), tri des îles hors champ pour la fluidité.
-- [ ] Registre des îles `islands = [{id, name, center, radius, spawn, dock:[x,z,heading]}]` et repérage de l'île courante.
-- [ ] Voyage en bateau : parler à Tomas → choix de destination → embarquement, traversée animée (le joueur à bord, caméra cinéma), débarquement au ponton d'arrivée. Sauvegarde de l'île courante.
-- [ ] Mini-carte multi-îles (zoom sur l'île courante, vue archipel pendant la traversée).
+- [x] `world.js` : carte de hauteur 96 m × 96 m et ombres (4096²) sur tout l'archipel. `[ ]` tri des îles hors champ (plus tard, si besoin).
+- [x] Registre des îles dans `src/archipel.js` (centre, rayon, apparition, ponton construit automatiquement) et île courante.
+- [x] Voyage en bateau v1 : E devant le voilier au ponton (après la quête des coquillages) → traversée en courbe au large, caméra cinéma, débarquement, sauvegarde de l'île courante. `[ ]` choix de destination quand il y aura 3 îles, voile/sillage animés (Astra).
+- [x] Mini-carte multi-îles (recadrée sur l'île courante, vue archipel pendant la traversée, pontons en bleu).
 - [ ] PNJ, dialogues et quêtes de l'Île du Phare (gardien, chèvres à ramener, lanterne du phare à rallumer), nouveaux lieux à découvrir, étoiles en plus.
-- [ ] Sauvegarde v3 compatible v1/v2.
+- [x] Sauvegarde : île courante ajoutée, compatible v1/v2.
 
 ### Interface entre les deux (à faire en premier, ensemble)
 - [x] Claude publie dans `src/islands/README.md` le gabarit d'un fichier d'île (fonction `buildIsland_phare()` appelée depuis `island.js` après Azura, tableaux à remplir, zone de coordonnées).

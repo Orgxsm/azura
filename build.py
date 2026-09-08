@@ -10,7 +10,7 @@ import os, sys, subprocess, shutil, tempfile, glob
 ROOT = os.path.dirname(os.path.abspath(__file__))
 SRC = os.path.join(ROOT, 'src')
 DIST = os.path.join(ROOT, 'dist')
-ORDER = ['core.js', 'island.js', 'islands/*.js', 'scene_end.js', 'util.js', 'rig.js', 'shaders.js', 'world.js', 'audio.js', 'game.js', 'anim.js', 'render.js']
+ORDER = ['core.js', 'archipel.js', 'island.js', 'islands/*.js', 'scene_end.js', 'util.js', 'rig.js', 'shaders.js', 'world.js', 'audio.js', 'game.js', 'anim.js', 'render.js']
 
 def read(name):
     with open(os.path.join(SRC, name), encoding='utf-8') as f:

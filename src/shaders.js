@@ -47,7 +47,7 @@ in vec3 vPosition;in vec3 vNormal;in vec3 vColor;in vec4 vShadow;
 uniform vec3 uEye;uniform float uTime;uniform int uMode;uniform highp sampler2DShadow uShadow;uniform float uShadowTexel;uniform float uDay;uniform float uDusk;uniform float uClip;uniform float uExpo;uniform float uDbg;
 out vec4 outColor;
 ${noiseChunk}
-float shadow(vec3 n){vec3 q=vShadow.xyz/vShadow.w*.5+.5;if(q.x<0.||q.x>1.||q.y<0.||q.y>1.||q.z>1.)return 1.;float bias=max(.00022,.0012*(1.-dot(n,normalize(vec3(-25,40,30)))));
+float shadow(vec3 n){vec3 q=vShadow.xyz/vShadow.w*.5+.5;if(q.x<0.||q.x>1.||q.y<0.||q.y>1.||q.z>1.)return 1.;float bias=max(.00035,.0018*(1.-dot(n,normalize(vec3(-25,40,30)))));
 vec2 o[8]=vec2[](vec2(-.7,-.2),vec2(.7,.2),vec2(-.2,.7),vec2(.2,-.7),vec2(-.5,.5),vec2(.5,-.5),vec2(.5,.6),vec2(-.6,-.6));float s=0.;for(int i=0;i<8;i++)s+=texture(uShadow,vec3(q.xy+o[i]*uShadowTexel*1.9,q.z-bias));return s/8.;}
 float hueOf(vec3 c){float mx=max(c.r,max(c.g,c.b)),mn=min(c.r,min(c.g,c.b)),d=mx-mn;if(d<1e-4)return 0.;float h;if(mx==c.r)h=mod((c.g-c.b)/d,6.);else if(mx==c.g)h=(c.b-c.r)/d+2.;else h=(c.r-c.g)/d+4.;return h*60.;}
 void main(){if(uClip>.5&&vPosition.y<-.03)discard;if(uDbg>.5){outColor=vec4(uDbg>1.5?normalize(vNormal)*.5+.5:vColor,0.);return;}
