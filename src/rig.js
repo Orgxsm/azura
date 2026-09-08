@@ -6,24 +6,32 @@ function rig(parts){const all=[];for(const [b,fn] of parts){const part=withBone(
 
 const C={skin:[color(0xf3c9a4),color(0xdba580),color(0xb07a52)],dark:palette.dark,straw:color(0xe8cd7c),white:color(0xfdfaf2),shoe:color(0x4a3323)};
 function humanoid(o){
+// Style « chibi » arrondi : grosse tête, corps compact, membres en capsules. Mêmes pivots que l'ancien rig cubique
+// (hanches ±.1/.62, épaules ±.28/1.08, cou 1.16) pour que poseHuman continue de fonctionner.
 const s=o.scale||1,sc=p=>p.map(v=>v*s);
-const B=(c,d,col)=>box(sc(c),sc(d),col);
+const E=(c,d,col,seg=12,rings=8)=>ellipsoid(sc(c),sc(d),col,seg,rings,0);
+const B=(c,d,col,rot=0)=>box(sc(c),sc(d),col,rot);
+const Cy=(a,b,r1,r2,col,n=12)=>cylinder(sc(a),sc(b),r1*s,r2*s,col,n);
+const cloth=o.shirt,sleeve=o.sleeve||o.shirt,dark=C.dark;
 return rig([
-[0,()=>{B([0,.87,0],[.42,.5,.24],o.shirt);B([0,.63,0],[.43,.09,.25],o.belt||C.dark);B([0,1.15,0],[.12,.08,.12],o.skin);if(o.apron)B([0,.74,.125],[.3,.36,.02],o.apron);if(o.bag)B([.24,.72,-.02],[.1,.22,.16],palette.trim);
-if(o.prop==='guitar'){B([.02,.8,.22],[.36,.44,.09],color(0x9b5a2c));B([.02,.8,.27],[.12,.14,.01],C.dark);B([-.38,1.0,.22],[.5,.05,.05],palette.wood);for(let i=0;i<4;i++)B([-.1,.7+i*.06,.27],[.5,.006,.006],color(0xe9e2c8));}}],
-[5,()=>{B([0,1.31,0],[.3,.3,.3],o.skin);B([0,1.41,0],[.33,.1,.33],o.hair);B([0,1.3,-.16],[.33,.22,.03],o.hair);
-B([-.06,1.32,.152],[.05,.05,.01],C.dark);B([.06,1.32,.152],[.05,.05,.01],C.dark);B([0,1.24,.152],[.08,.02,.01],color(0xb35a4a));
-if(o.hat==='straw'){cylinder(sc([0,1.44,0]),sc([0,1.47,0]),.36*s,.36*s,C.straw,14);cylinder(sc([0,1.46,0]),sc([0,1.62,0]),.2*s,.17*s,C.straw,12);cylinder(sc([0,1.48,0]),sc([0,1.52,0]),.205*s,.2*s,o.band||color(0xc34a3d),12);}
-if(o.hat==='cap'){cylinder(sc([0,1.44,0]),sc([0,1.56,0]),.19*s,.16*s,o.hatColor,12);B([0,1.45,.22],[.3,.03,.16],o.hatColor);}
-if(o.hat==='scarf'){B([0,1.44,0],[.34,.08,.34],o.hatColor);B([0,1.36,-.19],[.14,.2,.04],o.hatColor);}
-if(o.hat==='beret'){cylinder(sc([0,1.44,0]),sc([0,1.5,0]),.2*s,.24*s,o.hatColor,12);cylinder(sc([0,1.5,0]),sc([0,1.53,0]),.24*s,.12*s,o.hatColor,12);}
-if(o.beard)B([0,1.19,.1],[.22,.12,.12],o.hair);
-if(o.bun)ellipsoid(sc([0,1.46,-.12]),sc([.09,.08,.09]),o.hair,7,4,0);
-if(o.longHair)B([0,1.22,-.14],[.3,.28,.06],o.hair);}],
-[1,()=>{B([-.1,.33,0],[.16,.56,.18],o.pants);B([-.1,.04,.03],[.17,.08,.25],C.shoe);}],
-[2,()=>{B([.1,.33,0],[.16,.56,.18],o.pants);B([.1,.04,.03],[.17,.08,.25],C.shoe);}],
-[3,()=>{B([-.28,.86,0],[.12,.44,.12],o.sleeve||o.shirt);B([-.28,.6,0],[.1,.1,.1],o.skin);if(o.prop==='basket'){B([-.3,.44,.06],[.24,.17,.17],C.straw);B([-.3,.55,.06],[.2,.04,.13],color(0xd9a35a));}}],
-[4,()=>{B([.28,.86,0],[.12,.44,.12],o.sleeve||o.shirt);B([.28,.6,0],[.1,.1,.1],o.skin);if(o.prop==='rod')beam(sc([.3,.55,.05]),sc([.34,1.55,1.5]),.014*s,palette.wood);if(o.prop==='staff')beam(sc([.32,-.02,.08]),sc([.32,1.25,.08]),.025*s,palette.wood);}]]);
+[0,()=>{E([0,.86,0],[.245,.3,.185],cloth,14,9);E([0,.7,0],[.25,.16,.19],o.pants,14,7);Cy([0,.62,0],[0,.68,0],.215,.205,o.belt||dark,14);Cy([0,1.04,0],[0,1.16,0],.075,.07,o.skin,10);
+if(o.apron)E([0,.78,.14],[.2,.24,.035],o.apron,10,6);if(o.bag)E([.27,.7,-.02],[.06,.1,.09],palette.trim,8,5);
+if(o.prop==='guitar'){E([.02,.8,.24],[.2,.25,.06],color(0x9b5a2c),12,7);E([.02,.8,.3],[.07,.08,.01],dark,8,4);B([-.36,1.0,.24],[.5,.05,.05],palette.wood);for(let i=0;i<4;i++)B([-.1,.7+i*.06,.3],[.5,.006,.006],color(0xe9e2c8));}}],
+[5,()=>{E([0,1.34,0],[.27,.26,.27],o.skin,16,10);E([-.27,1.33,0],[.045,.05,.03],o.skin,8,5);E([.27,1.33,0],[.045,.05,.03],o.skin,8,5);
+for(const sd of[-1,1]){E([sd*.095,1.34,.235],[.055,.065,.03],C.white,8,5);E([sd*.09,1.335,.262],[.032,.04,.02],o.eye||color(0x3b2a20),8,5);E([sd*.1,1.41,.245],[.05,.012,.02],o.hair,6,3);}
+E([0,1.29,.27],[.028,.022,.02],tint(o.skin,.92),6,4);B([0,1.235,.262],[.07,.014,.012],color(0xb35a4a));
+E([0,1.43,-.05],[.29,.23,.285],o.hair,16,10);E([0,1.56,.19],[.19,.06,.11],o.hair,10,5);
+if(o.hat==='straw'){Cy([0,1.53,0],[0,1.555,0],.42,.42,C.straw,18);E([0,1.62,0],[.22,.13,.22],C.straw,14,7);Cy([0,1.55,0],[0,1.585,0],.225,.215,o.band||color(0xc34a3d),14);}
+if(o.hat==='cap'){E([0,1.56,0],[.26,.12,.26],o.hatColor,14,7);B([0,1.56,.28],[.3,.03,.16],o.hatColor);}
+if(o.hat==='scarf'){E([0,1.52,0],[.295,.09,.295],o.hatColor,14,6);B([0,1.44,-.24],[.14,.2,.04],o.hatColor);}
+if(o.hat==='beret'){E([0,1.61,.03],[.31,.09,.31],o.hatColor,14,6);E([0,1.7,0],[.03,.03,.03],o.hatColor,6,4);}
+if(o.beard)E([0,1.17,.19],[.17,.11,.09],o.hair,10,6);
+if(o.bun)E([0,1.62,-.14],[.11,.1,.11],o.hair,10,6);
+if(o.longHair)E([0,1.18,-.22],[.21,.24,.12],o.hair,12,7);}],
+[1,()=>{Cy([-.1,.62,0],[-.1,.12,0],.085,.075,o.pants,12);E([-.1,.06,.03],[.1,.065,.145],C.shoe,10,5);}],
+[2,()=>{Cy([.1,.62,0],[.1,.12,0],.085,.075,o.pants,12);E([.1,.06,.03],[.1,.065,.145],C.shoe,10,5);}],
+[3,()=>{E([-.29,1.03,0],[.085,.085,.085],sleeve,10,6);Cy([-.3,1.03,0],[-.3,.66,0],.065,.058,sleeve,10);E([-.3,.62,0],[.072,.075,.072],o.skin,10,6);if(o.prop==='basket'){E([-.33,.46,.06],[.13,.09,.09],C.straw,10,6);Cy([-.33,.53,.06],[-.33,.56,.06],.1,.1,color(0xd9a35a),10);}}],
+[4,()=>{E([.29,1.03,0],[.085,.085,.085],sleeve,10,6);Cy([.3,1.03,0],[.3,.66,0],.065,.058,sleeve,10);E([.3,.62,0],[.072,.075,.072],o.skin,10,6);if(o.prop==='rod')beam(sc([.32,.55,.05]),sc([.36,1.55,1.5]),.014*s,palette.wood);if(o.prop==='staff')beam(sc([.34,-.02,.08]),sc([.34,1.25,.08]),.025*s,palette.wood);}]]);
 }
 function catRig(){const fur=color(0xe28f3c),cream=color(0xfbe9cf);return rig([
 [0,()=>{box([0,.27,0],[.17,.15,.42],fur);box([0,.21,.02],[.13,.06,.3],cream);box([0,.37,.26],[.17,.15,.15],fur);box([0,.33,.33],[.08,.06,.04],cream);

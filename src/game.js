@@ -2,9 +2,9 @@
 // Propriétaire : GAMEPLAY (Claude Code).
 // ---------- état du jeu ----------
 const SAVE_KEY='azura-save-v1',DAY=540;
-const game={name:'',shells:new Set(),notes:new Set(),quests:{shells:0,cat:0,crabs:0,bread:0,treasure:0,fish:0,notes:0},log:[],discovered:{},playtime:0,clock:DAY*.1,catFollow:false,crabsCaught:0,fish:0,delivered:{},dug:false,fireworksUntil:-1,finale:false,island:'azura'};
+const game={name:'',shells:new Set(),notes:new Set(),quests:{shells:0,cat:0,crabs:0,bread:0,treasure:0,fish:0,notes:0,goats:0,oil:0},goatsCaught:0,oil:false,log:[],discovered:{},playtime:0,clock:DAY*.1,catFollow:false,crabsCaught:0,fish:0,delivered:{},dug:false,fireworksUntil:-1,finale:false,island:'azura'};
 let playing=false,dialog=null,dirty=false,lastSave=0,minigame=null;
-const NAMES={tomas:'Tomas',anae:'Anaé',lila:'Lila',oro:'Oro',pia:'Pia',marco:'Marco',bastien:'Bastien',cat:'Pistache'};
+const NAMES={tomas:'Tomas',anae:'Anaé',lila:'Lila',oro:'Oro',pia:'Pia',marco:'Marco',bastien:'Bastien',cat:'Pistache',gardien:'Elio'};
 function makeEntity(id,mesh,x,z,o={}){const e=Object.assign({id,mesh,x,z,y:0,heading:PI,phase:0,amp:0,speed:0,bones:new Float32Array(16*6),look:0},o);e.scale=o.scale||1;e.y=cellH(x,z);return e;}
 const player=makeEntity('hero',heroMesh,SPAWN[0],SPAWN[1]);
 const npcDefs=[
@@ -15,8 +15,9 @@ const npcDefs=[
 {id:'pia',name:'Pia',x:-7,z:7.2,leash:1.5,speed:1.3,scale:.95},
 {id:'marco',name:'Marco',x:3.8,z:7.9,leash:1.5,speed:1.4,scale:1.02},
 {id:'bastien',name:'Bastien le musicien',x:-.3,z:.3,leash:.4,speed:.9,scale:.98,pose:'guitar'},
-{id:'cat',name:'Pistache',x:.3,z:-1,leash:1.2,speed:1.6,cat:true}];
-const npcs=npcDefs.map(d=>{const [x,z]=snap(d.x,d.z);return makeEntity(d.id,npcMeshes[d.id],x,z,{name:d.name,leash:d.leash,walk:d.speed,scale:d.scale,cat:!!d.cat,pose:d.pose,home:[x,z],state:'idle',t:1+Math.random()*3,said:0,heading:Math.random()*TAU});});
+{id:'cat',name:'Pistache',x:.3,z:-1,leash:1.2,speed:1.6,cat:true},
+{id:'gardien',name:'Elio, le gardien du phare',x:34.5,z:-22.5,leash:1.2,speed:.8}];
+const npcs=npcDefs.map(d=>{const [x,z]=snap(d.x,d.z);return makeEntity(d.id,npcMeshes[d.id]||npcMeshes.oro,x,z,{name:d.name,leash:d.leash,walk:d.speed,scale:d.scale,cat:!!d.cat,pose:d.pose,home:[x,z],state:'idle',t:1+Math.random()*3,said:0,heading:Math.random()*TAU});});
 const cat=npcs.find(n=>n.cat),anae=npcs.find(n=>n.id==='anae');
 const shellSpots=[[-3,10.8],[-1.2,11.4],[1.4,11.6],[3.5,10.9],[4.9,9.5],[-4.7,9.3],[.5,8.2],[-4.5,15.9],[-9.6,2],[8.6,3.2],[.4,-.2],[1.2,-4.4]].map((p,i)=>{const [x,z]=snap(p[0],p[1]);return{id:i,x,z,y:cellH(x,z)};});
 const noteSpots=[[-3.6,12.6],[-4.4,4.1],[2.2,-4.1]].map((p,i)=>{const [x,z]=snap(p[0],p[1]);return{id:i,x,z,y:cellH(x,z)};});
@@ -25,6 +26,8 @@ const fishSpot=(()=>{const [x,z]=snap(-4.2,15.9);return{x,z,y:cellH(x,z)};})();
 const places=[{id:'village',name:'Le village',x:-2.5,z:3,r:3.5,minY:3},{id:'port',name:'La crique',x:-4.2,z:14.5,r:2.4,minY:0},{id:'summit',name:'Le belvédère',x:1.7,z:-5,r:2.5,minY:9.4},{id:'phare',name:"La crique du Phare",x:35.5,z:-8,r:4,minY:.3}];
 const gulls=Array.from({length:6},(_,i)=>({cx:range(-4,3),cz:range(6,14),R:range(4,9),h:range(9,17),w:range(.16,.3)*(i%2?1:-1),ph:range(0,TAU),bones:new Float32Array(48)}));
 const crabs=[[-3,10.6],[0,11.2],[2.6,10.9],[4.2,9.6],[-4.6,8.8],[1.2,8.7]].map((p,i)=>{const [x,z]=snap(p[0],p[1]);return{id:i,x,z,y:cellH(x,z),heading:Math.random()*TAU,phase:0,amp:0,speed:0,scale:1,state:'idle',t:Math.random()*3,home:[x,z],maxH:1.2,bones:new Float32Array(48),hidden:false,crab:true};});
+const goatMeshOf=()=>typeof goatMesh!=='undefined'?goatMesh:(npcMeshes.goat||npcMeshes.cat);const goatPose=(e,t)=>typeof poseGoat==='function'?poseGoat(e,t):poseCat(e,t);
+const goats=[[31.5,-15.5],[36.5,-13.5],[38.5,-19.5]].map((p,i)=>{const [x,z]=snap(p[0],p[1]);return{id:i,x,z,y:cellH(x,z),heading:Math.random()*TAU,phase:0,amp:0,speed:0,scale:typeof goatMesh!=='undefined'||npcMeshes.goat?1:1.7,state:'idle',t:Math.random()*3,home:[x,z],bones:new Float32Array(16*8),hidden:false,goat:true};});
 const lanterns=[[-3.3,10.8],[-4.6,15.6],[-2.0,3.5],[4.3,4.1],[1.4,-.1],[2.4,-4.1],[5.0,10.3],[-5.6,8.9],[-8.6,3.0]].map(p=>{const [x,z]=snap(p[0],p[1],2);return{x,z,y:cellH(x,z),bones:new Float32Array(16)};});
 const fireflies=Array.from({length:14},(_,i)=>({cx:i<7?-.6:-3.3,cz:i<7?-1.5:2.9,cy:i<7?7.3:3.8,ph:range(0,TAU),r:range(.6,2.2),h:range(.6,1.8)}));
 const fireflyBones=new Float32Array(16*14);
@@ -34,11 +37,11 @@ const boats={moored:{x:-6,y:.53,z:14.1,rot:-.13,bones:new Float32Array(16)},sail
 const chestBones=new Float32Array(32),crossBones=new Float32Array(16);
 
 // ---------- sauvegarde ----------
-function saveGame(silent){const d={v:2,name:game.name,x:player.x,z:player.z,heading:player.heading,cam:{theta:goal.theta,phi:goal.phi,r:goal.r},shells:[...game.shells],notes:[...game.notes],quests:game.quests,log:game.log,discovered:game.discovered,playtime:game.playtime,clock:game.clock,catFollow:game.catFollow,crabsCaught:game.crabsCaught,fish:game.fish,delivered:game.delivered,dug:game.dug,finale:game.finale,island:game.island,cat:[cat.x,cat.z],said:Object.fromEntries(npcs.map(n=>[n.id,n.said])),savedAt:Date.now()};
+function saveGame(silent){const d={v:2,name:game.name,x:player.x,z:player.z,heading:player.heading,cam:{theta:goal.theta,phi:goal.phi,r:goal.r},shells:[...game.shells],notes:[...game.notes],quests:game.quests,log:game.log,discovered:game.discovered,playtime:game.playtime,clock:game.clock,catFollow:game.catFollow,crabsCaught:game.crabsCaught,fish:game.fish,delivered:game.delivered,dug:game.dug,finale:game.finale,island:game.island,goatsCaught:game.goatsCaught,oil:game.oil,cat:[cat.x,cat.z],said:Object.fromEntries(npcs.map(n=>[n.id,n.said])),savedAt:Date.now()};
 try{localStorage.setItem(SAVE_KEY,JSON.stringify(d));}catch(e){if(!silent)toast("Sauvegarde impossible sur ce navigateur");return;}dirty=false;lastSave=performance.now();if(!silent)toast('Partie sauvegardée ✓');}
 function loadSave(){try{const d=JSON.parse(localStorage.getItem(SAVE_KEY));return d&&(d.v===1||d.v===2)?d:null;}catch(e){return null;}}
 function clearSave(){try{localStorage.removeItem(SAVE_KEY);}catch(e){}}
-function applySave(d){const [x,z]=snap(d.x,d.z);player.x=x;player.z=z;player.y=cellH(x,z);player.heading=d.heading||PI;game.name=d.name||'';game.shells=new Set(d.shells||[]);game.notes=new Set(d.notes||[]);Object.assign(game.quests,d.quests||{});game.log=d.log||Object.keys(game.quests).filter(k=>game.quests[k]>0);game.discovered=d.discovered||{};game.playtime=d.playtime||0;game.clock=d.clock??DAY*.1;game.catFollow=!!d.catFollow;game.crabsCaught=d.crabsCaught||0;game.fish=d.fish||0;game.delivered=d.delivered||{};game.dug=!!d.dug;game.finale=!!d.finale;game.island=d.island||'azura';
+function applySave(d){const [x,z]=snap(d.x,d.z);player.x=x;player.z=z;player.y=cellH(x,z);player.heading=d.heading||PI;game.name=d.name||'';game.shells=new Set(d.shells||[]);game.notes=new Set(d.notes||[]);Object.assign(game.quests,d.quests||{});game.log=d.log||Object.keys(game.quests).filter(k=>game.quests[k]>0);game.discovered=d.discovered||{};game.playtime=d.playtime||0;game.clock=d.clock??DAY*.1;game.catFollow=!!d.catFollow;game.crabsCaught=d.crabsCaught||0;game.fish=d.fish||0;game.delivered=d.delivered||{};game.dug=!!d.dug;game.finale=!!d.finale;game.island=d.island||'azura';game.goatsCaught=d.goatsCaught||0;game.oil=!!d.oil;
 if(d.cat){const [cx,cz]=snap(d.cat[0],d.cat[1]);cat.x=cx;cat.z=cz;cat.y=cellH(cx,cz);}
 if(game.quests.cat===2){cat.home=[anae.home[0]+.6,anae.home[1]+.4];}
 for(const n of npcs)n.said=(d.said||{})[n.id]||0;
@@ -46,7 +49,7 @@ if(d.cam){goal.theta=d.cam.theta;goal.phi=clamp(d.cam.phi,.35,1.46);goal.r=clamp
 function fmtTime(s){const m=Math.round(s/60);return m<1?'moins d\'une minute':m<60?m+' min':Math.floor(m/60)+' h '+(m%60)+' min';}
 const doneCount=q=>Object.values(q).filter(v=>v===2).length;
 function stars(){return Object.keys(game.discovered).length+doneCount(game.quests);}
-const TOTAL=11;
+const TOTAL=13;
 
 // ---------- jour / nuit ----------
 let dayF=1,duskF=0;
@@ -64,12 +67,14 @@ crabs:()=>game.crabsCaught>=3?"Retourne voir Lila sur la plage.":`Attrape 3 crab
 bread:()=>{const left=['marco','tomas','oro'].filter(k=>!game.delivered[k]);return left.length?`Livre le pain de Pia à ${left.map(k=>NAMES[k]).join(', ')}.`:"Retourne voir Pia, près du ponton.";},
 treasure:()=>"Trésor de Marco : « Sous le palmier qui penche vers la mer, à l'ouest de la crique, là où le sable touche la roche. » Creuse avec E.",
 fish:()=>game.fish>=3?"Apporte les 3 poissons à Anaé pour sa soupe.":`Pêche 3 poissons au bout du ponton (${game.fish}/3).`,
-notes:()=>game.notes.size>=3?"Rapporte les partitions à Bastien, sur la terrasse du haut.":`Retrouve les 3 partitions de Bastien (${game.notes.size}/3). Le vent les a dispersées.`};
+notes:()=>game.notes.size>=3?"Rapporte les partitions à Bastien, sur la terrasse du haut.":`Retrouve les 3 partitions de Bastien (${game.notes.size}/3). Le vent les a dispersées.`,
+goats:()=>game.goatsCaught>=3?"Retourne voir Elio, au sommet de l'Île du Phare.":`Rattrape les 3 chèvres d'Elio sur les pentes de l'Île du Phare (${game.goatsCaught}/3). Approche-toi et appuie sur E.`,
+oil:()=>game.oil?"Rapporte le bidon d'huile à Elio, au sommet de l'Île du Phare.":"La lampe du phare est éteinte : va chercher le bidon d'huile chez Tomas, sur le ponton d'Azura (le voilier fait la traversée)."};
 function objective(){const active=game.log.filter(id=>game.quests[id]===1);if(active.length)return active.slice(-2).reverse().map(id=>'• '+questTexts[id]()).join('\n');
-const q=game.quests;if(q.shells===0)return"Explore l'île et parle aux habitants. Tomas t'attend sur le ponton.";const todo=[['cat','Anaé, dans le village, a besoin d\'aide.'],['crabs','Lila, sur la plage, a une idée de jeu.'],['bread','Pia, près du ponton, sort son pain du four.'],['treasure','Marco, sur la plage, a trouvé quelque chose.'],['fish','Reparle à Tomas : il a une canne à te prêter.'],['notes','Bastien joue de la guitare sur la terrasse du haut. Va l\'écouter.']].filter(([k])=>q[k]===0);
+const q=game.quests;if(q.shells===0)return"Explore l'île et parle aux habitants. Tomas t'attend sur le ponton.";const todo=[['cat','Anaé, dans le village, a besoin d\'aide.'],['crabs','Lila, sur la plage, a une idée de jeu.'],['bread','Pia, près du ponton, sort son pain du four.'],['treasure','Marco, sur la plage, a trouvé quelque chose.'],['fish','Reparle à Tomas : il a une canne à te prêter.'],['notes','Bastien joue de la guitare sur la terrasse du haut. Va l\'écouter.'],['goats','Prends le voilier de Tomas : Elio, le gardien du phare, a besoin d\'aide au sommet de son île.']].filter(([k])=>q[k]===0);
 if(todo.length)return todo[0][1];const disc=Object.keys(game.discovered).length;if(disc<places.length)return`Découvre tous les lieux de l'archipel (${disc}/${places.length}). Il reste ${places.filter(p=>!game.discovered[p.id]).map(p=>p.name.toLowerCase()).join(', ')}.`;
 return stars()>=TOTAL?"Tu as tout découvert. Va saluer Oro au belvédère, puis profite de la fête !":"Continue d'explorer.";}
-function inventory(){const it=[];const bread=game.quests.bread===1?3-Object.keys(game.delivered).length:0;if(bread>0)it.push(`🍞 ×${bread}`);if(game.quests.fish>=1)it.push('🎣 canne');if(game.fish>0&&game.quests.fish===1)it.push(`🐟 ×${game.fish}`);if(game.quests.treasure===1)it.push('🗺️ carte');if(game.dug)it.push('⚓ ancre d\'or');if(game.notes.size&&game.quests.notes===1)it.push(`🎵 ×${game.notes.size}`);return it.join('  ');}
+function inventory(){const it=[];const bread=game.quests.bread===1?3-Object.keys(game.delivered).length:0;if(bread>0)it.push(`🍞 ×${bread}`);if(game.quests.fish>=1)it.push('🎣 canne');if(game.fish>0&&game.quests.fish===1)it.push(`🐟 ×${game.fish}`);if(game.quests.treasure===1)it.push('🗺️ carte');if(game.dug)it.push('⚓ ancre d\'or');if(game.notes.size&&game.quests.notes===1)it.push(`🎵 ×${game.notes.size}`);if(game.oil&&game.quests.oil===1)it.push('🛢️ huile');return it.join('  ');}
 function refreshHUD(){stats.textContent=`🐚 ${game.shells.size}/12 · ⭐ ${stars()}/${TOTAL} · ${dayIcon()}`;questText.textContent=objective();const inv=inventory();invEl.hidden=!inv;invEl.textContent=inv;}
 function startQuest(id){if(game.quests[id]===0){game.quests[id]=1;if(!game.log.includes(id))game.log.push(id);dirty=true;refreshHUD();}}
 function finishQuest(id,msg){game.quests[id]=2;star(msg);}
@@ -79,6 +84,7 @@ function showLine(){dialogEl.querySelector('b').textContent=dialog.name;dialogEl
 function advance(){if(!dialog)return;dialog.i++;if(dialog.i>=dialog.lines.length){const d=dialog;dialog=null;dialogEl.hidden=true;for(const n of npcs)n.talking=false;if(d.onEnd)d.onEnd();refreshHUD();}else{showLine();sfx('talk');}}
 dialogEl.addEventListener('click',advance);
 function linesFor(n){const q=game.quests,sh=game.shells.size,me=game.name||'petit',pick=a=>a[n.said++%a.length];const pre=[];
+if(n.id==='tomas'&&q.oil===1&&!game.oil){game.oil=true;dirty=true;refreshHUD();pre.push("Le bidon d'huile d'Elio ? Je l'avais mis de côté. Tiens, et dis-lui que sa lampe nous manque, la nuit.");}
 if(q.bread===1&&['marco','tomas','oro'].includes(n.id)&&!game.delivered[n.id]){game.delivered[n.id]=true;dirty=true;refreshHUD();pre.push({marco:"Du pain de Pia ? Encore chaud ! Tu me sauves la journée.",tomas:"Une miche de Pia ! Avec un poisson grillé, c'est un festin.",oro:"Le pain de Pia, monté jusqu'ici ? Tu es brave. Merci."}[n.id]);}
 const wrap=r=>{r.lines=[...pre,...r.lines];return r;};
 switch(n.id){
@@ -114,11 +120,19 @@ return wrap({lines:[pick(["♪ Quand le vent tourne, la mer chante… ♪ C'est 
 case'oro':if(stars()>=TOTAL&&!n.final){n.final=true;return wrap({lines:[`${me}, tu as découvert tous les secrets d'Azura, jusqu'au dernier.`,"L'île se souviendra de toi. Regarde vers la mer : ce soir, le village fait la fête en ton honneur.","Reviens quand tu veux : le vent, la mer et nous serons là."],end:()=>{game.fireworksUntil=game.playtime+40;toast('🎆 Feu d\'artifice au-dessus de la crique !');dirty=true;saveGame(true);}});}
 if(n.final)return wrap({lines:[pick(["Regarde la mer. Elle chante pour toi ce soir.","Le feu d'artifice, c'est Tomas qui le tire depuis son voilier."])],end:()=>{if(game.fireworksUntil<game.playtime)game.fireworksUntil=game.playtime+30;}});
 return wrap({lines:[pick(["Bienvenue au belvédère. Peu de gens grimpent jusqu'ici.","Écoute… Quand le vent tourne, la mer chante. Tomas ne l'a pas inventé.","Ce drapeau, je le hisse chaque matin depuis quarante ans.","Quand tu auras aidé tout le monde, reviens me voir. J'aurai quelque chose à te dire."])]});
+case'gardien':if(q.goats===0)return wrap({lines:[`Un visiteur ! Tu es arrivé par le voilier de Tomas ? Je suis Elio, je garde le phare depuis trente ans.`,"Mes trois chèvres ont profité de la brume pour filer sur les pentes. Rattrape-les-moi, elles ne mordent pas."],end:()=>startQuest('goats')});
+if(q.goats===1&&game.goatsCaught<3)return wrap({lines:[`${game.goatsCaught} sur 3. Elles aiment les rochers au-dessus de la crique. Approche-toi doucement, puis appuie sur E.`]});
+if(q.goats===1)return wrap({lines:["Les trois ! Tu es plus patient que moi.","Tiens, du fromage de chèvre, le meilleur de l'archipel."],end:()=>{for(const g of goats)g.hidden=false;finishQuest('goats','Les chèvres d\'Elio sont rentrées');}});
+if(q.oil===0)return wrap({lines:["Il y a plus grave : la lampe du phare est éteinte, je n'ai plus d'huile.","Tomas, sur le ponton d'Azura, garde un bidon pour moi. Prends le voilier, rapporte-le, et le phare éclairera de nouveau la nuit."],end:()=>startQuest('oil')});
+if(q.oil===1&&!game.oil)return wrap({lines:["Le bidon est chez Tomas, sur le ponton d'Azura. Le voilier t'y mène."]});
+if(q.oil===1)return wrap({lines:["Le bidon ! Tu as fait l'aller-retour pour moi.","Regarde ce soir : la lampe brillera jusqu'à Azura. Merci, "+me+"."],end:()=>finishQuest('oil','Le phare est rallumé')});
+return wrap({lines:[pick(["Par temps clair, on voit le belvédère d'Azura d'ici.","Les chèvres montent plus vite que moi, maintenant.","Écoute la mer contre les falaises. Elle chante autrement que du côté d'Azura."])]});
 case'cat':if(q.cat===1&&!game.catFollow)return wrap({lines:["Pistache miaule, se frotte contre ta jambe… et te suit !"],end:()=>{game.catFollow=true;cat.state='idle';}});
 return wrap({lines:["Pistache ronronne et se roule sur le dos. Tu lui grattes le ventre."],end:()=>sfx('purr')});}}
 function talkTo(n){const d=linesFor(n);if(!d)return;n.talking=true;say(n.cat?'Pistache':n.name,d.lines,d.end);}
 function nearThing(){let best=null,bd=1.8;for(const n of npcs){if(n.cat&&!(game.quests.cat===1&&!game.catFollow)&&game.quests.cat!==2)continue;const d=Math.hypot(n.x-player.x,n.z-player.z);if(d<bd&&Math.abs(n.y-player.y)<1.2){bd=d;best={type:'npc',n,label:n.cat?(game.quests.cat===2?'Caresser Pistache':'Appeler Pistache'):'Parler à '+n.name,btn:n.cat?'Câlin':'Parler'};}}
 if(game.quests.crabs===1&&game.crabsCaught<3)for(const c of crabs){if(c.hidden)continue;const d=Math.hypot(c.x-player.x,c.z-player.z);if(d<Math.min(bd,1.0)){bd=d;best={type:'crab',c,label:'Attraper le crabe',btn:'Hop !'};}}
+if(game.quests.goats===1&&game.goatsCaught<3)for(const g of goats){if(g.hidden)continue;const d=Math.hypot(g.x-player.x,g.z-player.z);if(d<Math.min(bd,1.3)){bd=d;best={type:'goat',g,label:'Attraper la chèvre',btn:'Hop !'};}}
 if(game.quests.treasure===1&&!game.dug){const d=Math.hypot(digSpot.x-player.x,digSpot.z-player.z);if(d<Math.min(bd,1.3)){bd=d;best={type:'dig',label:'Creuser ici',btn:'Creuser'};}}
 const dockIsl=nearDock();if(dockIsl){const dest=islands.find(i=>i.id!==dockIsl.id);if(dest){bd=1.7;best={type:'boat',dest,label:'Embarquer pour '+dest.name,btn:'Embarquer'};}}
 if(game.quests.fish>=1){const d=Math.hypot(fishSpot.x-player.x,fishSpot.z-player.z);if(d<Math.min(bd,1.4)&&Math.abs(fishSpot.y-player.y)<.6){bd=d;best={type:'fish',label:'Pêcher',btn:'Pêcher'};}}
@@ -127,6 +141,7 @@ function interact(){if(minigame){fishingHit();return;}if(dialog){advance();retur
 if(th.type==='npc')talkTo(th.n);
 else if(th.type==='crab'){th.c.hidden=true;game.crabsCaught++;sfx('catch');toast(`🦀 Crabe attrapé ! ${game.crabsCaught}/3`);dirty=true;refreshHUD();if(game.crabsCaught>=3)setTimeout(()=>toast('Retourne voir Lila !'),1500);}
 else if(th.type==='dig'){game.dug=true;sfx('dig');setTimeout(()=>{toast('⚓ Une ancre d\'or ! Le trésor de Marco est réel.');finishQuest('treasure','Le trésor est découvert');},700);}
+else if(th.type==='goat'){th.g.hidden=true;game.goatsCaught++;sfx('catch');toast(`🐐 Chèvre rattrapée ! ${game.goatsCaught}/3`);dirty=true;refreshHUD();if(game.goatsCaught>=3)setTimeout(()=>toast('Retourne voir Elio au sommet !'),1500);}
 else if(th.type==='fish')startFishing();
 else if(th.type==='boat'){if(game.quests.shells<2){toast('Le voilier est à Tomas : rends-lui d\'abord service pour gagner sa confiance.');return;}startVoyage(th.dest.id);}}
 
@@ -215,7 +230,7 @@ if(game.quests.notes===1)for(const s of noteSpots)if(!game.notes.has(s.id))dot(s
 if(game.quests.treasure===1&&!game.dug)dot(digSpot.x,digSpot.z,'#ffd166',5);
 if(game.quests.fish===1&&game.fish<3)dot(fishSpot.x,fishSpot.z,'#7ae7ff',5);
 const q=game.quests,nd=Object.keys(game.delivered).length;
-for(const n of npcs){if(n.cat)continue;const ready={tomas:q.shells===0||(q.shells===1&&game.shells.size>=8)||(q.shells===2&&q.fish===0)||(q.bread===1&&!game.delivered.tomas),anae:q.cat===0||(q.cat===1&&game.catFollow)||(q.fish===1&&game.fish>=3),lila:q.crabs===0||(q.crabs===1&&game.crabsCaught>=3),pia:q.bread===0||(q.bread===1&&nd>=3),marco:q.treasure===0||(q.bread===1&&!game.delivered.marco),bastien:q.notes===0||(q.notes===1&&game.notes.size>=3),oro:(stars()>=TOTAL&&!n.final)||(q.bread===1&&!game.delivered.oro)}[n.id];
+for(const n of npcs){if(n.cat)continue;const ready={tomas:q.shells===0||(q.shells===1&&game.shells.size>=8)||(q.shells===2&&q.fish===0)||(q.bread===1&&!game.delivered.tomas),anae:q.cat===0||(q.cat===1&&game.catFollow)||(q.fish===1&&game.fish>=3),lila:q.crabs===0||(q.crabs===1&&game.crabsCaught>=3),pia:q.bread===0||(q.bread===1&&nd>=3),marco:q.treasure===0||(q.bread===1&&!game.delivered.marco),bastien:q.notes===0||(q.notes===1&&game.notes.size>=3),oro:(stars()>=TOTAL&&!n.final)||(q.bread===1&&!game.delivered.oro),gardien:q.goats===0||(q.goats===1&&game.goatsCaught>=3)||(q.goats===2&&q.oil===0)||(q.oil===1&&game.oil)}[n.id];
 dot(n.x,n.z,ready?'#ffd166':'#fff8ea',ready?6:4);if(ready){c.fillStyle='#2c3f40';c.font='bold 9px Arial';c.textAlign='center';const [px,pz]=P(n.x,n.z);c.fillText('!',px,pz+3.5);}}
 const [px,pz]=P(player.x,player.z);c.save();c.translate(px,pz);c.rotate(-player.heading);c.fillStyle='#fff';c.strokeStyle='#1d5661';c.lineWidth=2;c.beginPath();c.moveTo(0,-9);c.lineTo(6,6);c.lineTo(0,3);c.lineTo(-6,6);c.closePath();c.fill();c.stroke();c.restore();}
 
@@ -242,9 +257,9 @@ else if(n.cat&&game.catFollow){const dx=player.x-n.x,dz=player.z-n.z,d=Math.hypo
 else if(n.state==='idle'){idleEntity(n,dt);n.t-=dt;if(!n.cat)n.look=Math.sin(t*.6+n.x)*.35;if(n.t<=0&&(dayF>.25||n.cat)){for(let k=0;k<6;k++){const a=Math.random()*TAU,r=Math.random()*n.leash,x=n.home[0]+Math.cos(a)*r,z=n.home[1]+Math.sin(a)*r,i=cellIndex(x,z);if(i>=0&&reach[i]){n.target=[x,z];n.state='walk';n.fails=0;break;}}n.t=1.5+Math.random()*4;}}
 else{n.look=0;const dx=n.target[0]-n.x,dz=n.target[1]-n.z,d=Math.hypot(dx,dz);if(d<.15||!moveEntity(n,dx,dz,n.walk,dt))if(d<.15||++n.fails>8){n.state='idle';n.t=1+Math.random()*3;}}
 groundEntity(n,dt);}
-function crabThink(c,dt,t){if(c.hidden)return;const dx=c.x-player.x,dz=c.z-player.z,d=Math.hypot(dx,dz);
-if(game.quests.crabs===1&&game.crabsCaught<3&&d<2.4){if(!moveEntity(c,dx+Math.sin(c.id*3+t*2)*.5,dz+Math.cos(c.id*2+t)*.5,2.3,dt))moveEntity(c,-dz,dx,2.3,dt);c.state='idle';c.t=.5;if(Math.random()<dt*1.5)sfx('crab');}
-else if(c.state==='idle'){idleEntity(c,dt);c.t-=dt;if(c.t<=0){const a=Math.random()*TAU,r=Math.random()*2.2;c.target=[c.home[0]+Math.cos(a)*r,c.home[1]+Math.sin(a)*r];c.state='walk';c.t=2+Math.random()*4;}}
+function crabThink(c,dt,t){if(c.hidden)return;const dx=c.x-player.x,dz=c.z-player.z,d=Math.hypot(dx,dz);const hunted=c.goat?(game.quests.goats===1&&game.goatsCaught<3):(game.quests.crabs===1&&game.crabsCaught<3);
+if(hunted&&d<(c.goat?3.2:2.4)){const sp=c.goat?2.6:2.3;if(!moveEntity(c,dx+Math.sin(c.id*3+t*2)*.5,dz+Math.cos(c.id*2+t)*.5,sp,dt))moveEntity(c,-dz,dx,sp,dt);c.state='idle';c.t=.5;if(Math.random()<dt*1.5)sfx('crab');}
+else if(c.state==='idle'){idleEntity(c,dt);c.t-=dt;if(c.t<=0){const a=Math.random()*TAU,r=Math.random()*(c.goat?3.5:2.2);c.target=[c.home[0]+Math.cos(a)*r,c.home[1]+Math.sin(a)*r];c.state='walk';c.t=2+Math.random()*4;}}
 else{const tx=c.target[0]-c.x,tz=c.target[1]-c.z,td=Math.hypot(tx,tz);if(td<.12||!moveEntity(c,tx,tz,.7,dt)){c.state='idle';c.t=1+Math.random()*3;}}
 groundEntity(c,dt);}
 const drawList=[];
@@ -256,7 +271,7 @@ if(mag>.08){if(cam.mode!=='follow')setView('play');const f=norm([current.target[
 else{idleEntity(player,dt);player.look=Math.sin(t*.5)*.25*(1-player.amp);}
 if(voyage.active)updateVoyage(dt);else groundEntity(player,dt);
 for(const n of npcs)npcThink(n,dt,t);
-for(const c of crabs)crabThink(c,dt,t);
+for(const c of crabs)crabThink(c,dt,t);for(const g of goats)crabThink(g,dt,t);
 updateFishing(dt);
 if(playing){for(const s of shellSpots){if(game.shells.has(s.id))continue;if(Math.hypot(s.x-player.x,s.z-player.z)<.65&&Math.abs(s.y-player.y)<.8){game.shells.add(s.id);sfx('pick');toast(`🐚 Coquillage trouvé ! ${game.shells.size}/12`);refreshHUD();dirty=true;saveGame(true);}}
 if(game.quests.notes===1)for(const s of noteSpots){if(game.notes.has(s.id))continue;if(Math.hypot(s.x-player.x,s.z-player.z)<.7&&Math.abs(s.y-player.y)<.8){game.notes.add(s.id);sfx('pick');toast(`🎵 Partition retrouvée ! ${game.notes.size}/3`);refreshHUD();dirty=true;saveGame(true);}}
@@ -270,6 +285,8 @@ drawList.length=0;
 poseHuman(player,t);drawList.push({mesh:player.mesh,bones:player.bones,n:6,mode:4});
 for(const n of npcs){if(n.cat)poseCat(n,t);else poseHuman(n,t);drawList.push({mesh:n.mesh,bones:n.bones,n:6,mode:4});}
 for(const c of crabs){if(c.hidden)continue;poseCrab(c,t);drawList.push({mesh:crabMesh,bones:c.bones,n:3,mode:4});}
+for(const g of goats){if(g.hidden)continue;goatPose(g,t);drawList.push({mesh:goatMeshOf(),bones:g.bones,n:8,mode:4});}
+if(game.quests.oil===2){setBone(lighthouseBones,0,mm(T(34,12.5,-24.6),SC(3,3,3)));drawList.push({mesh:lanternGlow,bones:lighthouseBones,n:1,mode:7,noShadow:true});}
 const spin=(list,mesh,taken,hover)=>{for(const s of list){if(taken.has(s.id))continue;const b=s.bones||(s.bones=new Float32Array(32));const root=mm(T(s.x,s.y+hover+Math.sin(t*2.2+s.id)*.05,s.z),RY(t*1.3+s.id));setBone(b,0,root);setBone(b,1,mm(root,T(Math.cos(t*3+s.id)*.24,.14+Math.sin(t*4.1+s.id)*.06,Math.sin(t*3+s.id)*.24)));drawList.push({mesh,bones:b,n:2,mode:4});
 const rb=s.ring||(s.ring=new Float32Array(16));setBone(rb,0,mm(T(s.x,s.y+.04,s.z),SC(1+Math.sin(t*2.2+s.id)*.12)));drawList.push({mesh:ringMesh,bones:rb,n:1,mode:5,noShadow:true});}};
 spin(shellSpots,shellMesh,game.shells,.08);
@@ -286,5 +303,5 @@ for(const l of lanterns){setBone(l.bones,0,mm(T(l.x,l.y,l.z),RY(Math.atan2(-l.x,
 if(dayF<.85){const vis=1-dayF/.85;fireflies.forEach((f,i)=>{const a=t*.35+f.ph+Math.sin(t*.9+i)*.6,x=f.cx+Math.cos(a)*f.r,z=f.cz+Math.sin(a*1.3)*f.r*.8,y=f.cy+f.h+Math.sin(t*1.7+i*2)*.3,blink=.5+.5*Math.sin(t*4+i*1.7);setBone(fireflyBones,i,mm(T(x,y,z),SC(vis*(.4+blink))));});drawList.push({mesh:fireflyMesh,bones:fireflyBones,n:14,mode:7,noShadow:true});}
 if(game.fireworksUntil>game.playtime){const age=game.playtime-(game.fireworksUntil-40);burstMeshes.forEach((m,bi)=>{const period=2.6,local=(age+bi*.65)%period,cycle=Math.floor((age+bi*.65)/period),rnd2=k=>Math.abs(Math.sin(cycle*12.9898+bi*78.233+k*37.7)*43758.5453)%1;const cx=-4+rnd2(1)*10,cz=17+rnd2(2)*8,cy=9+rnd2(3)*5;const b=burstBones[bi];if(local<.8){for(let k=0;k<12;k++)setBone(b,k,mm(T(cx,cy*local/.8+.5,cz),SC(.35)));m.boomed=false;}else{const e=(local-.8)/1.8,r=e*(2-e)*3.5;if(!m.boomed){m.boomed=true;sfx('boom');}for(let k=0;k<12;k++){const th=k/12*TAU,ph=(k%3)*1.1+bi;setBone(b,k,mm(T(cx+Math.cos(th)*Math.cos(ph)*r,cy+Math.sin(ph)*r*.7-e*e*1.5,cz+Math.sin(th)*Math.cos(ph)*r),SC(Math.max(.01,(1-e)*1.4))));}}drawList.push({mesh:m,bones:b,n:12,mode:8,noShadow:true});});}
 }
-const flagBones=new Float32Array(16),smokeBones=chimneys.map(()=>new Float32Array(96)),burstBones=burstMeshes.map(()=>new Float32Array(16*12));
+const lighthouseBones=new Float32Array(16),flagBones=new Float32Array(16),smokeBones=chimneys.map(()=>new Float32Array(96)),burstBones=burstMeshes.map(()=>new Float32Array(16*12));
 
