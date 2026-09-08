@@ -222,7 +222,8 @@ else if(h<1.3){r=240;g=222;b=170;}
 else{const v=clamp((h-1)/13,0,1);r=150+70*v;g=140+65*v;b=118+60*v;if(blocked[i]){r=205;g=110;b=60;}else if(!reach[i]){r*=.82;g*=.82;b*=.8;}}
 img.data[o]=r;img.data[o+1]=g;img.data[o+2]=b;img.data[o+3]=255;}c.putImageData(img,0,0);}
 function mapRegion(){if(voyage.active)return{cx:WORLD.x0+WORLD.size/2,cz:WORLD.z0+WORLD.size/2,R:WORLD.size/2};const i=currentIsland();return{cx:i.center[0],cz:i.center[1],R:i.r+6};}
-function drawMap(){const c=mapEl.getContext('2d'),M=mapEl.width,{cx,cz,R}=mapRegion();c.clearRect(0,0,M,M);c.drawImage(mapBase,(cx-R-WORLD.x0)/HS,(cz-R-WORLD.z0)/HS,2*R/HS,2*R/HS,0,0,M,M);const P=(x,z)=>[(x-(cx-R))/(2*R)*M,(z-(cz-R))/(2*R)*M];const dot=(x,z,col,r=5)=>{const [px,pz]=P(x,z);c.fillStyle=col;c.beginPath();c.arc(px,pz,r,0,TAU);c.fill();};
+const mapCrop=document.createElement('canvas');mapCrop.width=400;mapCrop.height=400;let mapKey='';
+function drawMap(){const c=mapEl.getContext('2d'),M=mapEl.width,{cx,cz,R}=mapRegion();const key=cx+','+cz+','+R;if(key!==mapKey){mapKey=key;const cc=mapCrop.getContext('2d');cc.clearRect(0,0,M,M);cc.drawImage(mapBase,(cx-R-WORLD.x0)/HS,(cz-R-WORLD.z0)/HS,2*R/HS,2*R/HS,0,0,M,M);}c.clearRect(0,0,M,M);c.drawImage(mapCrop,0,0);const P=(x,z)=>[(x-(cx-R))/(2*R)*M,(z-(cz-R))/(2*R)*M];const dot=(x,z,col,r=5)=>{const [px,pz]=P(x,z);c.fillStyle=col;c.beginPath();c.arc(px,pz,r,0,TAU);c.fill();};
 for(const isl of islands){const e=dockSeaEnd(isl);dot(e[0],e[2],'#7ae7ff',4);}
 if(voyage.active)dot(voyage.x,voyage.z,'#fff',5);
 if(game.quests.shells===1)for(const s of shellSpots)if(!game.shells.has(s.id))dot(s.x,s.z,'#ff9fc4',4);
@@ -251,7 +252,8 @@ function turnToward(a,b,k){let d=((b-a+PI)%TAU+TAU)%TAU-PI;return a+d*Math.min(1
 function moveEntity(e,dx,dz,speed,dt){const l=Math.hypot(dx,dz)||1;dx/=l;dz/=l;e.heading=turnToward(e.heading,Math.atan2(dx,dz)+(e.crab?PI/2:0),dt*11);const moved=tryMove(e,dx*speed*dt,dz*speed*dt,.13*e.scale);e.speed=moved?speed:0;e.phase+=(moved?speed:1.2)*dt*(e.cat?9:e.crab?16:4.6)/e.scale;e.amp+=((moved?1:.3)-e.amp)*(1-Math.exp(-dt*10));return moved;}
 function idleEntity(e,dt){e.speed=0;e.amp+=(0-e.amp)*(1-Math.exp(-dt*8));}
 function groundEntity(e,dt){const h=cellH(e.x,e.z);e.y+=(h-e.y)*(1-Math.exp(-dt*14));}
-function unstick(e){if(reach[cellIndex(e.x,e.z)])return false;const p=snap(e.x,e.z,2.5);e.x=p[0];e.z=p[1];e.y=cellH(p[0],p[1]);return true;}
+function freeAround(x,z){let n=0;const h0=cellH(x,z);for(let a=0;a<TAU;a+=TAU/8)if(canStep(h0,x+Math.sin(a)*.3,z+Math.cos(a)*.3))n++;return n;}
+function unstick(e){if(reach[cellIndex(e.x,e.z)]&&freeAround(e.x,e.z)>=4)return false;for(let r=HS;r<=3;r+=HS)for(let a=0;a<TAU;a+=HS/r){const x=e.x+Math.cos(a)*r,z=e.z+Math.sin(a)*r,i=cellIndex(x,z);if(i>=0&&reach[i]&&!blocked[i]&&freeAround(x,z)>=5){e.x=x;e.z=z;e.y=cellH(x,z);return true;}}return false;}
 function npcThink(n,dt,t){if(n.moved===false&&n.state==='walk'){n.stuckT=(n.stuckT||0)+dt;if(n.stuckT>1.5){n.stuckT=0;unstick(n);n.state='idle';n.t=.5;}}else n.stuckT=0;
 if(n.talking){n.heading=turnToward(n.heading,Math.atan2(player.x-n.x,player.z-n.z),dt*6);idleEntity(n,dt);n.look=0;}
 else if(n.cat&&game.catFollow){const dx=player.x-n.x,dz=player.z-n.z,d=Math.hypot(dx,dz);if(d>1.4){const moved=moveEntity(n,dx,dz,Math.min(3.4,player.speed+1.6),dt);if((!moved&&d>2.5)||d>9){const [x,z]=snap(player.x-Math.sin(player.heading)*.8,player.z-Math.cos(player.heading)*.8,2);n.x=x;n.z=z;n.y=cellH(x,z);}}else idleEntity(n,dt);}
