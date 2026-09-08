@@ -17,7 +17,8 @@ case'dig':tone(120,60,.18,'sawtooth',.12);tone(90,50,.2,'sawtooth',.1,.15);break
 case'purr':for(let i=0;i<10;i++)tone(60,58,.08,'sawtooth',.05,i*.075);break;
 case'cast':tone(300,900,.3,'sine',.06);break;
 case'boom':tone(70,30,.6,'sawtooth',.15);tone(1200,200,.5,'sine',.05);break;
-case'crab':tone(1500,1200,.05,'square',.04);break;}}
+case'crab':tone(1500,1200,.05,'square',.04);break;
+case'jump':tone(320,640,.14,'triangle',.07);break;}}
 function setMuted(m){audio.muted=m;try{localStorage.setItem('azura-muted',m?'1':'0');}catch(e){}if(audio.master)audio.master.gain.value=m?0:1;$('#sound').textContent=m?'🔇':'🔊';$('#sound').setAttribute('aria-label',m?'Activer le son':'Couper le son');}
 $('#sound').onclick=()=>{audioInit();setMuted(!audio.muted);if(audio.ctx&&audio.ctx.state==='suspended')audio.ctx.resume();};
 setMuted(audio.muted);

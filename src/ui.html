@@ -56,6 +56,7 @@ footer{position:absolute;bottom:28px;left:38px;right:38px;display:flex;justify-c
 @keyframes toast{from{transform:translateX(-50%) translateY(-12px);opacity:0}}
 #stick{position:absolute;left:34px;bottom:34px;width:130px;height:130px;border-radius:50%;background:#11434c40;border:1px solid #ffffff50;backdrop-filter:blur(8px);touch-action:none;display:none}
 #stick i{position:absolute;left:50%;top:50%;width:56px;height:56px;margin:-28px 0 0 -28px;border-radius:50%;background:#fff4dfcc;box-shadow:0 4px 14px #0004}
+#jump{position:absolute;right:124px;bottom:56px;width:56px;height:56px;border-radius:50%;background:#11434ccc;color:#fff;font-size:22px;display:none;border:1px solid #ffffff50}
 #action{position:absolute;right:34px;bottom:44px;width:78px;height:78px;border-radius:50%;background:#fff4dfe6;color:#344b46;font-size:14px;letter-spacing:1px;display:none;box-shadow:0 8px 24px #0d3a4240;line-height:1.15}
 #menu{position:absolute;top:26px;left:50%;transform:translateX(-50%);background:#11434c70;border:1px solid #ffffff40;backdrop-filter:blur(16px);border-radius:30px;padding:9px 18px;font-size:12px;letter-spacing:2px}
 #panel{position:absolute;inset:0;background:#0b3b4488;backdrop-filter:blur(6px);z-index:8;display:flex;align-items:center;justify-content:center}
@@ -80,7 +81,7 @@ footer{position:absolute;bottom:28px;left:38px;right:38px;display:flex;justify-c
 #quest-text{white-space:pre-line}
 #inv{font-size:11px;opacity:.85;margin-top:5px;letter-spacing:.5px}
 [hidden]{display:none!important}
-@media(pointer:coarse){#stick,#action{display:block}.hint .kb{display:none}#map{display:none}}
+@media(pointer:coarse){#stick,#action,#jump{display:block}.hint .kb{display:none}#map{display:none}}
 @media(max-width:650px){
 header{top:max(18px,env(safe-area-inset-top));left:18px;right:18px}
 .brand-mark{display:none}
@@ -116,9 +117,10 @@ footer{left:18px;right:18px;bottom:max(12px,env(safe-area-inset-bottom));justify
 <div id="fishing" hidden><b>PÊCHE</b><p>Appuie sur <kbd>E</kbd> quand le curseur est dans la zone verte.</p><div class="bar"><div class="zone"></div><div class="cursor"></div></div><small>ÉCHAP · ABANDONNER</small></div>
 <div id="stick" aria-hidden="true"><i></i></div>
 <button id="action" hidden>Parler</button>
+<button id="jump" hidden aria-label="Sauter">↑</button>
 <div id="prompt" hidden><kbd>E</kbd><span></span></div>
 <div id="dialog" hidden><b></b><p></p><i>ESPACE · CONTINUER</i></div>
 <div id="toast" hidden></div>
-<div id="panel" hidden><div><h2>AZURA</h2><p id="panel-info"></p><button id="save-now">Sauvegarder maintenant</button><button id="quality" class="secondary">Qualité graphique : Auto</button><button id="resume" class="secondary">Reprendre</button><button id="restart" class="danger">Recommencer une nouvelle partie</button></div></div>
-<footer><span class="location"><i></i> ARCHIPEL D'AZURA <b>01</b></span><span class="hint" id="hint"><span class="kb"><kbd>ZQSD</kbd> ou flèches pour marcher <em>·</em> <kbd>E</kbd> parler <em>·</em> <kbd>Maj</kbd> courir <em>·</em> <kbd>M</kbd> carte <em>·</em> <kbd>F</kbd> fluidité <em>·</em> </span>Glisser pour tourner la caméra</span><span class="edition">SAUVEGARDE AUTO</span></footer>
+<div id="panel" hidden><div><h2>AZURA</h2><p id="panel-info"></p><button id="save-now">Sauvegarder maintenant</button><button id="respawn" class="secondary">Me téléporter au point de départ de l'île (si je suis coincé)</button><button id="quality" class="secondary">Qualité graphique : Auto</button><button id="resume" class="secondary">Reprendre</button><button id="restart" class="danger">Recommencer une nouvelle partie</button></div></div>
+<footer><span class="location"><i></i> ARCHIPEL D'AZURA <b>01</b></span><span class="hint" id="hint"><span class="kb"><kbd>ZQSD</kbd> ou flèches pour marcher <em>·</em> <kbd>E</kbd> parler <em>·</em> <kbd>Espace</kbd> sauter <em>·</em> <kbd>Maj</kbd> courir <em>·</em> <kbd>M</kbd> carte <em>·</em> <kbd>F</kbd> fluidité <em>·</em> </span>Glisser pour tourner la caméra</span><span class="edition">SAUVEGARDE AUTO</span></footer>
 <div id="error" hidden><h2>La 3D n'a pas pu démarrer</h2><p>Essaie de rouvrir cette page dans Safari ou Chrome avec WebGL activé.</p><button onclick="location.reload()">Réessayer</button></div>

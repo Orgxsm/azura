@@ -56,6 +56,7 @@ footer{position:absolute;bottom:28px;left:38px;right:38px;display:flex;justify-c
 @keyframes toast{from{transform:translateX(-50%) translateY(-12px);opacity:0}}
 #stick{position:absolute;left:34px;bottom:34px;width:130px;height:130px;border-radius:50%;background:#11434c40;border:1px solid #ffffff50;backdrop-filter:blur(8px);touch-action:none;display:none}
 #stick i{position:absolute;left:50%;top:50%;width:56px;height:56px;margin:-28px 0 0 -28px;border-radius:50%;background:#fff4dfcc;box-shadow:0 4px 14px #0004}
+#jump{position:absolute;right:124px;bottom:56px;width:56px;height:56px;border-radius:50%;background:#11434ccc;color:#fff;font-size:22px;display:none;border:1px solid #ffffff50}
 #action{position:absolute;right:34px;bottom:44px;width:78px;height:78px;border-radius:50%;background:#fff4dfe6;color:#344b46;font-size:14px;letter-spacing:1px;display:none;box-shadow:0 8px 24px #0d3a4240;line-height:1.15}
 #menu{position:absolute;top:26px;left:50%;transform:translateX(-50%);background:#11434c70;border:1px solid #ffffff40;backdrop-filter:blur(16px);border-radius:30px;padding:9px 18px;font-size:12px;letter-spacing:2px}
 #panel{position:absolute;inset:0;background:#0b3b4488;backdrop-filter:blur(6px);z-index:8;display:flex;align-items:center;justify-content:center}
@@ -80,7 +81,7 @@ footer{position:absolute;bottom:28px;left:38px;right:38px;display:flex;justify-c
 #quest-text{white-space:pre-line}
 #inv{font-size:11px;opacity:.85;margin-top:5px;letter-spacing:.5px}
 [hidden]{display:none!important}
-@media(pointer:coarse){#stick,#action{display:block}.hint .kb{display:none}#map{display:none}}
+@media(pointer:coarse){#stick,#action,#jump{display:block}.hint .kb{display:none}#map{display:none}}
 @media(max-width:650px){
 header{top:max(18px,env(safe-area-inset-top));left:18px;right:18px}
 .brand-mark{display:none}
@@ -116,11 +117,12 @@ footer{left:18px;right:18px;bottom:max(12px,env(safe-area-inset-bottom));justify
 <div id="fishing" hidden><b>PÊCHE</b><p>Appuie sur <kbd>E</kbd> quand le curseur est dans la zone verte.</p><div class="bar"><div class="zone"></div><div class="cursor"></div></div><small>ÉCHAP · ABANDONNER</small></div>
 <div id="stick" aria-hidden="true"><i></i></div>
 <button id="action" hidden>Parler</button>
+<button id="jump" hidden aria-label="Sauter">↑</button>
 <div id="prompt" hidden><kbd>E</kbd><span></span></div>
 <div id="dialog" hidden><b></b><p></p><i>ESPACE · CONTINUER</i></div>
 <div id="toast" hidden></div>
-<div id="panel" hidden><div><h2>AZURA</h2><p id="panel-info"></p><button id="save-now">Sauvegarder maintenant</button><button id="quality" class="secondary">Qualité graphique : Auto</button><button id="resume" class="secondary">Reprendre</button><button id="restart" class="danger">Recommencer une nouvelle partie</button></div></div>
-<footer><span class="location"><i></i> ARCHIPEL D'AZURA <b>01</b></span><span class="hint" id="hint"><span class="kb"><kbd>ZQSD</kbd> ou flèches pour marcher <em>·</em> <kbd>E</kbd> parler <em>·</em> <kbd>Maj</kbd> courir <em>·</em> <kbd>M</kbd> carte <em>·</em> <kbd>F</kbd> fluidité <em>·</em> </span>Glisser pour tourner la caméra</span><span class="edition">SAUVEGARDE AUTO</span></footer>
+<div id="panel" hidden><div><h2>AZURA</h2><p id="panel-info"></p><button id="save-now">Sauvegarder maintenant</button><button id="respawn" class="secondary">Me téléporter au point de départ de l'île (si je suis coincé)</button><button id="quality" class="secondary">Qualité graphique : Auto</button><button id="resume" class="secondary">Reprendre</button><button id="restart" class="danger">Recommencer une nouvelle partie</button></div></div>
+<footer><span class="location"><i></i> ARCHIPEL D'AZURA <b>01</b></span><span class="hint" id="hint"><span class="kb"><kbd>ZQSD</kbd> ou flèches pour marcher <em>·</em> <kbd>E</kbd> parler <em>·</em> <kbd>Espace</kbd> sauter <em>·</em> <kbd>Maj</kbd> courir <em>·</em> <kbd>M</kbd> carte <em>·</em> <kbd>F</kbd> fluidité <em>·</em> </span>Glisser pour tourner la caméra</span><span class="edition">SAUVEGARDE AUTO</span></footer>
 <div id="error" hidden><h2>La 3D n'a pas pu démarrer</h2><p>Essaie de rouvrir cette page dans Safari ou Chrome avec WebGL activé.</p><button onclick="location.reload()">Réessayer</button></div>
 
 <script>(function () {
@@ -760,7 +762,8 @@ reach.fill(0);let reachCount=0;for(const isl of islands)reachCount+=floodFrom(is
 function snap(x,z,maxR=4){let best=null,bd=1e9;for(let r=0;r<=maxR;r+=HS){for(let a=0;a<TAU;a+=r?HS/r:TAU){const xx=x+Math.cos(a)*r,zz=z+Math.sin(a)*r,i=cellIndex(xx,zz);if(i>=0&&reach[i]){const d=r;if(d<bd){bd=d;best=[xx,zz];}}}if(best)break;}return best||[x,z];}
 function canStep(h0,x,z){const i=cellIndex(x,z);if(i<0||blocked[i])return false;const h=H[i];return h>SEA&&Math.abs(h-h0)<=STEP;}
 function tryMove(e,dx,dz,r=.13){const h0=cellH(e.x,e.z);const l=Math.hypot(dx,dz)||1,px=-dz/l*r,pz=dx/l*r;
-const ok=(nx,nz)=>canStep(h0,nx,nz)&&canStep(h0,nx+px,nz+pz)&&canStep(h0,nx-px,nz-pz)&&(!e.maxH||cellH(nx,nz)<e.maxH);
+const airOk=(x,z)=>{const i=cellIndex(x,z);return i>=0&&!blocked[i]&&H[i]>SEA&&H[i]<=e.y+.35;};
+const ok=(nx,nz)=>e.air?(airOk(nx,nz)&&airOk(nx+px,nz+pz)&&airOk(nx-px,nz-pz)):(canStep(h0,nx,nz)&&canStep(h0,nx+px,nz+pz)&&canStep(h0,nx-px,nz-pz)&&(!e.maxH||cellH(nx,nz)<e.maxH));
 if(ok(e.x+dx,e.z+dz)){e.x+=dx;e.z+=dz;return true;}
 if(Math.abs(dx)>1e-4&&ok(e.x+dx,e.z)){e.x+=dx;return true;}
 if(Math.abs(dz)>1e-4&&ok(e.x,e.z+dz)){e.z+=dz;return true;}
@@ -786,7 +789,8 @@ case'dig':tone(120,60,.18,'sawtooth',.12);tone(90,50,.2,'sawtooth',.1,.15);break
 case'purr':for(let i=0;i<10;i++)tone(60,58,.08,'sawtooth',.05,i*.075);break;
 case'cast':tone(300,900,.3,'sine',.06);break;
 case'boom':tone(70,30,.6,'sawtooth',.15);tone(1200,200,.5,'sine',.05);break;
-case'crab':tone(1500,1200,.05,'square',.04);break;}}
+case'crab':tone(1500,1200,.05,'square',.04);break;
+case'jump':tone(320,640,.14,'triangle',.07);break;}}
 function setMuted(m){audio.muted=m;try{localStorage.setItem('azura-muted',m?'1':'0');}catch(e){}if(audio.master)audio.master.gain.value=m?0:1;$('#sound').textContent=m?'🔇':'🔊';$('#sound').setAttribute('aria-label',m?'Activer le son':'Couper le son');}
 $('#sound').onclick=()=>{audioInit();setMuted(!audio.muted);if(audio.ctx&&audio.ctx.state==='suspended')audio.ctx.resume();};
 setMuted(audio.muted);
@@ -933,6 +937,8 @@ if(game.quests.treasure===1&&!game.dug){const d=Math.hypot(digSpot.x-player.x,di
 const dockIsl=nearDock();if(dockIsl){const dest=islands.find(i=>i.id!==dockIsl.id);if(dest){bd=1.7;best={type:'boat',dest,label:'Embarquer pour '+dest.name,btn:'Embarquer'};}}
 if(game.quests.fish>=1){const d=Math.hypot(fishSpot.x-player.x,fishSpot.z-player.z);if(d<Math.min(bd,1.4)&&Math.abs(fishSpot.y-player.y)<.6){bd=d;best={type:'fish',label:'Pêcher',btn:'Pêcher'};}}
 return best;}
+function jump(){if(dialog||minigame){interact();return;}if(!playing||!panel.hidden||voyage.active||player.air)return;player.air=true;player.vy=4.6;sfx('jump');}
+function respawn(){const isl=currentIsland();const [x,z]=snap(isl.spawn[0],isl.spawn[1],4);player.x=x;player.z=z;player.y=cellH(x,z);player.air=false;player.vy=0;panel.hidden=true;toast('Te revoilà sur '+isl.name+'.');dirty=true;}
 function interact(){if(minigame){fishingHit();return;}if(dialog){advance();return;}if(!playing||!panel.hidden)return;const th=nearThing();if(!th)return;
 if(th.type==='npc')talkTo(th.n);
 else if(th.type==='crab'){th.c.hidden=true;game.crabsCaught++;sfx('catch');toast(`🦀 Crabe attrapé ! ${game.crabsCaught}/3`);dirty=true;refreshHUD();if(game.crabsCaught>=3)setTimeout(()=>toast('Retourne voir Lila !'),1500);}
@@ -991,7 +997,7 @@ if(!document.documentElement.requestFullscreen)fullButton.hidden=true;else fullB
 const keys={};
 const keyMap={KeyW:'up',ArrowUp:'up',KeyS:'down',ArrowDown:'down',KeyA:'left',ArrowLeft:'left',KeyD:'right',ArrowRight:'right',ShiftLeft:'run',ShiftRight:'run'};
 window.addEventListener('keydown',e=>{if(e.target instanceof HTMLInputElement)return;if(e.target instanceof HTMLButtonElement&&(e.key==='Enter'||e.key===' '))return;if(keyMap[e.code]){keys[keyMap[e.code]]=true;e.preventDefault();return;}
-switch(e.code){case'KeyE':case'Space':case'Enter':interact();e.preventDefault();break;case'Escape':if(minigame)cancelFishing();else if(dialog){dialog=null;dialogEl.hidden=true;for(const n of npcs)n.talking=false;}else togglePanel();break;case'KeyH':dbg.hidden=!dbg.hidden;break;case'KeyF':fpsEl.hidden=!fpsEl.hidden;break;case'KeyM':mapEl.hidden=!mapEl.hidden;try{localStorage.setItem('azura-map',mapEl.hidden?'0':'1');}catch(x){}break;case'Equal':case'NumpadAdd':goal.r=clamp(goal.r*.9,4,65);break;case'Minus':case'NumpadSubtract':goal.r=clamp(goal.r*1.1,4,65);break;case'Home':$('#reset').onclick();break;}});
+switch(e.code){case'KeyE':case'Enter':interact();e.preventDefault();break;case'Space':jump();e.preventDefault();break;case'Escape':if(minigame)cancelFishing();else if(dialog){dialog=null;dialogEl.hidden=true;for(const n of npcs)n.talking=false;}else togglePanel();break;case'KeyH':dbg.hidden=!dbg.hidden;break;case'KeyF':fpsEl.hidden=!fpsEl.hidden;break;case'KeyM':mapEl.hidden=!mapEl.hidden;try{localStorage.setItem('azura-map',mapEl.hidden?'0':'1');}catch(x){}break;case'Equal':case'NumpadAdd':goal.r=clamp(goal.r*.9,4,65);break;case'Minus':case'NumpadSubtract':goal.r=clamp(goal.r*1.1,4,65);break;case'Home':$('#reset').onclick();break;}});
 window.addEventListener('keyup',e=>{if(keyMap[e.code])keys[keyMap[e.code]]=false;});
 window.addEventListener('blur',()=>{for(const k in keys)keys[k]=false;});
 const stick=$('#stick'),knob=stick.querySelector('i');let stickId=null,stickVec=[0,0];
@@ -1000,7 +1006,7 @@ stick.addEventListener('pointerdown',e=>{stickId=e.pointerId;stick.setPointerCap
 stick.addEventListener('pointermove',e=>{if(e.pointerId===stickId)moveStick(e);});
 const endStick=e=>{if(e.pointerId===stickId){stickId=null;stickVec=[0,0];knob.style.transform='';}};
 stick.addEventListener('pointerup',endStick);stick.addEventListener('pointercancel',endStick);stick.addEventListener('lostpointercapture',endStick);
-actionBtn.addEventListener('click',interact);
+actionBtn.addEventListener('click',interact);$('#jump').addEventListener('click',jump);$('#respawn').onclick=respawn;
 function togglePanel(){if(!playing)return;panel.hidden=!panel.hidden;if(!panel.hidden){$('#panel-info').textContent=`${game.name?game.name+' · ':''}${game.shells.size} coquillages · ${stars()} étoiles sur ${TOTAL} · ${doneCount(game.quests)} quêtes terminées · ${fmtTime(game.playtime)} de jeu`;$('#restart').textContent='Recommencer une nouvelle partie';restartArmed=false;$('#quality').textContent='Qualité graphique : '+qualityLabel()+(lastFps?' · '+lastFps+' im/s':'');}}
 let restartArmed=false;
 $('#menu').onclick=togglePanel;$('#resume').onclick=togglePanel;$('#save-now').onclick=()=>{saveGame(false);panel.hidden=true;};
@@ -1069,7 +1075,7 @@ let mag=Math.hypot(ix,iy);if(mag>1){ix/=mag;iy/=mag;mag=1;}
 if(mag>.08){if(cam.mode!=='follow')setView('play');const f=norm([current.target[0]-eye[0],0,current.target[2]-eye[2]]),r=[-f[2],0,f[0]];const px=player.x,pz=player.z;const moved=moveEntity(player,f[0]*iy+r[0]*ix,f[2]*iy+r[2]*ix,(keys.run||mag>.97&&stickId!==null?4.3:2.7)*Math.min(1,mag*1.3),dt);if(Math.hypot(player.x-px,player.z-pz)>0)dirty=true;
 if(!moved){player.stuckT=(player.stuckT||0)+dt;if(player.stuckT>.7){player.stuckT=0;let freed=false;for(let a=0;a<TAU&&!freed;a+=TAU/12)freed=tryMove(player,Math.sin(a)*.12,Math.cos(a)*.12,.1);if(!freed&&unstick(player))toast('Tu t\'étais coincé : te revoilà sur le chemin.');}}else player.stuckT=0;}
 else{idleEntity(player,dt);player.look=Math.sin(t*.5)*.25*(1-player.amp);}
-if(voyage.active)updateVoyage(dt);else groundEntity(player,dt);
+if(voyage.active)updateVoyage(dt);else if(player.air){player.vy-=12*dt;player.y+=player.vy*dt;const g=cellH(player.x,player.z);if(player.y<=g&&player.vy<=0){player.y=g;player.air=false;player.vy=0;player.stuckT=0;}}else groundEntity(player,dt);
 for(const n of npcs)npcThink(n,dt,t);
 for(const c of crabs)crabThink(c,dt,t);for(const g of goats)crabThink(g,dt,t);
 updateFishing(dt);
@@ -1077,7 +1083,7 @@ if(playing){for(const s of shellSpots){if(game.shells.has(s.id))continue;if(Math
 if(game.quests.notes===1)for(const s of noteSpots){if(game.notes.has(s.id))continue;if(Math.hypot(s.x-player.x,s.z-player.z)<.7&&Math.abs(s.y-player.y)<.8){game.notes.add(s.id);sfx('pick');toast(`🎵 Partition retrouvée ! ${game.notes.size}/3`);refreshHUD();dirty=true;saveGame(true);}}
 for(const p of places)if(!game.discovered[p.id]&&player.y>p.minY&&Math.hypot(p.x-player.x,p.z-player.z)<p.r){game.discovered[p.id]=true;star('Lieu découvert : '+p.name);}
 const th=(dialog||minigame)?null:nearThing();promptEl.hidden=!th;if(th){promptEl.querySelector('span').textContent=th.label;actionBtn.textContent=th.btn;}
-actionBtn.hidden=!(th||dialog||minigame);
+actionBtn.hidden=!(th||dialog||minigame);$('#jump').hidden=!!(dialog||minigame||voyage.active);
 if(dirty&&performance.now()-lastSave>6000)saveGame(true);
 if((frameCount&31)===0)stats.textContent=`🐚 ${game.shells.size}/12 · ⭐ ${stars()}/${TOTAL} · ${dayIcon()}`;}
 // poses
@@ -1109,7 +1115,8 @@ const lighthouseBones=new Float32Array(16),flagBones=new Float32Array(16),smokeB
 // anim.js — poses procédurales (marche, bras, tête, chat, crabe). Appelées par update() avec l'entité et le temps.
 // Propriétaire : ANIMATION (GPT-6 Astra). Contrat : poseHuman(e,t)/poseCat(e,t)/poseCrab(e,t) remplissent e.bones (Float32Array 16 matrices).
 function poseHuman(e,t){const s=e.scale,B=e.bones,a=e.amp,ph=e.phase,bob=Math.abs(Math.sin(ph))*.045*a*s+Math.sin(t*2)*.006;
-const root=mm(T(e.x,e.y+bob,e.z),RY(e.heading));const swing=Math.sin(ph)*.85*a,sway=Math.sin(t*1.7+e.x*3)*.05*(1-a);let armL=-Math.sin(ph)*.7*a+sway,armR=Math.sin(ph)*.7*a-sway,rzL=-.08,rzR=.08;
+const root=mm(T(e.x,e.y+bob,e.z),RY(e.heading));let swing=Math.sin(ph)*.85*a,sway=Math.sin(t*1.7+e.x*3)*.05*(1-a);let armL=-Math.sin(ph)*.7*a+sway,armR=Math.sin(ph)*.7*a-sway,rzL=-.08,rzR=.08;
+if(e.air){swing=-.55;armL=-1.3;armR=-1.3;rzL=-.5;rzR=.5;}
 if(e.pose==='guitar'&&a<.5&&!e.talking){const k=1-a*2;armL=mix(armL,-1.15,k);rzL=mix(rzL,.55,k);armR=mix(armR,-.75+Math.sin(t*7)*.12,k);rzR=mix(rzR,-.25,k);}
 if(e.id==='tomas'&&a<.5&&!e.talking){const k=1-a*2;armR=mix(armR,-.5+Math.sin(t*.8)*.05,k);}
 setBone(B,0,root);

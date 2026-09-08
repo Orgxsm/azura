@@ -39,7 +39,8 @@ reach.fill(0);let reachCount=0;for(const isl of islands)reachCount+=floodFrom(is
 function snap(x,z,maxR=4){let best=null,bd=1e9;for(let r=0;r<=maxR;r+=HS){for(let a=0;a<TAU;a+=r?HS/r:TAU){const xx=x+Math.cos(a)*r,zz=z+Math.sin(a)*r,i=cellIndex(xx,zz);if(i>=0&&reach[i]){const d=r;if(d<bd){bd=d;best=[xx,zz];}}}if(best)break;}return best||[x,z];}
 function canStep(h0,x,z){const i=cellIndex(x,z);if(i<0||blocked[i])return false;const h=H[i];return h>SEA&&Math.abs(h-h0)<=STEP;}
 function tryMove(e,dx,dz,r=.13){const h0=cellH(e.x,e.z);const l=Math.hypot(dx,dz)||1,px=-dz/l*r,pz=dx/l*r;
-const ok=(nx,nz)=>canStep(h0,nx,nz)&&canStep(h0,nx+px,nz+pz)&&canStep(h0,nx-px,nz-pz)&&(!e.maxH||cellH(nx,nz)<e.maxH);
+const airOk=(x,z)=>{const i=cellIndex(x,z);return i>=0&&!blocked[i]&&H[i]>SEA&&H[i]<=e.y+.35;};
+const ok=(nx,nz)=>e.air?(airOk(nx,nz)&&airOk(nx+px,nz+pz)&&airOk(nx-px,nz-pz)):(canStep(h0,nx,nz)&&canStep(h0,nx+px,nz+pz)&&canStep(h0,nx-px,nz-pz)&&(!e.maxH||cellH(nx,nz)<e.maxH));
 if(ok(e.x+dx,e.z+dz)){e.x+=dx;e.z+=dz;return true;}
 if(Math.abs(dx)>1e-4&&ok(e.x+dx,e.z)){e.x+=dx;return true;}
 if(Math.abs(dz)>1e-4&&ok(e.x,e.z+dz)){e.z+=dz;return true;}

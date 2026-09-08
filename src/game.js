@@ -137,6 +137,8 @@ if(game.quests.treasure===1&&!game.dug){const d=Math.hypot(digSpot.x-player.x,di
 const dockIsl=nearDock();if(dockIsl){const dest=islands.find(i=>i.id!==dockIsl.id);if(dest){bd=1.7;best={type:'boat',dest,label:'Embarquer pour '+dest.name,btn:'Embarquer'};}}
 if(game.quests.fish>=1){const d=Math.hypot(fishSpot.x-player.x,fishSpot.z-player.z);if(d<Math.min(bd,1.4)&&Math.abs(fishSpot.y-player.y)<.6){bd=d;best={type:'fish',label:'Pêcher',btn:'Pêcher'};}}
 return best;}
+function jump(){if(dialog||minigame){interact();return;}if(!playing||!panel.hidden||voyage.active||player.air)return;player.air=true;player.vy=4.6;sfx('jump');}
+function respawn(){const isl=currentIsland();const [x,z]=snap(isl.spawn[0],isl.spawn[1],4);player.x=x;player.z=z;player.y=cellH(x,z);player.air=false;player.vy=0;panel.hidden=true;toast('Te revoilà sur '+isl.name+'.');dirty=true;}
 function interact(){if(minigame){fishingHit();return;}if(dialog){advance();return;}if(!playing||!panel.hidden)return;const th=nearThing();if(!th)return;
 if(th.type==='npc')talkTo(th.n);
 else if(th.type==='crab'){th.c.hidden=true;game.crabsCaught++;sfx('catch');toast(`🦀 Crabe attrapé ! ${game.crabsCaught}/3`);dirty=true;refreshHUD();if(game.crabsCaught>=3)setTimeout(()=>toast('Retourne voir Lila !'),1500);}
@@ -195,7 +197,7 @@ if(!document.documentElement.requestFullscreen)fullButton.hidden=true;else fullB
 const keys={};
 const keyMap={KeyW:'up',ArrowUp:'up',KeyS:'down',ArrowDown:'down',KeyA:'left',ArrowLeft:'left',KeyD:'right',ArrowRight:'right',ShiftLeft:'run',ShiftRight:'run'};
 window.addEventListener('keydown',e=>{if(e.target instanceof HTMLInputElement)return;if(e.target instanceof HTMLButtonElement&&(e.key==='Enter'||e.key===' '))return;if(keyMap[e.code]){keys[keyMap[e.code]]=true;e.preventDefault();return;}
-switch(e.code){case'KeyE':case'Space':case'Enter':interact();e.preventDefault();break;case'Escape':if(minigame)cancelFishing();else if(dialog){dialog=null;dialogEl.hidden=true;for(const n of npcs)n.talking=false;}else togglePanel();break;case'KeyH':dbg.hidden=!dbg.hidden;break;case'KeyF':fpsEl.hidden=!fpsEl.hidden;break;case'KeyM':mapEl.hidden=!mapEl.hidden;try{localStorage.setItem('azura-map',mapEl.hidden?'0':'1');}catch(x){}break;case'Equal':case'NumpadAdd':goal.r=clamp(goal.r*.9,4,65);break;case'Minus':case'NumpadSubtract':goal.r=clamp(goal.r*1.1,4,65);break;case'Home':$('#reset').onclick();break;}});
+switch(e.code){case'KeyE':case'Enter':interact();e.preventDefault();break;case'Space':jump();e.preventDefault();break;case'Escape':if(minigame)cancelFishing();else if(dialog){dialog=null;dialogEl.hidden=true;for(const n of npcs)n.talking=false;}else togglePanel();break;case'KeyH':dbg.hidden=!dbg.hidden;break;case'KeyF':fpsEl.hidden=!fpsEl.hidden;break;case'KeyM':mapEl.hidden=!mapEl.hidden;try{localStorage.setItem('azura-map',mapEl.hidden?'0':'1');}catch(x){}break;case'Equal':case'NumpadAdd':goal.r=clamp(goal.r*.9,4,65);break;case'Minus':case'NumpadSubtract':goal.r=clamp(goal.r*1.1,4,65);break;case'Home':$('#reset').onclick();break;}});
 window.addEventListener('keyup',e=>{if(keyMap[e.code])keys[keyMap[e.code]]=false;});
 window.addEventListener('blur',()=>{for(const k in keys)keys[k]=false;});
 const stick=$('#stick'),knob=stick.querySelector('i');let stickId=null,stickVec=[0,0];
@@ -204,7 +206,7 @@ stick.addEventListener('pointerdown',e=>{stickId=e.pointerId;stick.setPointerCap
 stick.addEventListener('pointermove',e=>{if(e.pointerId===stickId)moveStick(e);});
 const endStick=e=>{if(e.pointerId===stickId){stickId=null;stickVec=[0,0];knob.style.transform='';}};
 stick.addEventListener('pointerup',endStick);stick.addEventListener('pointercancel',endStick);stick.addEventListener('lostpointercapture',endStick);
-actionBtn.addEventListener('click',interact);
+actionBtn.addEventListener('click',interact);$('#jump').addEventListener('click',jump);$('#respawn').onclick=respawn;
 function togglePanel(){if(!playing)return;panel.hidden=!panel.hidden;if(!panel.hidden){$('#panel-info').textContent=`${game.name?game.name+' · ':''}${game.shells.size} coquillages · ${stars()} étoiles sur ${TOTAL} · ${doneCount(game.quests)} quêtes terminées · ${fmtTime(game.playtime)} de jeu`;$('#restart').textContent='Recommencer une nouvelle partie';restartArmed=false;$('#quality').textContent='Qualité graphique : '+qualityLabel()+(lastFps?' · '+lastFps+' im/s':'');}}
 let restartArmed=false;
 $('#menu').onclick=togglePanel;$('#resume').onclick=togglePanel;$('#save-now').onclick=()=>{saveGame(false);panel.hidden=true;};
@@ -273,7 +275,7 @@ let mag=Math.hypot(ix,iy);if(mag>1){ix/=mag;iy/=mag;mag=1;}
 if(mag>.08){if(cam.mode!=='follow')setView('play');const f=norm([current.target[0]-eye[0],0,current.target[2]-eye[2]]),r=[-f[2],0,f[0]];const px=player.x,pz=player.z;const moved=moveEntity(player,f[0]*iy+r[0]*ix,f[2]*iy+r[2]*ix,(keys.run||mag>.97&&stickId!==null?4.3:2.7)*Math.min(1,mag*1.3),dt);if(Math.hypot(player.x-px,player.z-pz)>0)dirty=true;
 if(!moved){player.stuckT=(player.stuckT||0)+dt;if(player.stuckT>.7){player.stuckT=0;let freed=false;for(let a=0;a<TAU&&!freed;a+=TAU/12)freed=tryMove(player,Math.sin(a)*.12,Math.cos(a)*.12,.1);if(!freed&&unstick(player))toast('Tu t\'étais coincé : te revoilà sur le chemin.');}}else player.stuckT=0;}
 else{idleEntity(player,dt);player.look=Math.sin(t*.5)*.25*(1-player.amp);}
-if(voyage.active)updateVoyage(dt);else groundEntity(player,dt);
+if(voyage.active)updateVoyage(dt);else if(player.air){player.vy-=12*dt;player.y+=player.vy*dt;const g=cellH(player.x,player.z);if(player.y<=g&&player.vy<=0){player.y=g;player.air=false;player.vy=0;player.stuckT=0;}}else groundEntity(player,dt);
 for(const n of npcs)npcThink(n,dt,t);
 for(const c of crabs)crabThink(c,dt,t);for(const g of goats)crabThink(g,dt,t);
 updateFishing(dt);
@@ -281,7 +283,7 @@ if(playing){for(const s of shellSpots){if(game.shells.has(s.id))continue;if(Math
 if(game.quests.notes===1)for(const s of noteSpots){if(game.notes.has(s.id))continue;if(Math.hypot(s.x-player.x,s.z-player.z)<.7&&Math.abs(s.y-player.y)<.8){game.notes.add(s.id);sfx('pick');toast(`🎵 Partition retrouvée ! ${game.notes.size}/3`);refreshHUD();dirty=true;saveGame(true);}}
 for(const p of places)if(!game.discovered[p.id]&&player.y>p.minY&&Math.hypot(p.x-player.x,p.z-player.z)<p.r){game.discovered[p.id]=true;star('Lieu découvert : '+p.name);}
 const th=(dialog||minigame)?null:nearThing();promptEl.hidden=!th;if(th){promptEl.querySelector('span').textContent=th.label;actionBtn.textContent=th.btn;}
-actionBtn.hidden=!(th||dialog||minigame);
+actionBtn.hidden=!(th||dialog||minigame);$('#jump').hidden=!!(dialog||minigame||voyage.active);
 if(dirty&&performance.now()-lastSave>6000)saveGame(true);
 if((frameCount&31)===0)stats.textContent=`🐚 ${game.shells.size}/12 · ⭐ ${stars()}/${TOTAL} · ${dayIcon()}`;}
 // poses
