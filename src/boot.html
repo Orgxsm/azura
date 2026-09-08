@@ -1,0 +1,38 @@
+<script>(function () {
+  var started = false;
+  var title = document.getElementById('loading-title');
+  var help = document.getElementById('loading-help');
+  title.textContent = "Un instant, l'île s'éveille…";
+  help.textContent = 'Préparation de la scène 3D.';
+  var timer = setTimeout(check, 30000);
+  function check() {
+    if (started) return;
+    if (document.hidden) { timer = setTimeout(check, 30000); return; }
+    fail('Le démarrage de la scène a dépassé le délai prévu.');
+  }
+  function fail(message) {
+    clearTimeout(timer);
+    var loading = document.getElementById('loading');
+    if (loading) loading.hidden = true;
+    var error = document.getElementById('error');
+    error.hidden = false;
+    var detail = document.getElementById('error-detail');
+    if (!detail) {
+      detail = document.createElement('p');
+      detail.id = 'error-detail';
+      error.appendChild(detail);
+    }
+    detail.textContent = message;
+  }
+  window.azuraBoot = {
+    ready: function () { started = true; clearTimeout(timer); },
+    fail: fail
+  };
+  window.addEventListener('error', function (event) {
+    fail(event.message || 'Un fichier nécessaire au démarrage ne peut pas être chargé.');
+  }, true);
+  window.addEventListener('unhandledrejection', function (event) {
+    fail(String(event.reason && event.reason.message || event.reason || 'Erreur au démarrage.'));
+  });
+})();
+</script>

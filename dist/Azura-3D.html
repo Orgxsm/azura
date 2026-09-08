@@ -1,0 +1,1046 @@
+<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no"><meta name="theme-color" content="#087c8d"><title>Azura · L'île aux toits d'argile</title><style>
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#70c5dd;font-family:Arial,Helvetica,sans-serif;color:#fff;-webkit-user-select:none;user-select:none}
+canvas#world{display:block;width:100%;height:100%;touch-action:none;cursor:grab}
+canvas#world:active{cursor:grabbing}
+header{position:absolute;top:26px;left:34px;right:34px;display:flex;justify-content:space-between;align-items:flex-start;pointer-events:none;text-shadow:0 2px 20px #23586b55}
+.brand{display:flex;gap:14px;align-items:center}
+.brand-mark{font-family:Georgia,serif;font-size:34px;border:1px solid #ffffff80;border-radius:50%;width:51px;height:51px;display:grid;place-items:center}
+h1{font-size:23px;font-weight:500;letter-spacing:8px;margin:0 0 7px}
+header p{margin:0;font-size:12px;letter-spacing:1.6px}
+.hud{display:flex;flex-direction:column;align-items:flex-end;gap:8px;pointer-events:none}
+.badge{font-size:12px;letter-spacing:1.5px;border:1px solid #ffffff65;border-radius:30px;padding:9px 16px;background:#0b536133;backdrop-filter:blur(10px);white-space:nowrap}
+#quest{font-size:12px;line-height:1.45;max-width:260px;text-align:right;background:#11434c66;backdrop-filter:blur(10px);border:1px solid #ffffff30;border-radius:14px;padding:8px 12px}
+#quest b{display:block;font-size:10px;letter-spacing:2px;opacity:.75;font-weight:400;margin-bottom:3px}
+.views{position:absolute;left:50%;bottom:86px;transform:translateX(-50%);display:flex;background:#11434c85;backdrop-filter:blur(16px);padding:6px;border:1px solid #ffffff40;border-radius:40px;gap:3px;box-shadow:0 8px 35px #123e4220}
+button{font:inherit;color:inherit;border:0;cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+button:focus-visible{outline:3px solid #ffdd9c;outline-offset:4px}
+.views button{white-space:nowrap;padding:12px 18px;border-radius:30px;background:transparent;font-size:14px;transition:background .2s}
+.views button:hover{background:#ffffff20}
+.views button.active{background:#fff4df;color:#344b46;box-shadow:0 2px 6px #0001}
+.tools{position:absolute;right:30px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:3px;padding:7px;background:#11434c70;border:1px solid #ffffff40;backdrop-filter:blur(16px);border-radius:32px}
+.tools button{background:none;border-radius:50%;height:42px;width:42px;font-size:22px;font-weight:300}
+.tools button:hover,.tools button.active{background:#fff3}
+.tools span{height:1px;background:#fff3;margin:3px 9px}
+footer{position:absolute;bottom:28px;left:38px;right:38px;display:flex;justify-content:space-between;align-items:center;gap:20px;text-shadow:0 1px 12px #14394380;pointer-events:none}
+.location,.edition{font-size:10px;letter-spacing:1.6px}
+.location{display:flex;align-items:center;gap:10px}
+.location i{width:5px;height:5px;background:#ffe0a3;border-radius:50%}
+.location b{font-weight:400;opacity:.6;border-left:1px solid #fff7;padding-left:10px}
+.hint{font-size:12px;letter-spacing:.3px;opacity:.9;text-align:center}
+.hint em{padding:0 10px;font-style:normal}
+.hint kbd{font:inherit;border:1px solid #fff8;border-radius:5px;padding:1px 5px;background:#ffffff18}
+.edition{opacity:.65}
+#loading{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#afdcd9;z-index:10;color:#276168;transition:opacity .6s;padding:28px;text-align:center}
+#loading p{font-family:Georgia,serif;font-size:20px;max-width:500px}
+#loading-help{font-size:16px;line-height:1.6;max-width:470px}
+.sun{width:36px;height:36px;border-radius:50%;background:#fff2bb;box-shadow:0 0 70px #fff9;animation:breathe 1s infinite alternate}
+@keyframes breathe{to{transform:scale(1.2)}}
+#start{display:flex;flex-direction:column;align-items:center;gap:12px;margin-top:10px}
+#start h2{font-family:Georgia,serif;font-weight:400;font-size:40px;letter-spacing:10px;margin:0;color:#1d5661}
+#start .sub{font-size:13px;letter-spacing:3px;opacity:.7;margin-bottom:20px}
+#start button{padding:14px 30px;border-radius:30px;background:#1d5661;color:#fff4df;font-size:15px;min-width:260px;letter-spacing:.5px;box-shadow:0 8px 30px #1d566140}
+#start button.secondary{background:#ffffffa0;color:#1d5661;box-shadow:none}
+#start small{display:block;font-size:12px;opacity:.75;margin-top:4px;letter-spacing:.5px}
+#error{position:absolute;inset:25%;padding:30px;border-radius:20px;background:#154f5d;z-index:20;text-align:center;overflow:auto}
+#error button{padding:12px 20px;border-radius:20px;background:#fff;color:#154f5d}
+#error-detail{font:13px/1.5 monospace;overflow-wrap:anywhere;opacity:.8}
+#dialog{position:absolute;left:50%;bottom:150px;transform:translateX(-50%);width:min(620px,calc(100% - 40px));background:#fff8ea;color:#2c3f40;border-radius:18px;padding:16px 22px 14px;box-shadow:0 12px 40px #0d3a4240;cursor:pointer;animation:pop .18s ease-out}
+@keyframes pop{from{transform:translateX(-50%) translateY(10px);opacity:0}}
+#dialog b{display:block;font-size:11px;letter-spacing:2.5px;color:#b0642c;margin-bottom:6px}
+#dialog p{margin:0;font-size:16px;line-height:1.5;font-family:Georgia,serif}
+#dialog i{position:absolute;right:16px;bottom:10px;font-size:11px;letter-spacing:1px;opacity:.55;font-style:normal}
+#prompt{position:absolute;left:50%;bottom:150px;transform:translateX(-50%);background:#11434ccc;backdrop-filter:blur(10px);border:1px solid #ffffff40;border-radius:30px;padding:10px 18px;font-size:13px;pointer-events:none;white-space:nowrap}
+#prompt kbd{font:inherit;border:1px solid #fff8;border-radius:5px;padding:1px 6px;margin-right:6px;background:#ffffff18}
+#toast{position:absolute;left:50%;top:110px;transform:translateX(-50%);background:#fff4df;color:#344b46;border-radius:30px;padding:10px 20px;font-size:14px;pointer-events:none;box-shadow:0 8px 30px #0d3a4230;animation:toast .3s ease-out;white-space:nowrap;max-width:calc(100% - 30px)}
+@keyframes toast{from{transform:translateX(-50%) translateY(-12px);opacity:0}}
+#stick{position:absolute;left:34px;bottom:34px;width:130px;height:130px;border-radius:50%;background:#11434c40;border:1px solid #ffffff50;backdrop-filter:blur(8px);touch-action:none;display:none}
+#stick i{position:absolute;left:50%;top:50%;width:56px;height:56px;margin:-28px 0 0 -28px;border-radius:50%;background:#fff4dfcc;box-shadow:0 4px 14px #0004}
+#action{position:absolute;right:34px;bottom:44px;width:78px;height:78px;border-radius:50%;background:#fff4dfe6;color:#344b46;font-size:14px;letter-spacing:1px;display:none;box-shadow:0 8px 24px #0d3a4240;line-height:1.15}
+#menu{position:absolute;top:26px;left:50%;transform:translateX(-50%);background:#11434c70;border:1px solid #ffffff40;backdrop-filter:blur(16px);border-radius:30px;padding:9px 18px;font-size:12px;letter-spacing:2px}
+#panel{position:absolute;inset:0;background:#0b3b4488;backdrop-filter:blur(6px);z-index:8;display:flex;align-items:center;justify-content:center}
+#panel div{background:#fff8ea;color:#2c3f40;border-radius:22px;padding:26px 30px;width:min(420px,calc(100% - 40px));display:flex;flex-direction:column;gap:10px;text-align:center}
+#panel h2{font-family:Georgia,serif;font-weight:400;letter-spacing:6px;margin:0 0 4px;color:#1d5661}
+#panel p{margin:0 0 10px;font-size:13px;opacity:.75;line-height:1.5}
+#panel button{padding:13px 22px;border-radius:30px;background:#1d5661;color:#fff4df;font-size:14px}
+#panel button.secondary{background:#e9e0cc;color:#1d5661}
+#panel button.danger{background:#f1d4c8;color:#8d3a1d}
+#debug{position:absolute;left:20px;top:110px;width:220px;height:220px;image-rendering:pixelated;border:1px solid #fff8;border-radius:8px;pointer-events:none}
+#name{font:inherit;font-size:15px;padding:12px 18px;border-radius:30px;border:1px solid #1d566150;background:#ffffffb0;color:#1d5661;text-align:center;width:260px;outline:none}
+#name:focus{border-color:#1d5661}
+#map{position:absolute;left:34px;bottom:70px;width:190px;height:190px;border-radius:14px;border:1px solid #ffffff60;box-shadow:0 8px 30px #0d3a4230;background:#0b536180;pointer-events:none}
+#fishing{position:absolute;left:50%;bottom:150px;transform:translateX(-50%);width:min(420px,calc(100% - 40px));background:#fff8ea;color:#2c3f40;border-radius:18px;padding:16px 22px 18px;box-shadow:0 12px 40px #0d3a4240;text-align:center}
+#fishing b{display:block;font-size:11px;letter-spacing:2.5px;color:#b0642c;margin-bottom:8px}
+#fishing p{margin:0 0 12px;font-family:Georgia,serif;font-size:15px}
+.bar{position:relative;height:22px;border-radius:11px;background:#d8e6e5;overflow:hidden}
+.bar .zone{position:absolute;top:0;bottom:0;background:#5d9b74;border-radius:11px}
+.bar .cursor{position:absolute;top:-2px;width:6px;height:26px;background:#b0642c;border-radius:3px;margin-left:-3px}
+#fishing small{display:block;margin-top:10px;font-size:11px;letter-spacing:1px;opacity:.6}
+#quest-text{white-space:pre-line}
+#inv{font-size:11px;opacity:.85;margin-top:5px;letter-spacing:.5px}
+[hidden]{display:none!important}
+@media(pointer:coarse){#stick,#action{display:block}.hint .kb{display:none}#map{display:none}}
+@media(max-width:650px){
+header{top:max(18px,env(safe-area-inset-top));left:18px;right:18px}
+.brand-mark{display:none}
+h1{font-size:20px;letter-spacing:6px;margin-bottom:4px}
+header p{font-size:10px}
+.badge{font-size:10px;padding:7px 10px;letter-spacing:1px}
+#quest{font-size:11px;max-width:190px}
+.tools{right:12px;padding:4px;top:auto;bottom:150px;transform:none}
+.tools button{width:37px;height:37px}
+.views{top:max(90px,calc(env(safe-area-inset-top) + 70px));bottom:auto;left:18px;transform:none;padding:4px}
+.views button{padding:9px 11px;font-size:12px}
+#menu{top:auto;bottom:max(140px,calc(env(safe-area-inset-bottom) + 132px));left:auto;right:auto;transform:none;left:50%;transform:translateX(-50%)}
+footer{left:18px;right:18px;bottom:max(12px,env(safe-area-inset-bottom));justify-content:center}
+.location,.edition{display:none}
+.hint{font-size:11px}
+#dialog,#prompt,#fishing{bottom:180px}
+#dialog p{font-size:15px}
+#error{inset:20% 8%}
+#start h2{font-size:32px}
+}
+</style></head><body>
+<canvas id="world" aria-label="Village tropical en trois dimensions. Utilise les flèches ou le joystick pour marcher, glisse pour tourner la caméra."></canvas>
+<canvas id="debug" width="400" height="400" hidden></canvas>
+<div id="loading"><span class="sun"></span><p id="loading-title">Cet aperçu ne lance pas la 3D</p><div id="loading-help">Sur iPhone, l’aperçu d’un fichier peut afficher la page sans exécuter le jeu.<br>Utilise le lien du site dans Safari, ou ouvre ce fichier dans un navigateur sur ordinateur.</div>
+<div id="start" hidden><h2>AZURA</h2><span class="sub">L'ÎLE AUX TOITS D'ARGILE</span><button id="continue" hidden>Reprendre l'aventure<small id="continue-info"></small></button><input id="name" placeholder="Ton prénom (optionnel)" maxlength="14" autocomplete="off"><button id="new" class="secondary">Nouvelle partie</button></div></div>
+<header><div class="brand"><span class="brand-mark">A</span><div><h1>AZURA</h1><p>L'île aux toits d'argile</p></div></div>
+<div class="hud"><span class="badge" id="stats">🐚 0/12 · ⭐ 0/10 · ☀️</span><div id="quest"><b>OBJECTIF</b><span id="quest-text">Explore l'île et parle aux habitants.</span><div id="inv" hidden></div></div></div></header>
+<button id="menu" aria-label="Menu du jeu">MENU</button>
+<aside class="views" aria-label="Points de vue"><button data-view="play" class="active">Jouer</button><button data-view="village">Le village</button><button data-view="port">La crique</button><button data-view="summit">Le belvédère</button></aside>
+<div class="tools"><button id="rotate" aria-label="Activer la rotation automatique" title="Rotation automatique">↻</button><span></span><button id="plus" aria-label="Zoom avant">+</button><button id="minus" aria-label="Zoom arrière">−</button><span></span><button id="reset" aria-label="Revenir sur le personnage" title="Revenir sur le personnage">⌂</button><button id="fullscreen" aria-label="Plein écran" title="Plein écran">⛶</button><span></span><button id="sound" aria-label="Couper le son" title="Son">🔊</button></div>
+<canvas id="map" width="400" height="400" aria-label="Carte de l'île"></canvas>
+<div id="fishing" hidden><b>PÊCHE</b><p>Appuie sur <kbd>E</kbd> quand le curseur est dans la zone verte.</p><div class="bar"><div class="zone"></div><div class="cursor"></div></div><small>ÉCHAP · ABANDONNER</small></div>
+<div id="stick" aria-hidden="true"><i></i></div>
+<button id="action" hidden>Parler</button>
+<div id="prompt" hidden><kbd>E</kbd><span></span></div>
+<div id="dialog" hidden><b></b><p></p><i>ESPACE · CONTINUER</i></div>
+<div id="toast" hidden></div>
+<div id="panel" hidden><div><h2>AZURA</h2><p id="panel-info"></p><button id="save-now">Sauvegarder maintenant</button><button id="quality" class="secondary">Qualité graphique : Auto</button><button id="resume" class="secondary">Reprendre</button><button id="restart" class="danger">Recommencer une nouvelle partie</button></div></div>
+<footer><span class="location"><i></i> ARCHIPEL D'AZURA <b>01</b></span><span class="hint" id="hint"><span class="kb"><kbd>ZQSD</kbd> ou flèches pour marcher <em>·</em> <kbd>E</kbd> parler <em>·</em> <kbd>Maj</kbd> courir <em>·</em> <kbd>M</kbd> carte <em>·</em> </span>Glisser pour tourner la caméra</span><span class="edition">SAUVEGARDE AUTO</span></footer>
+<div id="error" hidden><h2>La 3D n'a pas pu démarrer</h2><p>Essaie de rouvrir cette page dans Safari ou Chrome avec WebGL activé.</p><button onclick="location.reload()">Réessayer</button></div>
+
+<script>(function () {
+  var started = false;
+  var title = document.getElementById('loading-title');
+  var help = document.getElementById('loading-help');
+  title.textContent = "Un instant, l'île s'éveille…";
+  help.textContent = 'Préparation de la scène 3D.';
+  var timer = setTimeout(check, 30000);
+  function check() {
+    if (started) return;
+    if (document.hidden) { timer = setTimeout(check, 30000); return; }
+    fail('Le démarrage de la scène a dépassé le délai prévu.');
+  }
+  function fail(message) {
+    clearTimeout(timer);
+    var loading = document.getElementById('loading');
+    if (loading) loading.hidden = true;
+    var error = document.getElementById('error');
+    error.hidden = false;
+    var detail = document.getElementById('error-detail');
+    if (!detail) {
+      detail = document.createElement('p');
+      detail.id = 'error-detail';
+      error.appendChild(detail);
+    }
+    detail.textContent = message;
+  }
+  window.azuraBoot = {
+    ready: function () { started = true; clearTimeout(timer); },
+    fail: fail
+  };
+  window.addEventListener('error', function (event) {
+    fail(event.message || 'Un fichier nécessaire au démarrage ne peut pas être chargé.');
+  }, true);
+  window.addEventListener('unhandledrejection', function (event) {
+    fail(String(event.reason && event.reason.message || event.reason || 'Erreur au démarrage.'));
+  });
+})();
+</script>
+<script>
+(function(){
+// core.js — contexte WebGL2, aléatoire déterministe, maths, primitives de construction (tri/quad/box/cylinder/ellipsoid/beam…)
+// Propriétaire : partagé (ne pas renommer les primitives : le moteur en dépend).
+const canvas=document.querySelector('#world');
+const gl=canvas.getContext('webgl2',{antialias:false,alpha:false,powerPreference:'high-performance'});
+if(!gl){document.querySelector('#error').hidden=false;document.querySelector('#loading').style.display='none';throw Error('WebGL 2 unavailable');}
+let seed=1729;const rnd=()=>{seed=(Math.imul(1664525,seed)+1013904223)|0;return(seed>>>0)/4294967296;},range=(a,b)=>a+(b-a)*rnd();
+const PI=Math.PI,TAU=PI*2;
+const sub=(a,b)=>a.map((v,i)=>v-b[i]),add=(a,b)=>a.map((v,i)=>v+b[i]),mul=(a,s)=>a.map(v=>v*s),dot=(a,b)=>a.reduce((s,v,i)=>s+v*b[i],0),cross=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]],norm=a=>mul(a,1/(Math.hypot(...a)||1));
+function matmul(a,b){let r=new Float32Array(16);for(let c=0;c<4;c++)for(let row=0;row<4;row++)for(let k=0;k<4;k++)r[c*4+row]+=a[k*4+row]*b[c*4+k];return r;}
+function lookAt(e,t){let z=norm(sub(e,t)),x=norm(cross([0,1,0],z)),y=cross(z,x);return new Float32Array([x[0],y[0],z[0],0,x[1],y[1],z[1],0,x[2],y[2],z[2],0,-dot(x,e),-dot(y,e),-dot(z,e),1]);}
+function perspective(fov,asp,n,f){let t=1/Math.tan(fov/2);return new Float32Array([t/asp,0,0,0,0,t,0,0,0,0,(f+n)/(n-f),-1,0,0,2*f*n/(n-f),0]);}
+function ortho(l,r,b,t,n,f){return new Float32Array([2/(r-l),0,0,0,0,2/(t-b),0,0,0,0,-2/(f-n),0,-(r+l)/(r-l),-(t+b)/(t-b),-(f+n)/(f-n),1]);}
+const color=h=>[(h>>16&255)/255,(h>>8&255)/255,(h&255)/255];
+const palette={wall:color(0xf4ddb1),cream:color(0xffebc7),sand:color(0xf7dea3),rock:color(0xb1ad97),rockLight:color(0xd4c5a6),wood:color(0x765039),trim:color(0x9d6e46),dark:color(0x263c3c),tile:color(0xd57037),leaf:color(0x5e9d26),leafLight:color(0x87b833)};
+const tint=(c,f)=>c.map(v=>Math.min(1,v*f));
+let verts=[],triangles=0;
+function tri(a,b,c,col,ns){const n=norm(cross(sub(b,a),sub(c,a)));for(const [i,p]of[a,b,c].entries())verts.push(...p,...(ns?ns[i]:n),...col);triangles++;}
+function quad(a,b,c,d,col){tri(a,b,c,col);tri(a,c,d,col);}
+function transform(p,pos,rot=0){return[pos[0]+p[0]*Math.cos(rot)+p[2]*Math.sin(rot),pos[1]+p[1],pos[2]-p[0]*Math.sin(rot)+p[2]*Math.cos(rot)];}
+function box(p,s,col,rot=0){let[x,y,z]=s.map(v=>v/2);let v=[[-x,-y,-z],[x,-y,-z],[x,y,-z],[-x,y,-z],[-x,-y,z],[x,-y,z],[x,y,z],[-x,y,z]].map(v=>transform(v,p,rot));for(let f of[[4,5,6,7],[1,0,3,2],[0,4,7,3],[5,1,2,6],[7,6,2,3],[0,1,5,4]])quad(...f.map(i=>v[i]),col);}
+function ellipsoid(p,s,col,seg=12,rings=7,jitter=.12){let grid=[];let phase=rnd()*6;for(let j=0;j<=rings;j++){let row=[];for(let i=0;i<=seg;i++){let a=i/seg*TAU,b=j/rings*PI;let noise=1+jitter*(Math.sin(a*3+b*5+phase)*.45+Math.cos(a*5-b*3+phase)*.55);row.push([p[0]+s[0]*Math.sin(b)*Math.cos(a)*noise,p[1]+s[1]*Math.cos(b)*noise,p[2]+s[2]*Math.sin(b)*Math.sin(a)*noise]);}grid.push(row);}for(let j=0;j<rings;j++)for(let i=0;i<seg;i++){let c=tint(col,range(.985,1.015));let ps=[grid[j][i],grid[j+1][i],grid[j+1][i+1],grid[j][i+1]];let ns=ps.map(q=>norm(q.map((v,k)=>(v-p[k])/(s[k]*s[k]))));tri(ps[0],ps[1],ps[2],c,[ns[0],ns[1],ns[2]]);tri(ps[0],ps[2],ps[3],c,[ns[0],ns[2],ns[3]]);}}
+function cylinder(a,b,r1,r2,col,n=10){const w=norm(sub(b,a)),u=norm(cross(w,Math.abs(w[1])>.95?[1,0,0]:[0,1,0])),v=cross(w,u);let ra=[],rb=[];for(let i=0;i<=n;i++){let d=add(mul(u,Math.cos(i/n*TAU)),mul(v,Math.sin(i/n*TAU)));ra.push(add(a,mul(d,r1)));rb.push(add(b,mul(d,r2)));}for(let i=0;i<n;i++){quad(ra[i],rb[i],rb[i+1],ra[i+1],col);tri(a,ra[i],ra[i+1],col);tri(b,rb[i+1],rb[i],col);}}
+function beam(a,b,r,col=palette.wood){cylinder(a,b,r,r*.94,col,7);}
+function rock(x,y,z,sx,sy,sz){ellipsoid([x,y,z],[sx,sy,sz],tint(palette.rockLight,range(.82,1.04)),16,9,.07);}
+function patch(x,y,z,sx,sz){ellipsoid([x,y,z],[sx,.26,sz],tint(palette.leaf,range(.68,.95)),14,5,.15);}
+
+// island.js — L'île d'Azura : relief, maisons, tours, escaliers, ponton, végétation, socles, terrasses pavées.
+// Propriétaire : DESIGN (GPT-6 Astra). Contrat : tout ce qui doit être praticable passe par stairs(...), platforms[] et terraces[] (voir COLLAB.md).
+// A terraced granite island with a sheltered beach opening toward the south.
+ellipsoid([0,-.25,-1.3],[12.6,1.15,11.4],palette.sand,48,12,.04);
+ellipsoid([0,-.02,7.8],[6.8,.46,5.1],palette.sand,32,8,.04);
+const tiers=[{x:0,y:.9,z:-2.2,sx:10.5,sy:2.45,sz:6.4},{x:.5,y:3.7,z:-4.8,sx:8.2,sy:2.7,sz:5.2},{x:.7,y:6.9,z:-6.6,sx:5.9,sy:3.1,sz:4},{x:1.1,y:10.3,z:-7.5,sx:3.5,sy:3.3,sz:2.9}];
+for(let t of tiers){rock(t.x,t.y,t.z,t.sx,t.sy,t.sz);}
+// Irregular vertical rock stacks, readable individually rather than a smooth mound.
+for(let i=0;i<68;i++){let a=range(0,TAU),r=range(.68,1),x=Math.cos(a)*10*r,z=-2+Math.sin(a)*7.2*r;let h=.4+4.5*Math.max(0,1-Math.abs(x)/12)*Math.max(0,(-z+5)/13);if(z>3&&Math.abs(x)<5)continue;let s=range(.7,1.7);rock(x,h*.48,z,s,1+h*.6,s*.87);if(rnd()>.5)patch(x,h+1,z,s*.8,s*.7);}
+// Tall exposed cliff on the eastern flank.
+for(let i=0;i<9;i++){let x=6.6+range(-.7,1.7),z=-6+i*1.04;rock(x,3.5,z,range(1,1.8),range(3.5,5.1),1.5);}
+// Shore granite stacks frame the cove.
+for(let side of[-1,1])for(let i=0;i<11;i++){let x=side*range(5.8,9.6),z=range(5.3,11.8),s=range(.65,1.5);rock(x,.3+s*.55,z,s,s*range(1,1.9),s*.85);}
+function local(pos,rot,p){return transform(p,pos,rot);}
+// Half-cylinder terracotta tiles over pitched roofs, with individual warm variation.
+function roof(pos,w,d,h,rot=0){let P=p=>local(pos,rot,p);let over=.3;let wh=w/2+over,dh=d/2+over;
+ for(let side of[-1,1]){quad(P([0,h,-dh]),P([side*wh,0,-dh]),P([side*wh,0,dh]),P([0,h,dh]),tint(palette.tile,.77));
+ let rows=Math.ceil(wh/.34),cols=Math.ceil(dh*2/.29);for(let r=0;r<rows;r++)for(let c=0;c<cols;c++){let x0=r/rows*wh,x1=(r+1)/rows*wh+.045,z0=-dh+c/cols*dh*2,tw=dh*2/cols;let col=tint(palette.tile,range(.84,1.2));for(let k=0;k<4;k++){let a=k/4*PI,b=(k+1)/4*PI;let zz0=z0+tw*(.5-.5*Math.cos(a)),zz1=z0+tw*(.5-.5*Math.cos(b));let ya=.055*Math.sin(a),yb=.055*Math.sin(b);let q=[P([side*x0,h*(1-x0/wh)+ya+.035,zz0]),P([side*x1,h*(1-x1/wh)+ya+.035,zz0]),P([side*x1,h*(1-x1/wh)+yb+.035,zz1]),P([side*x0,h*(1-x0/wh)+yb+.035,zz1])];if(side===1)q.reverse();quad(...q,col);}}beam(P([side*wh,-.06,-dh]),P([side*wh,-.06,dh]),.09,palette.trim);}
+ for(let z=-dh;z<dh;z+=.26)cylinder(P([0,h+.07,z]),P([0,h+.07,z+.25]),.13,.13,tint(palette.tile,1.12),8);
+ for(let end of[-1,1])for(let side of[-1,1])beam(P([0,h,end*dh]),P([side*wh,0,end*dh]),.09,palette.wood);
+}
+function windowAt(pos,w=.48,h=.83,rot=0,shutters=true){box(pos,[w+.17,h+.17,.11],palette.wood,rot);box(local(pos,rot,[0,0,.066]),[w,h,.06],color(0x45616a),rot);for(let x of[-w*.25,w*.25])box(local(pos,rot,[x,0,.11]),[w*.43,h*.92,.035],tint(color(0x8cb6b5),range(.68,1)),rot);box(local(pos,rot,[0,0,.14]),[.048,h,.05],palette.trim,rot);box(local(pos,rot,[0,-.08,.14]),[w,.045,.05],palette.trim,rot);box(local(pos,rot,[0,-h/2-.1,.06]),[w+.27,.13,.26],palette.rockLight,rot);
+ if(shutters)for(let side of[-1,1]){let p=local(pos,rot,[side*(w*.78+.09),0,.08]);box(p,[w*.43,h+.08,.1],tint(palette.wood,1.13),rot+side*.18);for(let j=0;j<5;j++)box(local(p,rot,[0,-h*.4+j*h*.19,.06]),[w*.39,.035,.05],palette.trim,rot);}}
+function archDoor(p,w,h,rot=0){let P=q=>local(p,rot,q);box(P([0,h*.35,.04]),[w,h*.7,.12],palette.dark,rot);let r=w/2;for(let i=0;i<12;i++){let a=i/12*PI,b=(i+1)/12*PI;tri(P([0,h*.7,.1]),P([Math.cos(b)*r,h*.7+Math.sin(b)*r,.1]),P([Math.cos(a)*r,h*.7+Math.sin(a)*r,.1]),palette.dark);let ro=r+.14;quad(P([Math.cos(a)*r,h*.7+Math.sin(a)*r,.13]),P([Math.cos(b)*r,h*.7+Math.sin(b)*r,.13]),P([Math.cos(b)*ro,h*.7+Math.sin(b)*ro,.13]),P([Math.cos(a)*ro,h*.7+Math.sin(a)*ro,.13]),palette.trim);}
+ for(let side of[-1,1])box(P([side*(r+.07),h*.35,.1]),[.14,h*.7,.18],palette.trim,rot);for(let i=0;i<5;i++)box(P([-w*.4+i*w*.2,h*.34,.12]),[.014,h*.63,.03],tint(palette.wood,.62),rot);ellipsoid(P([w*.28,h*.35,.18]),[.045,.045,.045],color(0xcda155),6,4,0);box(P([0,.01,.2]),[w+.45,.15,.58],palette.rockLight,rot);}
+function balcony(pos,w,d,rot=0){let P=q=>local(pos,rot,q);for(let i=0;i<Math.ceil(w/.19);i++)box(P([-w/2+i*.19,.01,0]),[.17,.13,d],tint(palette.trim,range(.83,1.2)),rot);for(let x of[-w/2,w/2]){beam(P([x,-1.25,-d/2]),P([x,0,d/2]),.095);beam(P([x,-.1,-d/2]),P([x,-.1,d/2]),.12);}
+ for(let i=0;i<=Math.ceil(w/.7);i++){let x=-w/2+i/Math.ceil(w/.7)*w;beam(P([x,0,d/2]),P([x,.78,d/2]),.063);}
+ for(let y of[.38,.8]){beam(P([-w/2,y,d/2]),P([w/2,y,d/2]),.05,palette.trim);for(let x of[-w/2,w/2])beam(P([x,y,-d/2]),P([x,y,d/2]),.05,palette.trim);}}
+const houseLots=[],chimneys=[],terraces=[],stairDefs=[];
+function house(x,y,z,w,d,h,rot=0,wood=false,bal=false){let pos=[x,y,z],P=p=>local(pos,rot,p);houseLots.push([x,z,Math.max(w,d)*.66]);terraces.push({x,y,z,w,d,rot});let wall=wood?tint(palette.trim,.94):tint(palette.wall,range(.94,1.05));
+ box(P([0,h/2,0]),[w,h,d],wall,rot);box(P([0,.17,0]),[w+.12,.35,d+.1],palette.rock,rot);
+ for(let end of[-1,1])tri(P([-w/2,h,end*d/2]),P([w/2,h,end*d/2]),P([0,h+1.06,end*d/2]),wall);
+ for(let side of[-1,1])for(let end of[-1,1])box(P([side*(w/2-.04),h/2,end*(d/2+.035)]),[.13,h,.14],palette.wood,rot);
+ for(let yy of[.4,h-.04,...(h>3?[h*.49]:[])])box(P([0,yy,d/2+.075]),[w+.2,.13,.13],palette.trim,rot);
+ if(wood)for(let xx=-w/2+.16;xx<w/2;xx+=.25)box(P([xx,h/2,d/2+.022]),[.013,h-.2,.022],tint(palette.wood,.88),rot);
+ let front=d/2+.11;archDoor(P([-.35,0,front]),.69,1.48,rot);
+ if(h>3){windowAt(P([-w*.25,h*.72,front]),.45,.8,rot);windowAt(P([w*.25,h*.72,front]),.45,.8,rot);windowAt(P([w/2+.08,h*.67,0]),.52,.85,rot+PI/2);if(bal)balcony(P([0,h*.48,d/2+.53]),w+.45,1.23,rot);}
+ else{windowAt(P([w*.28,h*.55,front]),.48,.7,rot);windowAt(P([w/2+.08,h*.56,0]),.48,.75,rot+PI/2);}
+ roof(P([0,h,0]),w,d,1.12,rot);
+ if(rnd()>.25){chimneys.push(P([w*.28,h+1.4,-d*.2]));box(P([w*.28,h+.78,-d*.2]),[.38,1,.4],palette.rockLight,rot);box(P([w*.28,h+1.3,-d*.2]),[.48,.12,.5],palette.trim,rot);}
+ for(let i=0;i<7;i++){let xx=range(-w*.44,w*.44),yy=range(.3,h-.3);if(Math.abs(xx+.35)<.5&&yy<1.5)continue;box(P([xx,yy,d/2+.025]),[range(.12,.33),.09,.025],tint(wall,.84),rot);}
+}
+// Dwellings staggered so roof silhouettes and paths remain readable from the cove.
+house(-6.4,1.1,4.1,3.5,2.9,2.8,-.18,false,true);
+balcony([-6.4,1.25,6.14],4.2,1.6,-.18);
+house(5.55,1.25,5.1,2.6,2.8,3.8,-.38,true,true);
+house(-3.65,3.8,.7,2.55,2.7,4.1,.12,false,true);
+house(1.6,3.2,2.3,3.15,2.45,2.45,-.09,false,false);
+house(5.5,5.5,-.35,2.35,2.7,3.1,.27,false,true);
+house(-5.4,5.3,-3.6,2.7,2.35,2.7,-.18,true,true);
+house(-.7,7.3,-3.5,2.65,2.55,3.1,.1,false,true);
+house(4,9,-5.6,2.4,2.2,2.35,.21,false,false);
+house(-2.8,10.1,-6.2,2.1,2.1,2.5,-.19,true,false);
+// Round lookout towers, cream render, orange segmented conical tiled roofs.
+function tower(x,y,z,r,h,withRoof=true){houseLots.push([x,z,r+1]);terraces.push({x,y,z,w:r*2,d:r*2,rot:0,round:true});cylinder([x,y,z],[x,y+h,z],r,r*.9,palette.wall,20);for(let yy of[.3,h*.47,h-.18])cylinder([x,y+yy,z],[x,y+yy+.16,z],r*1.035,r*1.035,palette.rockLight,20);archDoor([x,y,z+r+.02],r*.66,1.5,0);for(let a of[0,PI/2,PI,-PI/2]){windowAt([x+Math.sin(a)*r*.93,y+h*.72,z+Math.cos(a)*r*.93],.34,.75,a,false);}
+ if(withRoof){let rh=r*.72;for(let j=0;j<7;j++){let t=j/7,rr=(r+.3)*(1-t),rn=(r+.3)*(1-(j+1)/7);for(let i=0;i<28;i++){let a=i/28*TAU,b=(i+1)/28*TAU;quad([x+rr*Math.cos(a),y+h+rh*t,z+rr*Math.sin(a)],[x+rn*Math.cos(a),y+h+rh*(j+1)/7,z+rn*Math.sin(a)],[x+rn*Math.cos(b),y+h+rh*(j+1)/7,z+rn*Math.sin(b)],[x+rr*Math.cos(b),y+h+rh*t,z+rr*Math.sin(b)],tint(palette.tile,range(.9,1.17)));}cylinder([x,y+h+rh*t-.025,z],[x,y+h+rh*t+.035,z],rr+.015,rr+.015,tint(palette.tile,.8),28);}cylinder([x,y+h+rh-.02,z],[x,y+h+rh+.3,z],.15,.07,palette.wood,8);}
+ else{for(let i=0;i<10;i++){let a=i/10*TAU;box([x+Math.sin(a)*r*.86,y+h+.18,z+Math.cos(a)*r*.86],[.43,.52,.42],palette.wall,a);}}
+}
+tower(0,1.6,5.25,.91,3.6,true);tower(.8,13.5,-6.8,1.12,4.2,true);tower(-2,5.5,-.65,.82,3.1,false);
+// Meandering stairs: solid risers, worn stone treads, rope balustrades.
+function stairs(points,width=1.12,wood=false,rail=false){stairDefs.push({points,width});for(let k=0;k<points.length-1;k++){let a=points[k],b=points[k+1],d=sub(b,a),horizontal=Math.hypot(d[0],d[2]),steps=Math.max(2,Math.ceil(Math.abs(d[1])/.19),Math.ceil(horizontal/.34)),rot=Math.atan2(d[0],d[2]);for(let i=0;i<steps;i++){let t=(i+.5)/steps,p=add(a,mul(d,t));box([p[0],p[1]-.13,p[2]],[width,.24,horizontal/steps+.055],tint(wood?palette.trim:palette.rockLight,range(.9,1.1)),rot);box([p[0],p[1]-.36,p[2]],[width*.92,.3,horizontal/steps],tint(palette.rock,.9),rot);}
+ if(rail){let side=[Math.cos(rot)*width*.53,0,-Math.sin(rot)*width*.53];for(let sign of[-1,1]){let last=null;for(let i=0;i<=Math.ceil(horizontal/1.1);i++){let t=i/Math.ceil(horizontal/1.1),p=add(add(a,mul(d,t)),mul(side,sign));beam(p,add(p,[0,.8,0]),.058,palette.trim);if(last){let mid=mul(add(last,p),.5);mid[1]+=.65;beam(add(last,[0,.8,0]),mid,.024,color(0xcbba85));beam(mid,add(p,[0,.8,0]),.024,color(0xcbba85));}last=p;}}}}
+}
+stairs([[1.45,.28,9.2],[1.7,1.1,7.3],[2.9,2.2,5.45],[3.6,3.2,3.5]],1.25,false,true);
+stairs([[-1.5,.3,8.4],[-2.25,1.6,5.55],[-1.9,3,3.6],[-1.9,3.8,2.0]],1.05,true,true);
+stairs([[3.4,3.2,3.4],[4.3,4.6,1.2],[3.4,5.5,-.9],[1.1,7.3,-1.6]],.95,false,false);
+stairs([[-4.9,3.8,3.6],[-6.1,4.3,1.6],[-5.8,4.9,-.4],[-4.6,5.3,-2.1],[-3.3,6.8,-3.1],[-2.5,7.3,-2.3]],.95,false,false);
+stairs([[1.1,7.3,-1.6],[1.6,8.5,-3.4],[1.7,10.4,-5.3]],.83,false,true);
+// Sun-warmed timber pier and its mooring posts.
+function pier(){let x=-4.2,z=10.6;for(let j=0;j<26;j++)box([x,.51,z+j*.22],[1.65,.16,.205],tint(palette.trim,range(.88,1.23)),.1);for(let j=0;j<5;j++)for(let side of[-1,1]){let zz=z+j*1.32;beam([x+side*.88,-.8,zz],[x+side*.88,.98,zz],.11,palette.wood);cylinder([x+side*.88,.74,zz],[x+side*.88,.87,zz],.14,.14,color(0xc5b891),8);}beam([x-.65,.3,z],[x-.65,.3,z+5.7],.13);beam([x+.65,.3,z],[x+.65,.3,z+5.7],.13);}
+pier();
+// Harbour boat with a curved hull, mast, ropes and a loosely furled sail.
+function boat(x,y,z,rot,sail=false){let P=p=>transform(p,[x,y,z],rot);let n=16;let outline=[];for(let i=0;i<n;i++){let a=i/n*TAU;outline.push([Math.sin(a)*.68,0,Math.cos(a)*1.9]);}for(let i=0;i<n;i++){let a=outline[i],b=outline[(i+1)%n];quad(P(a),P(b),P([b[0]*.57,-.51,b[2]*.81]),P([a[0]*.57,-.51,a[2]*.81]),palette.wood);beam(P(a),P(b),.06,palette.trim);tri(P([0,-.2,0]),P([b[0]*.9,-.16,b[2]*.9]),P([a[0]*.9,-.16,a[2]*.9]),tint(palette.wood,.62));}for(let zz of[-1,-.1,.9])box(P([0,-.06,zz]),[1.05,.09,.24],palette.trim,rot);beam(P([0,0,0]),P([0,4.2,0]),.055);beam(P([0,2.9,-1]),P([0,2.9,1.4]),.04);for(let zz of[-1.7,1.7])beam(P([0,0,zz]),P([0,4,0]),.012,color(0xdacb9d));if(sail){let a=P([.05,3.75,.05]),b=P([.05,.5,.05]),c=P([.18,.6,1.48]);tri(a,b,c,color(0xffefd1));tri(c,b,a,color(0xffefd1));}}
+// Pots, barrels, shutters, low stone garden walls, and little coastal details.
+function pot(x,y,z,s=.3,green=true){cylinder([x,y,z],[x,y+s*.95,z],s*.6,s,palette.tile,10);cylinder([x,y+s*.9,z],[x,y+s*1.08,z],s*1.1,s*1.1,tint(palette.tile,1.18),12);cylinder([x,y+s*1.08,z],[x,y+s*1.1,z],s*.8,s*.8,palette.dark,10);if(green)shrub(x,y+s,z,s*1.5);}
+function barrel(x,y,z,s=.3){ellipsoid([x,y+s*.8,z],[s,s*.8,s],palette.trim,12,6,.015);for(let h of[.3,1.15])cylinder([x,y+s*h,z],[x,y+s*(h+.12),z],s*.98,s*.98,color(0x575f57),12);cylinder([x,y+s*1.58,z],[x,y+s*1.65,z],s*.78,s*.78,palette.wood,12);}
+function shrub(x,y,z,s=1){for(let i=0;i<5;i++){let a=range(0,TAU),r=range(0,s*.55);ellipsoid([x+Math.cos(a)*r,y+range(.1,s*.4),z+Math.sin(a)*r],[s*range(.4,.7),s*range(.3,.5),s*range(.4,.65)],tint(palette.leaf,range(.72,1.2)),8,5,.19);}}
+for(let p of[[-5.1,1.1,5.7],[-7.6,1.1,5.5],[4.45,1.25,6.3],[.9,3.2,4.1],[-2.5,3.8,2.2],[5,5.5,1.1],[-1.8,7.3,-1.5],[1.7,13.5,-5.9]]){pot(...p,.22,true);barrel(p[0]+.6,p[1],p[2]-.2,.25);}
+for(let i=0;i<22;i++){let a=i/22*TAU;let x=-5.7+Math.cos(a)*2.5,z=-2+Math.sin(a)*1.4;box([x,4.7,z],[.5,.55,.43],tint(palette.rockLight,range(.9,1)),a);}
+// Palms use bent trunks and individually modelled feather leaves.
+function palm(x,y,z,h,scale=1){const lean=range(-.5,.5),leanZ=range(-.35,.35);let top=[x+lean,y+h,z+leanZ];for(let j=0;j<12;j++){let t=j/12,tt=(j+1)/12;let a=[x+lean*t*t,y+h*t,z+leanZ*t*t],b=[x+lean*tt*tt,y+h*tt,z+leanZ*tt*tt];cylinder(a,b,(.15-.065*t)*scale,(.15-.065*tt)*scale,tint(palette.trim,range(.83,1.08)),8);cylinder(b,add(b,[0,.037,0]),(.15-.065*tt)*scale*1.15,(.15-.065*tt)*scale*1.15,tint(palette.wood,1.25),8);}
+ for(let j=0;j<10;j++){let a=j/10*TAU+range(-.18,.18),length=range(1.7,2.6)*scale,lift=range(.35,.95),col=tint(palette.leafLight,range(.75,1.13));let center=t=>[top[0]+Math.cos(a)*length*t,top[1]+Math.sin(t*PI)*lift-t*t*.9*scale,top[2]+Math.sin(a)*length*t];let prev=center(0);for(let k=1;k<=12;k++){let t=k/12,p=center(t),width=Math.sin(t*PI)*.55*scale;let left=add(p,[-Math.sin(a)*width,-.07,Math.cos(a)*width]),right=add(p,[Math.sin(a)*width,-.07,-Math.cos(a)*width]);let pp=center((k-1)/12),pw=Math.sin((k-1)/12*PI)*.55*scale;let pl=add(pp,[-Math.sin(a)*pw,-.06,Math.cos(a)*pw]),pr=add(pp,[Math.sin(a)*pw,-.06,-Math.cos(a)*pw]);quad(pp,p,left,pl,col);quad(pp,pr,right,p,tint(col,.87));if(k%2===0){beam(p,left,.012,tint(col,.78));beam(p,right,.012,tint(col,.78));}prev=p;}beam(top,center(.75),.018,tint(col,.8));}
+ for(let i=0;i<3;i++)ellipsoid(add(top,[range(-.17,.17),-.14,range(-.17,.17)]),[.13,.16,.13],color(0x78753a),7,5,.1);
+}
+for(let p of[[-8.1,2,4.4,5.7,1.1],[8.2,1.6,5.5,5.6,1.05],[-8.5,3.5,-3.5,5.8,1.2],[6.7,7,-5.6,5,1],[-2.8,12.1,-7.8,5,1.05],[3.8,12,-8.1,4.7,1],[-10,.5,.7,3.4,.8],[8.4,.8,-2,4.5,.85],[-6.1,.4,8.7,3.7,.8]])palm(...p);
+// Umbrella-shaped coastal trees: many clustered leaves create soft, lush silhouettes.
+function tree(x,y,z,h,r){beam([x,y,z],[x+.15,y+h,z],.13);for(let j=0;j<4;j++){let a=j/4*TAU;beam([x,y+h*.6,z],[x+Math.cos(a)*r*.6,y+h*.91,z+Math.sin(a)*r*.6],.06);}
+ for(let j=0;j<14;j++){let a=range(0,TAU),rr=range(.1,r*.85),cx=x+Math.cos(a)*rr,cz=z+Math.sin(a)*rr,cy=y+h+range(-.2,.35);let s=range(.36,.67)*r;ellipsoid([cx,cy,cz],[s,s*.52,s*.85],tint(palette.leaf,range(.73,1.2)),9,5,.13);for(let k=0;k<3;k++)ellipsoid([cx+range(-s,s)*.55,cy+s*.35,cz+range(-s,s)*.55],[s*.38,s*.18,s*.33],tint(palette.leafLight,range(.82,1.11)),6,4,.15);}}
+for(let p of[[-7.9,3.7,1.1,2.9,1.7],[6.6,3.3,3.1,2.7,1.5],[-5.6,7.6,-5.5,2.2,1.8],[4.8,8.8,-3.5,2.3,1.5],[-.5,12.2,-8.5,1.8,1.8],[1.3,8.8,-7.5,2.2,1.7],[-8.4,1,-.9,2.8,1.3],[7.8,1,7.8,2,1.2],[-4,1,7.1,1.8,1.0]])tree(...p);
+// Dense planting along ledges, with gaps reserved for architecture and paths.
+const plantPatches=[[-7,2.5,2,1.3],[-8.3,2.8,-1,1],[-6.5,5,-1.6,1],[-4.7,7.4,-4.6,1.2],[-3.4,8.4,-5.4,1],[1.8,10.8,-6.6,1.1],[4.6,10.7,-6.9,.9],[5.6,7.7,-3.9,1.1],[7.6,5.5,-1.7,1.3],[5,4.4,2.7,.8],[3.4,1.1,6.8,.7],[-3.8,.7,6.8,.65],[6.4,.7,8.1,.8],[-6.2,.6,8.2,.7],[0,4,1,.65],[1.7,6.7,-.8,.7],[-1.8,10.5,-5.4,.7]];
+for(let p of plantPatches){shrub(...p);for(let j=0;j<3;j++)shrub(p[0]+range(-.8,.8),p[1]+range(-.3,.1),p[2]+range(-.65,.65),p[3]*.55);}
+function grass(x,y,z,s){for(let j=0;j<7;j++){let a=range(0,TAU),h=range(.3,.7)*s,w=.06*s,b=[x+Math.cos(a)*.35*s,y+h,z+Math.sin(a)*.35*s];let c=tint(palette.leafLight,range(.8,1.2));tri([x-w,y,z],[x+w,y,z],b,c);tri(b,[x+w,y,z],[x-w,y,z],c);}}
+for(let p of plantPatches)for(let i=0;i<4;i++)grass(p[0]+range(-1,1),p[1]-.13,p[2]+range(-.9,.9),.7);
+// Sand pebbles and a few tiny sunlit flowers.
+for(let i=0;i<50;i++){let x=range(-5.4,5.4),z=range(8.3,11.2);if(x>1&&x<2.9)continue;let s=range(.035,.16);ellipsoid([x,.3,z],[s,s*.64,s*.85],tint(palette.rock,range(.75,1.12)),6,4,.2);}
+for(let p of plantPatches)for(let j=0;j<5;j++){let x=p[0]+range(-.6,.6),z=p[2]+range(-.6,.6),y=p[1]+.26;beam([x,y-.3,z],[x,y,z],.012,palette.leaf);ellipsoid([x,y,z],[.055,.035,.055],j%2?color(0xffdf69):color(0xfffaf0),5,3,0);}
+// Smaller granite outcrops and hanging shrubs break up the large geological masses.
+for(let t of tiers){for(let i=0;i<21;i++){let a=range(0,TAU),r=range(.60,.96),xx=t.x+Math.cos(a)*t.sx*r,zz=t.z+Math.sin(a)*t.sz*r,yy=t.y+t.sy*Math.sqrt(1-r*r);if(houseLots.some(h=>Math.hypot(xx-h[0],zz-h[1])<h[2]+.2))continue;let ss=range(.55,1.15);rock(xx,yy-.35,zz,ss,ss*1.3,ss*.9);shrub(xx,yy+ss*.55,zz,ss*.9);}}
+for(let p of [[-1.8,11.6,-6.7,1.2],[2.5,13,-7.1,1.1],[-3.8,9.8,-5.5,1.2],[4.7,9,-5.9,1.2],[1.2,7.8,-3.5,1],[-6.7,5.8,-3.8,1.2],[6.8,6.4,-2.8,1.1],[-6.3,3.2,1.6,1],[-.7,3.8,2,.8],[3.8,3.9,.7,1]])shrub(...p);
+// Socles de pierre sous chaque maison et tour, et terrasses pavées reliant escaliers et maisons.
+for(const t of terraces)box([t.x,t.y-1.1,t.z],[t.w+.6,2.2,t.d+.6],tint(palette.rockLight,.96),t.rot);
+const platforms=[{x:3.5,y:3.2,z:3.5,r:1},{x:-3.3,y:3.8,z:2.9,r:1.9},{x:-.6,y:7.3,z:-1.5,r:2.2},{x:1.7,y:10.4,z:-5.3,r:1.5}];
+for(const p of platforms){cylinder([p.x,p.y-2.6,p.z],[p.x,p.y,p.z],p.r,p.r,tint(palette.rockLight,.92),24);cylinder([p.x,p.y-.02,p.z],[p.x,p.y+.01,p.z],p.r-.12,p.r-.12,tint(palette.rock,1.08),24);for(let i=0;i<10;i++){const a=i/10*TAU;ellipsoid([p.x+Math.cos(a)*p.r*range(.2,.8),p.y+.005,p.z+Math.sin(a)*p.r*range(.2,.8)],[range(.18,.3),.012,range(.15,.26)],tint(palette.rockLight,range(.85,1)),8,3,.1);}}
+// (les îles supplémentaires de src/islands/*.js sont assemblées ici, avant scene_end.js)
+
+// scene_end.js — clôture de la géométrie statique : tableaux GPU de l'archipel, de l'océan et des nuages.
+// Propriétaire : partagé. Ne rien ajouter de géométrique après ce fichier.
+const solidVertexCount=verts.length/9;
+const sceneData=new Float32Array(verts);verts=[];
+// Ocean geometry is animated entirely in the GPU.
+for(let x=-100;x<100;x+=2)for(let z=-100;z<100;z+=2)quad([x,0,z],[x,0,z+2],[x+2,0,z+2],[x+2,0,z],color(0x159db5));
+const oceanData=new Float32Array(verts);verts=[];
+// Atmosphere is kept behind the environment; soft geometry clouds catch warm light.
+for(let i=0;i<18;i++){let x=range(-75,75),z=range(-90,-45),y=range(19,36);for(let j=0;j<4;j++)ellipsoid([x+j*range(2,4),y+range(-1,2),z],[range(3,7),range(2,3.5),range(2.5,4)],color(0xfffcf1),12,7,.02);}
+const cloudData=new Float32Array(verts);verts=[];
+
+// util.js — petits helpers DOM/maths, matrices colonne-major, maillages à os (withBone/rig/meshDyn).
+// Propriétaire : partagé.
+const $=s=>document.querySelector(s);
+const clamp=(v,a,b)=>Math.min(b,Math.max(a,v));
+const mix=(a,b,k)=>a+(b-a)*k;
+
+// ---------- matrices ----------
+const I4=new Float32Array([1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1]);
+const T=(x,y,z)=>new Float32Array([1,0,0,0,0,1,0,0,0,0,1,0,x,y,z,1]);
+const SC=(s,sy=s,sz=s)=>new Float32Array([s,0,0,0,0,sy,0,0,0,0,sz,0,0,0,0,1]);
+const RX=a=>{const c=Math.cos(a),s=Math.sin(a);return new Float32Array([1,0,0,0,0,c,s,0,0,-s,c,0,0,0,0,1]);};
+const RY=a=>{const c=Math.cos(a),s=Math.sin(a);return new Float32Array([c,0,-s,0,0,1,0,0,s,0,c,0,0,0,0,1]);};
+const RZ=a=>{const c=Math.cos(a),s=Math.sin(a);return new Float32Array([c,s,0,0,-s,c,0,0,0,0,1,0,0,0,0,1]);};
+const mm=(...ms)=>ms.reduce((a,b)=>matmul(a,b));
+const piv=(p,m)=>mm(T(p[0],p[1],p[2]),m,T(-p[0],-p[1],-p[2]));
+const setBone=(B,i,m)=>B.set(m,i*16);
+
+
+// rig.js — squelettes et maillages des personnages, animaux, objets (humanoid, chat, mouette, crabe, bateaux, lanternes…).
+// Propriétaire : DESIGN / ANIMATION (GPT-6 Astra). Contrat : rig([[bone,fn],...]) ; 16 os max ; pivots documentés dans COLLAB.md.
+// ---------- géométrie dynamique : chaque sommet reçoit un index d'os ----------
+function withBone(b,fn){verts=[];fn();const o=new Array(verts.length/9*10);let j=0;for(let i=0;i<verts.length;i+=9){for(let k=0;k<9;k++)o[j++]=verts[i+k];o[j++]=b;}verts=[];return o;}
+function rig(parts){const all=[];for(const [b,fn] of parts){const part=withBone(b,fn);for(let i=0;i<part.length;i++)all.push(part[i]);}return new Float32Array(all);}
+
+const C={skin:[color(0xf3c9a4),color(0xdba580),color(0xb07a52)],dark:palette.dark,straw:color(0xe8cd7c),white:color(0xfdfaf2),shoe:color(0x4a3323)};
+function humanoid(o){
+const s=o.scale||1,sc=p=>p.map(v=>v*s);
+const B=(c,d,col)=>box(sc(c),sc(d),col);
+return rig([
+[0,()=>{B([0,.87,0],[.42,.5,.24],o.shirt);B([0,.63,0],[.43,.09,.25],o.belt||C.dark);B([0,1.15,0],[.12,.08,.12],o.skin);if(o.apron)B([0,.74,.125],[.3,.36,.02],o.apron);if(o.bag)B([.24,.72,-.02],[.1,.22,.16],palette.trim);
+if(o.prop==='guitar'){B([.02,.8,.22],[.36,.44,.09],color(0x9b5a2c));B([.02,.8,.27],[.12,.14,.01],C.dark);B([-.38,1.0,.22],[.5,.05,.05],palette.wood);for(let i=0;i<4;i++)B([-.1,.7+i*.06,.27],[.5,.006,.006],color(0xe9e2c8));}}],
+[5,()=>{B([0,1.31,0],[.3,.3,.3],o.skin);B([0,1.41,0],[.33,.1,.33],o.hair);B([0,1.3,-.16],[.33,.22,.03],o.hair);
+B([-.06,1.32,.152],[.05,.05,.01],C.dark);B([.06,1.32,.152],[.05,.05,.01],C.dark);B([0,1.24,.152],[.08,.02,.01],color(0xb35a4a));
+if(o.hat==='straw'){cylinder(sc([0,1.44,0]),sc([0,1.47,0]),.36*s,.36*s,C.straw,14);cylinder(sc([0,1.46,0]),sc([0,1.62,0]),.2*s,.17*s,C.straw,12);cylinder(sc([0,1.48,0]),sc([0,1.52,0]),.205*s,.2*s,o.band||color(0xc34a3d),12);}
+if(o.hat==='cap'){cylinder(sc([0,1.44,0]),sc([0,1.56,0]),.19*s,.16*s,o.hatColor,12);B([0,1.45,.22],[.3,.03,.16],o.hatColor);}
+if(o.hat==='scarf'){B([0,1.44,0],[.34,.08,.34],o.hatColor);B([0,1.36,-.19],[.14,.2,.04],o.hatColor);}
+if(o.hat==='beret'){cylinder(sc([0,1.44,0]),sc([0,1.5,0]),.2*s,.24*s,o.hatColor,12);cylinder(sc([0,1.5,0]),sc([0,1.53,0]),.24*s,.12*s,o.hatColor,12);}
+if(o.beard)B([0,1.19,.1],[.22,.12,.12],o.hair);
+if(o.bun)ellipsoid(sc([0,1.46,-.12]),sc([.09,.08,.09]),o.hair,7,4,0);
+if(o.longHair)B([0,1.22,-.14],[.3,.28,.06],o.hair);}],
+[1,()=>{B([-.1,.33,0],[.16,.56,.18],o.pants);B([-.1,.04,.03],[.17,.08,.25],C.shoe);}],
+[2,()=>{B([.1,.33,0],[.16,.56,.18],o.pants);B([.1,.04,.03],[.17,.08,.25],C.shoe);}],
+[3,()=>{B([-.28,.86,0],[.12,.44,.12],o.sleeve||o.shirt);B([-.28,.6,0],[.1,.1,.1],o.skin);if(o.prop==='basket'){B([-.3,.44,.06],[.24,.17,.17],C.straw);B([-.3,.55,.06],[.2,.04,.13],color(0xd9a35a));}}],
+[4,()=>{B([.28,.86,0],[.12,.44,.12],o.sleeve||o.shirt);B([.28,.6,0],[.1,.1,.1],o.skin);if(o.prop==='rod')beam(sc([.3,.55,.05]),sc([.34,1.55,1.5]),.014*s,palette.wood);if(o.prop==='staff')beam(sc([.32,-.02,.08]),sc([.32,1.25,.08]),.025*s,palette.wood);}]]);
+}
+function catRig(){const fur=color(0xe28f3c),cream=color(0xfbe9cf);return rig([
+[0,()=>{box([0,.27,0],[.17,.15,.42],fur);box([0,.21,.02],[.13,.06,.3],cream);box([0,.37,.26],[.17,.15,.15],fur);box([0,.33,.33],[.08,.06,.04],cream);
+tri([-.075,.44,.24],[-.02,.44,.24],[-.05,.54,.22],fur);tri([.02,.44,.24],[.075,.44,.24],[.05,.54,.22],fur);
+box([-.04,.38,.335],[.03,.03,.01],C.dark);box([.04,.38,.335],[.03,.03,.01],C.dark);box([0,.34,.352],[.03,.02,.01],color(0xd87a7a));}],
+[1,()=>box([-.07,.1,.14],[.06,.2,.06],fur)],[2,()=>box([.07,.1,.14],[.06,.2,.06],fur)],
+[3,()=>box([-.07,.1,-.14],[.06,.2,.06],fur)],[4,()=>box([.07,.1,-.14],[.06,.2,.06],fur)],
+[5,()=>{cylinder([0,.3,-.2],[0,.5,-.42],.03,.02,fur,6);ellipsoid([0,.5,-.42],[.025,.025,.025],cream,5,3,0);}]]);}
+function gullRig(){const w=C.white,g=color(0xd8dde0);return rig([
+[0,()=>{ellipsoid([0,0,0],[.12,.09,.3],w,8,5,0);ellipsoid([0,.05,.3],[.08,.08,.1],w,7,4,0);box([0,.03,.42],[.03,.03,.1],color(0xf0a030),0);box([0,-.01,-.3],[.12,.02,.14],g);}],
+[1,()=>quad([0,0,-.14],[0,0,.12],[-.75,.02,.02],[-.6,.03,-.25],g)],
+[2,()=>quad([0,0,.12],[0,0,-.14],[.6,.03,-.25],[.75,.02,.02],g)]]);}
+function crabRig(){const red=color(0xd9552f),dark=color(0x8c2f16);return rig([
+[0,()=>{ellipsoid([0,.09,0],[.17,.07,.12],red,10,5,.04);box([-.05,.16,.08],[.03,.04,.03],C.dark);box([.05,.16,.08],[.03,.04,.03],C.dark);
+for(const sd of[-1,1]){box([sd*.2,.09,.12],[.09,.06,.1],red,sd*.4);box([sd*.24,.1,.18],[.05,.04,.07],dark,sd*.5);}}],
+[1,()=>{for(let i=0;i<3;i++)beam([-.12,.06,-.08+i*.08],[-.27,.0,-.12+i*.1],.014,dark);}],
+[2,()=>{for(let i=0;i<3;i++)beam([.12,.06,-.08+i*.08],[.27,.0,-.12+i*.1],.014,dark);}]]);}
+
+// ---------- maillages dynamiques ----------
+function meshDyn(data){let vao=gl.createVertexArray();gl.bindVertexArray(vao);let buffer=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,buffer);gl.bufferData(gl.ARRAY_BUFFER,data,gl.STATIC_DRAW);for(let i=0;i<3;i++){gl.enableVertexAttribArray(i);gl.vertexAttribPointer(i,3,gl.FLOAT,false,40,i*12);}gl.enableVertexAttribArray(3);gl.vertexAttribPointer(3,1,gl.FLOAT,false,40,36);gl.bindVertexArray(null);return{vao,count:data.length/10};}
+
+const heroMesh=meshDyn(humanoid({shirt:color(0x2f8f9d),pants:color(0x3c4a5a),skin:C.skin[0],hair:color(0x4a2f1e),hat:'straw',bag:true}));
+const npcMeshes={
+tomas:meshDyn(humanoid({shirt:color(0xf1e2c4),sleeve:color(0xf1e2c4),pants:color(0x2e4a6b),skin:C.skin[1],hair:color(0x3a2618),hat:'cap',hatColor:color(0x1f4d73),beard:true,prop:'rod'})),
+anae:meshDyn(humanoid({shirt:color(0x8c4a6b),pants:color(0x5b4b63),skin:C.skin[0],hair:color(0xd9d3c4),bun:true,apron:color(0xfff2dc),scale:.92})),
+lila:meshDyn(humanoid({shirt:color(0xf4c34d),pants:color(0xd9603b),skin:C.skin[1],hair:color(0x6b3d1d),longHair:true,scale:.7})),
+oro:meshDyn(humanoid({shirt:color(0x6b5c3f),pants:color(0x3c3a35),skin:C.skin[2],hair:color(0xe8e2d4),beard:true,hat:'scarf',hatColor:color(0xc8402e),prop:'staff'})),
+pia:meshDyn(humanoid({shirt:color(0x5d9b74),pants:color(0xe8d6b3),skin:C.skin[2],hair:color(0x1e1410),hat:'scarf',hatColor:color(0xf2b134),scale:.95,prop:'basket'})),
+marco:meshDyn(humanoid({shirt:color(0xd9603b),pants:color(0x4f5b6b),skin:C.skin[1],hair:color(0x2b1a10),hat:'straw',band:color(0x2f8f9d),scale:1.02})),
+bastien:meshDyn(humanoid({shirt:color(0x3f4f8a),pants:color(0x2b2b33),skin:C.skin[0],hair:color(0x2b1a10),hat:'beret',hatColor:color(0xa8323a),prop:'guitar',scale:.98})),
+cat:meshDyn(catRig())};
+const gullMesh=meshDyn(gullRig()),crabMesh=meshDyn(crabRig());
+const mooredBoat=meshDyn(new Float32Array(withBone(0,()=>{boat(0,0,0,0,false);for(let i=0;i<3;i++)cylinder([-.3,.02,-.6+i*.1],[-.3,.06,-.6+i*.1],.16-i*.04,.16-i*.04,color(0xcbba85),8);})));
+const sailBoat=meshDyn(rig([[0,()=>boat(0,0,0,0,false)],[1,()=>{tri([.05,3.75,.05],[.05,.5,.05],[.18,.6,1.48],color(0xffefd1));tri([0,3.4,-.05],[0,.9,-.05],[-.1,1,-1.55],color(0xffe6b8));}]]));
+const shellMesh=meshDyn(rig([[0,()=>{ellipsoid([0,.06,0],[.16,.07,.14],color(0xffd6c2),10,5,.05);ellipsoid([0,.09,-.03],[.09,.05,.08],color(0xf4a98b),8,4,0);for(let i=0;i<5;i++){const a=-.9+i*.45;beam([0,.08,-.08],[Math.sin(a)*.15,.11,-.08+Math.cos(a)*.2],.012,color(0xfff1e8));}}],[1,()=>ellipsoid([0,0,0],[.03,.03,.03],C.white,5,3,0)]]));
+const noteMesh=meshDyn(rig([[0,()=>{box([0,.22,0],[.3,.4,.012],color(0xfff8e6));for(let i=0;i<5;i++)box([0,.08+i*.07,.008],[.24,.008,.005],C.dark);ellipsoid([-.05,.2,.012],[.035,.025,.01],C.dark,6,3,0);beam([-.02,.2,.012],[-.02,.33,.012],.006,C.dark);}],[1,()=>ellipsoid([0,0,0],[.03,.03,.03],C.white,5,3,0)]]));
+const flagMesh=meshDyn(rig([[0,()=>{beam([0,0,0],[0,1.5,0],.03,palette.wood);ellipsoid([0,1.53,0],[.05,.05,.05],color(0xcda155),6,4,0);const nx=9,ny=4;for(let i=0;i<nx;i++)for(let j=0;j<ny;j++){const x0=i/nx*.95,x1=(i+1)/nx*.95,y0=1.45-j/ny*.5,y1=1.45-(j+1)/ny*.5;quad([x0,y0,0],[x1,y0,0],[x1,y1,0],[x0,y1,0],j%2?color(0xfff1d6):color(0xe36a3b));}}]]));
+const smokeMesh=meshDyn(rig(Array.from({length:6},(_,k)=>[k,()=>ellipsoid([0,0,0],[.17,.14,.17],color(0xf3f0e8),7,4,.15)])));
+const ringMesh=meshDyn(new Float32Array(withBone(0,()=>{for(let i=0;i<24;i++){const a=i/24*TAU,b=(i+1)/24*TAU;quad([Math.cos(a)*.5,0,Math.sin(a)*.5],[Math.cos(b)*.5,0,Math.sin(b)*.5],[Math.cos(b)*.62,0,Math.sin(b)*.62],[Math.cos(a)*.62,0,Math.sin(a)*.62],color(0xfff1c2));}})));
+const lanternMesh=meshDyn(new Float32Array(withBone(0,()=>{beam([0,0,0],[0,1.9,0],.035,palette.wood);beam([0,1.9,0],[.22,1.86,0],.02,palette.wood);for(const dx of[-.08,.08])for(const dz of[-.08,.08])box([.22+dx,1.65,dz],[.016,.22,.016],color(0x3a3230));box([.22,1.78,0],[.2,.03,.2],color(0x3a3230));box([.22,1.53,0],[.18,.02,.18],color(0x3a3230));})));
+const lanternGlow=meshDyn(new Float32Array(withBone(0,()=>box([.22,1.65,0],[.13,.18,.13],color(0xf2a13a)))));
+const fireflyMesh=meshDyn(rig(Array.from({length:14},(_,k)=>[k,()=>ellipsoid([0,0,0],[.035,.035,.035],color(0xb8e34a),5,3,0)])));
+const burstMeshes=[0xff6b6b,0xffd166,0x7ae7ff,0xc9a0ff].map(c=>meshDyn(rig(Array.from({length:12},(_,k)=>[k,()=>ellipsoid([0,0,0],[.16,.16,.16],color(c),6,4,0)]))));
+const chestMesh=meshDyn(rig([[0,()=>{box([0,.16,0],[.6,.32,.4],palette.wood);for(const z of[-.19,.19])box([0,.16,z],[.62,.34,.03],color(0x3a3230));box([0,.16,0],[.63,.06,.42],color(0x3a3230));for(let i=0;i<9;i++)ellipsoid([-.2+i%3*.2,.33,-.1+Math.floor(i/3)*.1],[.06,.045,.06],color(0xf4c542),6,3,.1);}],[1,()=>{box([0,.04,.2],[.6,.08,.4],palette.wood);box([0,.04,.2],[.62,.1,.03],color(0x3a3230));}]]));
+const crossMesh=meshDyn(new Float32Array(withBone(0,()=>{box([0,.01,0],[.9,.02,.12],color(0xb0642c),.78);box([0,.01,0],[.9,.02,.12],color(0xb0642c),-.78);})));
+verts=null;
+
+
+// shaders.js — GLSL : éclairage, matériaux procéduraux, ciel, eau, SSAO, bloom, tone mapping ; création des programmes.
+// Propriétaire : DESIGN pour l'aspect (couleurs, matériaux, ciel, eau) ; GAMEPLAY pour les uniforms/structure. Prévenir avant de renommer un uniform.
+// ---------- shaders ----------
+function shader(type,source){const s=gl.createShader(type);gl.shaderSource(s,source);gl.compileShader(s);if(!gl.getShaderParameter(s,gl.COMPILE_STATUS))throw Error(gl.getShaderInfoLog(s));return s;}
+function program(v,f){let p=gl.createProgram();gl.attachShader(p,shader(gl.VERTEX_SHADER,v));gl.attachShader(p,shader(gl.FRAGMENT_SHADER,f));gl.linkProgram(p);if(!gl.getProgramParameter(p,gl.LINK_STATUS))throw Error(gl.getProgramInfoLog(p));return p;}
+const boneChunk=`
+layout(location=0) in vec3 aPosition;
+layout(location=1) in vec3 aNormal;
+layout(location=2) in vec3 aColor;
+layout(location=3) in float aBone;
+uniform mat4 uBones[16];
+uniform float uTime;
+uniform int uMode;
+vec3 animate(out vec3 n){
+vec3 p=aPosition;n=aNormal;
+if(uMode==3){float d=max(p.x,0.);p.z+=sin(uTime*7.-d*4.5)*.16*d;p.y+=sin(uTime*5.-d*3.)*.05*d;}
+mat4 m=uBones[int(aBone+.5)];
+p=(m*vec4(p,1.)).xyz;n=normalize(mat3(m)*n);
+if(uMode==0&&aColor.g>aColor.r*1.25&&aColor.g>aColor.b*1.6){float w=sin(uTime*1.4+p.x*.35+p.z*.25)+.5*sin(uTime*2.3+p.z*.7);p.x+=w*.04*(1.+p.y*.04);p.z+=w*.02;}
+if(uMode==6)p.x+=sin(uTime*.05)*9.;
+return p;}`;
+const noiseChunk=`
+float hash(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
+float noise(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(hash(i),hash(i+vec2(1,0)),f.x),mix(hash(i+vec2(0,1)),hash(i+vec2(1)),f.x),f.y);}
+float fbm(vec2 p){float v=0.,a=.5;for(int i=0;i<4;i++){v+=a*noise(p);p=p*2.03+vec2(1.7,9.2);a*=.5;}return v;}`;
+const skyChunk=`
+vec3 skyColor(vec3 d,float day,float dusk,float t){
+vec3 sunD=normalize(vec3(-25.,40.,30.));float y=clamp(d.y,-1.,1.);
+vec3 dayC=mix(vec3(.6,.8,.92),vec3(.15,.44,.85),smoothstep(-.05,.55,y));
+dayC=mix(dayC,vec3(.88,.94,.98),pow(1.-clamp(y,0.,1.),12.)*.28);
+float sd=max(dot(d,sunD),0.);dayC+=vec3(1.,.92,.72)*(pow(sd,1400.)*4.+pow(sd,28.)*.28+pow(sd,3.)*.09);
+vec3 nightC=mix(vec3(.07,.1,.2),vec3(.01,.015,.05),smoothstep(-.05,.5,y));
+vec3 g=floor(d*150.);float st=hash(g.xy+g.z*.37);float star=step(.993,st)*(.55+.45*sin(t*2.+st*90.))*smoothstep(.0,.25,y);nightC+=vec3(.9,.95,1.)*star;
+vec3 moonD=normalize(vec3(20.,25.,-30.));float md=max(dot(d,moonD),0.);nightC+=vec3(.9,.92,.85)*(pow(md,2000.)*2.5+pow(md,40.)*.14);
+vec3 c=mix(nightC,dayC,day);
+vec3 duskC=vec3(.98,.5,.22)*pow(1.-clamp(y,0.,1.),3.)*(.45+.55*max(dot(normalize(d.xz+vec2(1e-4)),normalize(sunD.xz)),0.));
+c=mix(c,c*.7+duskC,dusk*.8);return c;}`;
+const vertex=`#version 300 es
+precision highp float;precision highp int;
+${boneChunk}
+uniform mat4 uVP;uniform mat4 uLight;
+out vec3 vPosition;out vec3 vNormal;out vec3 vColor;out vec4 vShadow;
+void main(){vec3 n;vec3 p=animate(n);vPosition=p;vNormal=n;vColor=aColor;vShadow=uLight*vec4(p,1.);gl_Position=uVP*vec4(p,1.);}`;
+const fragment=`#version 300 es
+precision highp float;precision highp int;
+in vec3 vPosition;in vec3 vNormal;in vec3 vColor;in vec4 vShadow;
+uniform vec3 uEye;uniform float uTime;uniform int uMode;uniform highp sampler2DShadow uShadow;uniform float uShadowTexel;uniform float uDay;uniform float uDusk;uniform float uClip;uniform float uExpo;uniform float uDbg;
+out vec4 outColor;
+${noiseChunk}
+float shadow(vec3 n){vec3 q=vShadow.xyz/vShadow.w*.5+.5;if(q.x<0.||q.x>1.||q.y<0.||q.y>1.||q.z>1.)return 1.;float bias=max(.00022,.0012*(1.-dot(n,normalize(vec3(-25,40,30)))));
+vec2 o[8]=vec2[](vec2(-.7,-.2),vec2(.7,.2),vec2(-.2,.7),vec2(.2,-.7),vec2(-.5,.5),vec2(.5,-.5),vec2(.5,.6),vec2(-.6,-.6));float s=0.;for(int i=0;i<8;i++)s+=texture(uShadow,vec3(q.xy+o[i]*uShadowTexel*1.9,q.z-bias));return s/8.;}
+float hueOf(vec3 c){float mx=max(c.r,max(c.g,c.b)),mn=min(c.r,min(c.g,c.b)),d=mx-mn;if(d<1e-4)return 0.;float h;if(mx==c.r)h=mod((c.g-c.b)/d,6.);else if(mx==c.g)h=(c.b-c.r)/d+2.;else h=(c.r-c.g)/d+4.;return h*60.;}
+void main(){if(uClip>.5&&vPosition.y<-.03)discard;if(uDbg>.5){outColor=vec4(uDbg>1.5?normalize(vNormal)*.5+.5:vColor,0.);return;}
+vec3 n=normalize(vNormal);vec3 view=normalize(uEye-vPosition);if(dot(n,view)<0.)n=-n;vec3 sun=normalize(vec3(-25,40,30));vec3 c=vColor;float emis=0.;vec3 nightTint=vec3(.16,.2,.36);
+if(uMode==2||uMode==6){float l=.72+.22*max(n.y,0.)+.2*max(dot(n,sun),0.);c*=l;c*=mix(nightTint,vec3(1.),uDay);c=mix(c,c*vec3(1.3,.75,.6),uDusk*.6);}
+else if(uMode==5){c*=1.1;emis=.45;}
+else if(uMode==7){c*=1.+1.3*(1.-uDay);emis=1.-uDay*.75;}
+else if(uMode==8){c*=1.05;emis=1.;}
+else{float mx=max(c.r,max(c.g,c.b)),mn=min(c.r,min(c.g,c.b)),sat=(mx-mn)/max(mx,1e-3),val=mx,hue=hueOf(c);vec3 P=vPosition;
+bool leaf=c.g>c.r*1.25&&c.g>c.b*1.6;bool stat=uMode==0;
+bool wall=stat&&sat<.32&&val>.9&&!leaf;bool sand=stat&&!wall&&hue>35.&&hue<50.&&sat>.25&&sat<.45&&val>.85;bool rock=stat&&!wall&&!sand&&sat<.25&&val>.5&&val<.92&&!leaf;
+bool tile=stat&&hue>10.&&hue<32.&&sat>.5&&val>.66;bool wood=stat&&hue>12.&&hue<35.&&val<.66&&sat>.3;bool glass=hue>150.&&hue<205.&&sat>.15&&!leaf;
+float rough=.75,spec=.06;
+if(sand){float r=noise(P.xz*9.+vec2(0.,P.x*2.))*.5+noise(P.xz*23.)*.3;c*=.93+r*.12;n=normalize(n+vec3(noise(P.xz*6.)-.5,0.,noise(P.xz*6.+3.)-.5)*.14);spec=.04;rough=.85;}
+else if(rock){float s=sin(P.y*9.+noise(P.xz*1.5)*4.)*.5+.5;float f=fbm(P.xz*2.+P.y);c*=vec3(.8,.78,.74)*(.78+.2*f+.06*s);rough=.9;spec=.05;}
+else if(wall){float f=fbm(P.xz*6.+P.y*6.);c*=.95+.08*f;spec=.09;rough=.7;}
+else if(tile){float g=noise(P.xz*20.+P.y*20.);c*=.92+.12*g;spec=.16;rough=.45;}
+else if(wood){float g=noise(vec2(P.x*3.+P.z*3.,P.y*40.));c*=.9+.16*g;spec=.14;rough=.6;}
+else if(glass){spec=.7;rough=.18;c*=.9;}
+else if(leaf){rough=.6;spec=.12;float f=noise(P.xz*8.+P.y*3.);c*=.9+.18*f;}
+else{spec=.12;rough=.62;}
+float shade=shadow(n);float ndl=dot(n,sun);float diffuse=leaf?max(0.,ndl*.6+.4):max(0.,ndl);
+vec3 skyA=mix(vec3(.11,.14,.27),vec3(.6,.76,.95),uDay),gndA=mix(vec3(.05,.05,.09),vec3(.44,.38,.3),uDay);vec3 ambient=mix(gndA,skyA,n.y*.5+.5);ambient=mix(ambient,ambient*vec3(1.25,.85,.6),uDusk*.5);
+vec3 sunCol=mix(vec3(.28,.33,.55)*.6,vec3(1.14,1.03,.86),uDay);sunCol=mix(sunCol,sunCol*vec3(1.45,.78,.45),uDusk*.75);
+float sh=mix(mix(.35,1.,shade),mix(.08,1.,shade),uDay);vec3 direct=sunCol*diffuse*sh*mix(.5,.74,uDay);
+vec3 h=normalize(sun+view);float sp=pow(max(dot(n,h),0.),mix(260.,10.,rough))*spec*mix(.3,1.,shade)*mix(.15,1.,uDay);
+float fres=pow(1.-max(dot(n,view),0.),4.);
+vec3 col=c*(ambient+direct)+sunCol*sp*(1.+diffuse)+skyA*fres*spec*.9;
+if(leaf)col+=c*vec3(.9,1.,.5)*max(0.,dot(-view,sun))*.18*uDay;
+float grain=noise(P.xz*17.+P.y*7.);col*=.975+grain*.05;c=col;emis=sp*.5;}
+float dist=length(uEye-vPosition);float hf=exp(-max(vPosition.y,0.)*.05);float fog=1.-exp(-dist*dist*.000016*(.5+hf));
+vec3 fogColor=mix(vec3(.05,.07,.15),vec3(.62,.82,.9),uDay);fogColor=mix(fogColor,vec3(.95,.6,.4),uDusk*.6);if(uMode<7)c=mix(c,fogColor,min(.85,fog));
+outColor=vec4(c*uExpo,emis);}`;
+const depthVertex=`#version 300 es
+precision highp float;precision highp int;
+${boneChunk}
+uniform mat4 uVP;
+void main(){vec3 n;vec3 p=animate(n);gl_Position=uVP*vec4(p,1.);}`;
+const depthFragment=`#version 300 es
+precision highp float;precision highp int;void main(){}`;
+const quadVertex=`#version 300 es
+precision highp float;precision highp int;out vec2 vUV;void main(){vec2 p=vec2(float((gl_VertexID<<1)&2),float(gl_VertexID&2));vUV=p;gl_Position=vec4(p*2.-1.,.99999,1.);}`;
+const skyFragment=`#version 300 es
+precision highp float;precision highp int;in vec2 vUV;uniform mat4 uInvVP;uniform vec3 uEye;uniform float uDay;uniform float uDusk;uniform float uTime;uniform float uExpo;out vec4 outColor;
+${noiseChunk}
+${skyChunk}
+void main(){vec4 w=uInvVP*vec4(vUV*2.-1.,1.,1.);vec3 d=normalize(w.xyz/w.w-uEye);vec3 c=skyColor(d,uDay,uDusk,uTime);outColor=vec4(c*uExpo,0.);}`;
+const waterVertex=`#version 300 es
+precision highp float;precision highp int;
+layout(location=0) in vec3 aPosition;uniform mat4 uVP;uniform float uTime;out vec3 vPosition;
+void main(){vec3 p=aPosition;p.y+=.045*sin(p.x*.63+uTime*.68)+.035*sin(p.z*.85+uTime*.87)+.022*sin(p.x*1.4+p.z*1.2-uTime);vPosition=p;gl_Position=uVP*vec4(p,1.);}`;
+const waterFragment=`#version 300 es
+precision highp float;precision highp int;
+in vec3 vPosition;uniform vec3 uEye;uniform float uTime;uniform float uDay;uniform float uDusk;uniform sampler2D uScene;uniform sampler2D uDepth;uniform sampler2D uRefl;uniform mat4 uReflVP;uniform float uHasRefl;uniform vec2 uRes;uniform float uNear;uniform float uFar;uniform float uExpo;
+out vec4 outColor;
+${noiseChunk}
+${skyChunk}
+float lin(float d){float z=d*2.-1.;return 2.*uNear*uFar/(uFar+uNear-z*(uFar-uNear));}
+void main(){vec2 uv=gl_FragCoord.xy/uRes;vec3 p=vPosition;vec2 q=p.xz;vec3 view=normalize(uEye-p);vec3 sun=normalize(vec3(-25,40,30));
+float sceneZ=lin(texture(uDepth,uv).r),fragZ=lin(gl_FragCoord.z);float depth=max(sceneZ-fragZ,0.);
+float t=uTime;
+vec2 g1=vec2(cos(q.x*.63+t*.68)*.028,cos(q.y*.85+t*.87)*.03);vec2 g2=vec2(cos(q.x*1.4+q.y*1.2-t)*.03,cos(q.x*1.4+q.y*1.2-t)*.026);
+float e=.15;vec2 dn=vec2(noise(q*2.6+t*.25)-noise(q*2.6+vec2(e,0.)+t*.25),noise(q*2.6+t*.25)-noise(q*2.6+vec2(0.,e)+t*.25))*.9+vec2(noise(q*7.+vec2(t*.5,0.))-noise(q*7.+vec2(e+t*.5,0.)),noise(q*7.+vec2(0.,t*.4))-noise(q*7.+vec2(0.,e+t*.4)))*.5;
+vec3 n=normalize(vec3(-(g1.x+g2.x)-dn.x*.9,1.,-(g1.y+g2.y)-dn.y*.9));
+float edge1=(length((q-vec2(0,-1.3))/vec2(12.6,11.4))-1.)*10.;float edge2=(length((q-vec2(0,7.8))/vec2(6.8,5.1))-1.)*5.;float shore=min(edge1,edge2);float shallow=exp(-max(shore,0.)*.25);
+vec2 ruv=uv+n.xz*.035*clamp(depth,0.,1.);if(lin(texture(uDepth,ruv).r)<fragZ)ruv=uv;vec3 refr=texture(uScene,ruv).rgb;
+vec3 shallowC=vec3(.1,.72,.72),deepC=vec3(.02,.3,.5);vec3 waterC=mix(shallowC,deepC,1.-shallow);
+float absorb=1.-exp(-depth*.55);vec3 col=mix(refr,waterC,clamp(absorb*.9+.08,0.,1.));
+vec3 rd=reflect(-view,n);vec3 refl=skyColor(vec3(rd.x,max(rd.y,.03),rd.z),uDay,uDusk,t);
+if(uHasRefl>.5){vec4 rp=uReflVP*vec4(p,1.);vec2 rv=rp.xy/rp.w*.5+.5+n.xz*.06;if(rv.x>0.&&rv.x<1.&&rv.y>0.&&rv.y<1.&&rp.w>0.){vec4 rt=texture(uRefl,rv);refl=rt.rgb;}}
+float fres=.03+.97*pow(1.-max(dot(n,view),0.),5.);col=mix(col,refl,clamp(fres*.92,0.,.92));
+vec3 h=normalize(sun+view);float sp=pow(max(dot(n,h),0.),320.)*1.4+pow(max(dot(n,h),0.),40.)*.12;vec3 sunCol=mix(vec3(.5,.55,.8)*.4,vec3(1.1,1.,.85),uDay);sunCol=mix(sunCol,sunCol*vec3(1.4,.75,.45),uDusk*.7);col+=sunCol*sp;
+float ripple=noise(q*2.+t*.16);float foamA=1.-smoothstep(.06,.48,abs(shore-.1-.17*sin(t+q.x*.8)-ripple*.28));foamA*=smoothstep(.25,.8,ripple);
+float foamD=(1.-smoothstep(.0,.35,depth))*(.55+.45*noise(q*9.+t*.6));float foam=max(foamA*.85,foamD*.8)*mix(.35,1.,uDay);
+col=mix(col,vec3(.93,.97,.95),foam);
+float band=1.-smoothstep(.03,.17,abs(shore-.7-.2*sin(t*.9+q.x*.6)));col=mix(col,vec3(.73,.96,.9),band*.15*uDay);
+col*=mix(vec3(.5,.55,.8),vec3(1.),uDay);
+float dist=length(uEye-p);float fog=1.-exp(-dist*dist*.000021*1.4);vec3 fogColor=mix(vec3(.05,.07,.15),vec3(.62,.82,.9),uDay);fogColor=mix(fogColor,vec3(.95,.6,.4),uDusk*.6);col=mix(col,fogColor,min(.85,fog));
+outColor=vec4(col*uExpo,clamp(sp*.5,0.,1.)*(1.-fog));}`;
+const ssaoFragment=`#version 300 es
+precision highp float;precision highp int;in vec2 vUV;uniform sampler2D uDepth;uniform mat4 uProj;uniform mat4 uInvProj;uniform vec2 uRes;out vec4 outColor;
+${noiseChunk}
+vec3 vpos(vec2 uv){float d=texture(uDepth,uv).r;vec4 v=uInvProj*vec4(uv*2.-1.,d*2.-1.,1.);return v.xyz/v.w;}
+void main(){float d0=texture(uDepth,vUV).r;if(d0>=.9999){outColor=vec4(1.);return;}vec3 p=vpos(vUV);vec3 n=normalize(cross(dFdx(p),dFdy(p)));if(dot(n,-p)<0.)n=-n;
+float a=hash(gl_FragCoord.xy)*6.2832;vec3 rv=vec3(cos(a),sin(a),0.);vec3 tg=normalize(rv-n*dot(rv,n));vec3 bt=cross(n,tg);mat3 tbn=mat3(tg,bt,n);
+vec3 K[12]=vec3[](vec3(.1,.05,.08),vec3(-.12,.1,.06),vec3(.05,-.15,.12),vec3(-.2,-.08,.15),vec3(.22,.18,.1),vec3(-.05,.28,.2),vec3(.3,-.25,.18),vec3(-.35,.1,.3),vec3(.15,.4,.32),vec3(-.4,-.35,.25),vec3(.5,.05,.45),vec3(-.2,.55,.5));
+float radius=.7,occ=0.;for(int i=0;i<12;i++){vec3 s=p+tbn*K[i]*radius;vec4 o=uProj*vec4(s,1.);vec2 ouv=o.xy/o.w*.5+.5;if(ouv.x<0.||ouv.x>1.||ouv.y<0.||ouv.y>1.)continue;float sz=vpos(ouv).z;float rc=smoothstep(0.,1.,radius/abs(p.z-sz));occ+=(sz>=s.z+.04?1.:0.)*rc;}
+float ao=1.-occ/12.;outColor=vec4(vec3(ao),1.);}`;
+const blurFragment=`#version 300 es
+precision highp float;precision highp int;in vec2 vUV;uniform sampler2D uTex;uniform vec2 uTexel;out vec4 outColor;
+void main(){vec4 s=vec4(0.);for(int x=-2;x<=1;x++)for(int y=-2;y<=1;y++)s+=texture(uTex,vUV+(vec2(float(x),float(y))+.5)*uTexel);outColor=s/16.;}`;
+const compositeFragment=`#version 300 es
+precision highp float;precision highp int;in vec2 vUV;uniform sampler2D uScene;uniform sampler2D uAO;uniform float uAOStrength;out vec4 outColor;
+void main(){vec4 s=texture(uScene,vUV);float ao=texture(uAO,vUV).r;ao=pow(clamp(ao,0.,1.),1.6);outColor=vec4(s.rgb*mix(1.,ao,uAOStrength),s.a);}`;
+const brightFragment=`#version 300 es
+precision highp float;precision highp int;in vec2 vUV;uniform sampler2D uTex;out vec4 outColor;
+void main(){vec4 s=texture(uTex,vUV);float l=dot(s.rgb,vec3(.3,.59,.11));float k=max(0.,l-.85)*1.6+s.a*1.4;outColor=vec4(s.rgb*k,1.);}`;
+const gaussFragment=`#version 300 es
+precision highp float;precision highp int;in vec2 vUV;uniform sampler2D uTex;uniform vec2 uDir;out vec4 outColor;
+void main(){float w[5]=float[](.227,.195,.122,.054,.016);vec3 c=texture(uTex,vUV).rgb*w[0];for(int i=1;i<5;i++){c+=texture(uTex,vUV+uDir*float(i)).rgb*w[i];c+=texture(uTex,vUV-uDir*float(i)).rgb*w[i];}outColor=vec4(c,1.);}`;
+const finalFragment=`#version 300 es
+precision highp float;precision highp int;in vec2 vUV;uniform sampler2D uScene;uniform sampler2D uBloom;uniform float uBloomK;uniform float uTime;uniform float uDay;uniform float uRaw;uniform float uGain;out vec4 outColor;
+${noiseChunk}
+vec3 aces(vec3 x){return clamp((x*(2.51*x+.03))/(x*(2.43*x+.59)+.14),0.,1.);}
+void main(){if(uRaw>.5){vec4 s=texture(uScene,vUV);outColor=uRaw>1.5?vec4(vec3(s.a),1.):vec4(s.rgb,1.);return;}vec3 c=texture(uScene,vUV).rgb+texture(uBloom,vUV).rgb*uBloomK;
+c*=uGain;float l0=max(dot(c,vec3(.3,.59,.11)),1e-4);float lt=aces(vec3(l0)).r;c*=lt/l0;c=mix(c,aces(c),.35);c=clamp(c,0.,1.);float l=dot(c,vec3(.3,.59,.11));c=mix(vec3(l),c,1.18);c=(c-.5)*1.06+.5;
+c*=1.-.32*pow(length(vUV-.5)*1.25,2.6);c+=(hash(vUV*1731.+fract(uTime))-.5)*.012;
+c=pow(max(c,vec3(0.)),vec3(.96));outColor=vec4(c,1.);}`;
+const hmVertex=`#version 300 es
+precision highp float;layout(location=0) in vec3 aPosition;layout(location=2) in vec3 aColor;uniform mat4 uVP;out float vY;out vec3 vColor;void main(){vY=aPosition.y;vColor=aColor;gl_Position=uVP*vec4(aPosition,1.);}`;
+const hmFragment=`#version 300 es
+precision highp float;in float vY;in vec3 vColor;out vec4 o;void main(){if(vColor.g>vColor.r*1.25&&vColor.g>vColor.b*1.6)discard;float t=clamp((vY+5.)/30.,0.,1.);float hi=floor(t*255.);o=vec4(hi/255.,fract(t*255.),0.,1.);}`;
+
+const flatV=`#version 300 es
+precision highp float;layout(location=0) in vec3 aPosition;layout(location=1) in vec3 aNormal;layout(location=2) in vec3 aColor;uniform mat4 uVP;out vec3 vC;void main(){vC=aColor*(.6+.4*max(0.,dot(normalize(aNormal),normalize(vec3(-25.,40.,30.)))));gl_Position=uVP*vec4(aPosition,1.);}`;
+const flatF=`#version 300 es
+precision highp float;in vec3 vC;out vec4 o;void main(){o=vec4(vC,0.);}`;
+let flatProgram;
+let mainProgram,depthProgram,skyProgram,hmProgram,waterProgram,ssaoProgram,blurProgram,compositeProgram,brightProgram,gaussProgram,finalProgram;
+try{flatProgram=program(flatV,flatF);mainProgram=program(vertex,fragment);depthProgram=program(depthVertex,depthFragment);skyProgram=program(quadVertex,skyFragment);hmProgram=program(hmVertex,hmFragment);waterProgram=program(waterVertex,waterFragment);ssaoProgram=program(quadVertex,ssaoFragment);blurProgram=program(quadVertex,blurFragment);compositeProgram=program(quadVertex,compositeFragment);brightProgram=program(quadVertex,brightFragment);gaussProgram=program(quadVertex,gaussFragment);finalProgram=program(quadVertex,finalFragment);}
+catch(e){document.querySelector('#error').hidden=false;document.querySelector('#loading').style.display='none';console.error(e);throw e;}
+
+function mesh(data){let vao=gl.createVertexArray();gl.bindVertexArray(vao);let buffer=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,buffer);gl.bufferData(gl.ARRAY_BUFFER,data,gl.STATIC_DRAW);for(let i=0;i<3;i++){gl.enableVertexAttribArray(i);gl.vertexAttribPointer(i,3,gl.FLOAT,false,36,i*12);}gl.bindVertexArray(null);return{vao,count:data.length/9};}
+const solid=mesh(sceneData),ocean=mesh(oceanData),clouds=mesh(cloudData);
+gl.vertexAttrib4f(3,0,0,0,1);
+
+const U=p=>new Proxy({},{get:(o,n)=>o[n]!==undefined?o[n]:(o[n]=gl.getUniformLocation(p,n))});
+const locations=U(mainProgram),depthLoc=U(depthProgram),skyLoc=U(skyProgram),waterLoc=U(waterProgram),ssaoLoc=U(ssaoProgram),blurLoc=U(blurProgram),compLoc=U(compositeProgram),brightLoc=U(brightProgram),gaussLoc=U(gaussProgram),finalLoc=U(finalProgram);
+
+
+// world.js — carte de hauteur GPU, tamponnage des terrasses/escaliers, zones interdites, remplissage des cellules atteignables, collisions.
+// Propriétaire : GAMEPLAY (Claude Code).
+// ---------- carte de hauteur : rendu vertical de l'île, relu sur le CPU ----------
+const HN=400,HS=32/HN,SEA=.22,STEP=.42;
+let H=new Float32Array(HN*HN),reach=new Uint8Array(HN*HN);
+{
+const tex=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,tex);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA8,HN,HN,0,gl.RGBA,gl.UNSIGNED_BYTE,null);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.NEAREST);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.NEAREST);
+const rb=gl.createRenderbuffer();gl.bindRenderbuffer(gl.RENDERBUFFER,rb);gl.renderbufferStorage(gl.RENDERBUFFER,gl.DEPTH_COMPONENT16,HN,HN);
+const fbo=gl.createFramebuffer();gl.bindFramebuffer(gl.FRAMEBUFFER,fbo);gl.framebufferTexture2D(gl.FRAMEBUFFER,gl.COLOR_ATTACHMENT0,gl.TEXTURE_2D,tex,0);gl.framebufferRenderbuffer(gl.FRAMEBUFFER,gl.DEPTH_ATTACHMENT,gl.RENDERBUFFER,rb);
+if(gl.checkFramebufferStatus(gl.FRAMEBUFFER)!==gl.FRAMEBUFFER_COMPLETE)throw Error('Heightmap framebuffer incomplete');
+gl.viewport(0,0,HN,HN);gl.clearColor(0,0,0,1);gl.enable(gl.DEPTH_TEST);gl.disable(gl.CULL_FACE);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
+gl.useProgram(hmProgram);gl.uniformMatrix4fv(gl.getUniformLocation(hmProgram,'uVP'),false,new Float32Array([1/16,0,0,0,0,0,-1/20,0,0,1/16,0,0,0,0,0,1]));
+gl.bindVertexArray(solid.vao);gl.drawArrays(gl.TRIANGLES,0,solid.count);gl.bindVertexArray(null);
+const px=new Uint8Array(HN*HN*4);gl.readPixels(0,0,HN,HN,gl.RGBA,gl.UNSIGNED_BYTE,px);
+for(let i=0;i<HN*HN;i++)H[i]=((px[i*4]+px[i*4+1]/255)/255)*30-5;
+gl.bindFramebuffer(gl.FRAMEBUFFER,null);gl.deleteFramebuffer(fbo);gl.deleteTexture(tex);gl.deleteRenderbuffer(rb);
+}
+const cellIndex=(x,z)=>{const ix=Math.floor((x+16)/HS),iz=Math.floor((z+16)/HS);return ix<0||iz<0||ix>=HN||iz>=HN?-1:iz*HN+ix;};
+const cellH=(x,z)=>{const i=cellIndex(x,z);return i<0?-5:H[i];};
+function heightAt(x,z){const fx=(x+16)/HS-.5,fz=(z+16)/HS-.5,ix=Math.floor(fx),iz=Math.floor(fz),tx=fx-ix,tz=fz-iz;const g=(a,b)=>H[clamp(b,0,HN-1)*HN+clamp(a,0,HN-1)];return(g(ix,iz)*(1-tx)+g(ix+1,iz)*tx)*(1-tz)+(g(ix,iz+1)*(1-tx)+g(ix+1,iz+1)*tx)*tz;}
+// Terrasses pavées d'abord (elles écrasent les bosses, laissent passer sous les balcons), puis escaliers en absolu.
+for(const p of platforms)for(let z=p.z-p.r;z<=p.z+p.r;z+=HS)for(let x=p.x-p.r;x<=p.x+p.r;x+=HS){const i=cellIndex(x,z);if(i<0)continue;const px=x-((x+16)%HS)+HS/2,pz=z-((z+16)%HS)+HS/2;if(Math.hypot(px-p.x,pz-p.z)>p.r)continue;const g=H[i];if(g<p.y+1||(g>p.y+1.5&&g<p.y+3.2))H[i]=p.y;}
+const stairDist=new Float32Array(HN*HN).fill(1e9);
+for(const s of stairDefs)for(let k=0;k<s.points.length-1;k++){const a=s.points[k],b=s.points[k+1],dx=b[0]-a[0],dz=b[2]-a[2],len=Math.hypot(dx,dz)||1,hw=s.width*.42;
+const x0=Math.min(a[0],b[0])-hw,x1=Math.max(a[0],b[0])+hw,z0=Math.min(a[2],b[2])-hw,z1=Math.max(a[2],b[2])+hw;
+for(let z=z0;z<=z1;z+=HS)for(let x=x0;x<=x1;x+=HS){const i=cellIndex(x,z);if(i<0)continue;const px=x-((x+16)%HS)+HS/2,pz=z-((z+16)%HS)+HS/2;let t=((px-a[0])*dx+(pz-a[2])*dz)/(len*len);if(t<-.02||t>1.02)continue;t=clamp(t,0,1);const perp=Math.abs((px-a[0])*dz-(pz-a[2])*dx)/len;if(perp>hw||perp>=stairDist[i])continue;stairDist[i]=perp;H[i]=a[1]+(b[1]-a[1])*t-.01;}}
+// Les emprises des maisons et des tours sont interdites : on ne grimpe jamais sur un toit.
+const blocked=new Uint8Array(HN*HN);
+for(const t of terraces){const m=t.round?.15:.3,R=Math.max(t.w,t.d)/2+m+HS,c=Math.cos(t.rot),sn=Math.sin(t.rot);for(let z=t.z-R;z<=t.z+R;z+=HS)for(let x=t.x-R;x<=t.x+R;x+=HS){const i=cellIndex(x,z);if(i<0)continue;const dx=x-t.x,dz=z-t.z;let inside;if(t.round)inside=Math.hypot(dx,dz)<=t.w/2+m;else{const lx=dx*c-dz*sn,lz=dx*sn+dz*c;inside=Math.abs(lx)<=t.w/2+m&&Math.abs(lz)<=t.d/2+m;}if(inside)blocked[i]=1;}}
+
+const SPAWN=[.2,9.8];
+function floodFrom(x,z){reach.fill(0);const start=cellIndex(x,z);const q=new Int32Array(HN*HN);let qi=0,qn=0;q[qn++]=start;reach[start]=1;while(qi<qn){const i=q[qi++],h=H[i],ix=i%HN,iz=(i-ix)/HN;for(const[dx,dz]of[[1,0],[-1,0],[0,1],[0,-1]]){const nx=ix+dx,nz=iz+dz;if(nx<0||nz<0||nx>=HN||nz>=HN)continue;const j=nz*HN+nx;if(reach[j]||blocked[j])continue;const hj=H[j];if(hj>SEA&&Math.abs(hj-h)<=STEP){reach[j]=1;q[qn++]=j;}}}return qn;}
+const reachCount=floodFrom(SPAWN[0],SPAWN[1]);
+function snap(x,z,maxR=4){let best=null,bd=1e9;for(let r=0;r<=maxR;r+=HS){for(let a=0;a<TAU;a+=r?HS/r:TAU){const xx=x+Math.cos(a)*r,zz=z+Math.sin(a)*r,i=cellIndex(xx,zz);if(i>=0&&reach[i]){const d=r;if(d<bd){bd=d;best=[xx,zz];}}}if(best)break;}return best||[x,z];}
+function canStep(h0,x,z){const i=cellIndex(x,z);if(i<0||blocked[i])return false;const h=H[i];return h>SEA&&Math.abs(h-h0)<=STEP;}
+function tryMove(e,dx,dz,r=.13){const h0=cellH(e.x,e.z);const l=Math.hypot(dx,dz)||1,px=-dz/l*r,pz=dx/l*r;
+const ok=(nx,nz)=>canStep(h0,nx,nz)&&canStep(h0,nx+px,nz+pz)&&canStep(h0,nx-px,nz-pz)&&(!e.maxH||cellH(nx,nz)<e.maxH);
+if(ok(e.x+dx,e.z+dz)){e.x+=dx;e.z+=dz;return true;}
+if(Math.abs(dx)>1e-4&&ok(e.x+dx,e.z)){e.x+=dx;return true;}
+if(Math.abs(dz)>1e-4&&ok(e.x,e.z+dz)){e.z+=dz;return true;}
+return false;}
+
+
+// audio.js — sons synthétisés WebAudio (vagues, effets).
+// Propriétaire : GAMEPLAY (Claude Code) ; DESIGN peut proposer des sons.
+// ---------- son (synthèse WebAudio, aucun fichier) ----------
+const audio={ctx:null,master:null,muted:false};
+try{audio.muted=localStorage.getItem('azura-muted')==='1';}catch(e){}
+function audioInit(){if(audio.ctx)return;try{const ctx=new (window.AudioContext||window.webkitAudioContext)();audio.ctx=ctx;const master=ctx.createGain();master.gain.value=audio.muted?0:1;master.connect(ctx.destination);audio.master=master;
+const len=ctx.sampleRate*3,buf=ctx.createBuffer(1,len,ctx.sampleRate),d=buf.getChannelData(0);let last=0;for(let i=0;i<len;i++){const w=Math.random()*2-1;last=(last+.02*w)/1.02;d[i]=last*3.5;}
+const src=ctx.createBufferSource();src.buffer=buf;src.loop=true;const lp=ctx.createBiquadFilter();lp.type='lowpass';lp.frequency.value=520;const g=ctx.createGain();g.gain.value=.05;const lfo=ctx.createOscillator();lfo.frequency.value=.11;const lg=ctx.createGain();lg.gain.value=.035;lfo.connect(lg);lg.connect(g.gain);lfo.start();src.connect(lp);lp.connect(g);g.connect(master);src.start();audio.waves=g;}catch(e){console.warn('Audio indisponible',e);}}
+function tone(f0,f1,dur,type='sine',vol=.18,delay=0){const ctx=audio.ctx;if(!ctx)return;const t=ctx.currentTime+delay;const o=ctx.createOscillator(),g=ctx.createGain();o.type=type;o.frequency.setValueAtTime(f0,t);o.frequency.exponentialRampToValueAtTime(Math.max(20,f1),t+dur);g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(vol,t+.01);g.gain.exponentialRampToValueAtTime(.001,t+dur);o.connect(g);g.connect(audio.master);o.start(t);o.stop(t+dur+.02);}
+function sfx(kind){if(!audio.ctx||audio.muted)return;switch(kind){
+case'pick':tone(880,1320,.14);tone(1320,1760,.12,'sine',.12,.08);break;
+case'talk':tone(520,440,.07,'triangle',.08);break;
+case'star':[523,659,784,1047].forEach((f,i)=>tone(f,f,.22,'triangle',.14,i*.09));break;
+case'catch':tone(660,990,.12,'square',.07);tone(990,1320,.16,'sine',.12,.1);break;
+case'fail':tone(440,180,.35,'sawtooth',.06);break;
+case'dig':tone(120,60,.18,'sawtooth',.12);tone(90,50,.2,'sawtooth',.1,.15);break;
+case'purr':for(let i=0;i<10;i++)tone(60,58,.08,'sawtooth',.05,i*.075);break;
+case'cast':tone(300,900,.3,'sine',.06);break;
+case'boom':tone(70,30,.6,'sawtooth',.15);tone(1200,200,.5,'sine',.05);break;
+case'crab':tone(1500,1200,.05,'square',.04);break;}}
+function setMuted(m){audio.muted=m;try{localStorage.setItem('azura-muted',m?'1':'0');}catch(e){}if(audio.master)audio.master.gain.value=m?0:1;$('#sound').textContent=m?'🔇':'🔊';$('#sound').setAttribute('aria-label',m?'Activer le son':'Couper le son');}
+$('#sound').onclick=()=>{audioInit();setMuted(!audio.muted);if(audio.ctx&&audio.ctx.state==='suspended')audio.ctx.resume();};
+setMuted(audio.muted);
+const gesture=()=>{audioInit();if(audio.ctx&&audio.ctx.state==='suspended')audio.ctx.resume();};
+window.addEventListener('pointerdown',gesture,{passive:true});window.addEventListener('keydown',gesture);
+
+
+// game.js — état du jeu, PNJ, quêtes, dialogues, sauvegarde, interface, caméra, entrées, mini-carte, boucle update().
+// Propriétaire : GAMEPLAY (Claude Code).
+// ---------- état du jeu ----------
+const SAVE_KEY='azura-save-v1',DAY=540;
+const game={name:'',shells:new Set(),notes:new Set(),quests:{shells:0,cat:0,crabs:0,bread:0,treasure:0,fish:0,notes:0},log:[],discovered:{},playtime:0,clock:DAY*.1,catFollow:false,crabsCaught:0,fish:0,delivered:{},dug:false,fireworksUntil:-1,finale:false};
+let playing=false,dialog=null,dirty=false,lastSave=0,minigame=null;
+const NAMES={tomas:'Tomas',anae:'Anaé',lila:'Lila',oro:'Oro',pia:'Pia',marco:'Marco',bastien:'Bastien',cat:'Pistache'};
+function makeEntity(id,mesh,x,z,o={}){const e=Object.assign({id,mesh,x,z,y:0,heading:PI,phase:0,amp:0,speed:0,bones:new Float32Array(16*6),look:0},o);e.scale=o.scale||1;e.y=cellH(x,z);return e;}
+const player=makeEntity('hero',heroMesh,SPAWN[0],SPAWN[1]);
+const npcDefs=[
+{id:'tomas',name:'Tomas le pêcheur',x:-4.2,z:15.2,leash:1.2,speed:1},
+{id:'lila',name:'Lila',x:2.6,z:10.4,leash:2.6,speed:2.2,scale:.7},
+{id:'anae',name:'Anaé',x:-3.3,z:3.9,leash:.9,speed:.8,scale:.92},
+{id:'oro',name:'Oro, le gardien',x:2.1,z:-4.9,leash:.5,speed:.9},
+{id:'pia',name:'Pia',x:-7,z:7.2,leash:1.5,speed:1.3,scale:.95},
+{id:'marco',name:'Marco',x:3.8,z:7.9,leash:1.5,speed:1.4,scale:1.02},
+{id:'bastien',name:'Bastien le musicien',x:-.3,z:.3,leash:.4,speed:.9,scale:.98,pose:'guitar'},
+{id:'cat',name:'Pistache',x:.3,z:-1,leash:1.2,speed:1.6,cat:true}];
+const npcs=npcDefs.map(d=>{const [x,z]=snap(d.x,d.z);return makeEntity(d.id,npcMeshes[d.id],x,z,{name:d.name,leash:d.leash,walk:d.speed,scale:d.scale,cat:!!d.cat,pose:d.pose,home:[x,z],state:'idle',t:1+Math.random()*3,said:0,heading:Math.random()*TAU});});
+const cat=npcs.find(n=>n.cat),anae=npcs.find(n=>n.id==='anae');
+const shellSpots=[[-3,10.8],[-1.2,11.4],[1.4,11.6],[3.5,10.9],[4.9,9.5],[-4.7,9.3],[.5,8.2],[-4.5,15.9],[-9.6,2],[8.6,3.2],[.4,-.2],[1.2,-4.4]].map((p,i)=>{const [x,z]=snap(p[0],p[1]);return{id:i,x,z,y:cellH(x,z)};});
+const noteSpots=[[-3.6,12.6],[-4.4,4.1],[2.2,-4.1]].map((p,i)=>{const [x,z]=snap(p[0],p[1]);return{id:i,x,z,y:cellH(x,z)};});
+const digSpot=(()=>{const [x,z]=snap(-9.2,3.6);return{x,z,y:cellH(x,z)};})();
+const fishSpot=(()=>{const [x,z]=snap(-4.2,15.9);return{x,z,y:cellH(x,z)};})();
+const places=[{id:'village',name:'Le village',x:-2.5,z:3,r:3.5,minY:3},{id:'port',name:'La crique',x:-4.2,z:14.5,r:2.4,minY:0},{id:'summit',name:'Le belvédère',x:1.7,z:-5,r:2.5,minY:9.4}];
+const gulls=Array.from({length:6},(_,i)=>({cx:range(-4,3),cz:range(6,14),R:range(4,9),h:range(9,17),w:range(.16,.3)*(i%2?1:-1),ph:range(0,TAU),bones:new Float32Array(48)}));
+const crabs=[[-3,10.6],[0,11.2],[2.6,10.9],[4.2,9.6],[-4.6,8.8],[1.2,8.7]].map((p,i)=>{const [x,z]=snap(p[0],p[1]);return{id:i,x,z,y:cellH(x,z),heading:Math.random()*TAU,phase:0,amp:0,speed:0,scale:1,state:'idle',t:Math.random()*3,home:[x,z],maxH:1.2,bones:new Float32Array(48),hidden:false,crab:true};});
+const lanterns=[[-3.3,10.8],[-4.6,15.6],[-2.0,3.5],[4.3,4.1],[1.4,-.1],[2.4,-4.1],[5.0,10.3],[-5.6,8.9],[-8.6,3.0]].map(p=>{const [x,z]=snap(p[0],p[1],2);return{x,z,y:cellH(x,z),bones:new Float32Array(16)};});
+const fireflies=Array.from({length:14},(_,i)=>({cx:i<7?-.6:-3.3,cz:i<7?-1.5:2.9,cy:i<7?7.3:3.8,ph:range(0,TAU),r:range(.6,2.2),h:range(.6,1.8)}));
+const fireflyBones=new Float32Array(16*14);
+const summitTower={x:.8,y:13.5,z:-6.8,r:1.12,h:4.2};
+const flagBase=[summitTower.x,summitTower.y+summitTower.h+summitTower.r*.72+.28,summitTower.z];
+const boats={moored:{x:-6,y:.53,z:14.1,rot:-.13,bones:new Float32Array(16)},sail:{a:0,bones:new Float32Array(32)}};
+const chestBones=new Float32Array(32),crossBones=new Float32Array(16);
+
+// ---------- sauvegarde ----------
+function saveGame(silent){const d={v:2,name:game.name,x:player.x,z:player.z,heading:player.heading,cam:{theta:goal.theta,phi:goal.phi,r:goal.r},shells:[...game.shells],notes:[...game.notes],quests:game.quests,log:game.log,discovered:game.discovered,playtime:game.playtime,clock:game.clock,catFollow:game.catFollow,crabsCaught:game.crabsCaught,fish:game.fish,delivered:game.delivered,dug:game.dug,finale:game.finale,cat:[cat.x,cat.z],said:Object.fromEntries(npcs.map(n=>[n.id,n.said])),savedAt:Date.now()};
+try{localStorage.setItem(SAVE_KEY,JSON.stringify(d));}catch(e){if(!silent)toast("Sauvegarde impossible sur ce navigateur");return;}dirty=false;lastSave=performance.now();if(!silent)toast('Partie sauvegardée ✓');}
+function loadSave(){try{const d=JSON.parse(localStorage.getItem(SAVE_KEY));return d&&(d.v===1||d.v===2)?d:null;}catch(e){return null;}}
+function clearSave(){try{localStorage.removeItem(SAVE_KEY);}catch(e){}}
+function applySave(d){const [x,z]=snap(d.x,d.z);player.x=x;player.z=z;player.y=cellH(x,z);player.heading=d.heading||PI;game.name=d.name||'';game.shells=new Set(d.shells||[]);game.notes=new Set(d.notes||[]);Object.assign(game.quests,d.quests||{});game.log=d.log||Object.keys(game.quests).filter(k=>game.quests[k]>0);game.discovered=d.discovered||{};game.playtime=d.playtime||0;game.clock=d.clock??DAY*.1;game.catFollow=!!d.catFollow;game.crabsCaught=d.crabsCaught||0;game.fish=d.fish||0;game.delivered=d.delivered||{};game.dug=!!d.dug;game.finale=!!d.finale;
+if(d.cat){const [cx,cz]=snap(d.cat[0],d.cat[1]);cat.x=cx;cat.z=cz;cat.y=cellH(cx,cz);}
+if(game.quests.cat===2){cat.home=[anae.home[0]+.6,anae.home[1]+.4];}
+for(const n of npcs)n.said=(d.said||{})[n.id]||0;
+if(d.cam){goal.theta=d.cam.theta;goal.phi=clamp(d.cam.phi,.35,1.46);goal.r=clamp(d.cam.r,4,16);Object.assign(current,structuredClone(goal));}}
+function fmtTime(s){const m=Math.round(s/60);return m<1?'moins d\'une minute':m<60?m+' min':Math.floor(m/60)+' h '+(m%60)+' min';}
+const doneCount=q=>Object.values(q).filter(v=>v===2).length;
+function stars(){return Object.keys(game.discovered).length+doneCount(game.quests);}
+const TOTAL=10;
+
+// ---------- jour / nuit ----------
+let dayF=1,duskF=0;
+function updateClock(dt){if(playing)game.clock+=dt;const ph=(game.clock/DAY)%1,sun=Math.sin(ph*TAU);let d=clamp((sun+.12)/.34,0,1);dayF=d*d*(3-2*d);duskF=1-clamp(Math.abs(sun)/.22,0,1);return sun;}
+function dayIcon(){const sun=Math.sin(((game.clock/DAY)%1)*TAU);return sun>.15?'☀️':sun>-.12?'🌅':'🌙';}
+
+// ---------- interface ----------
+const stats=$('#stats'),questText=$('#quest-text'),invEl=$('#inv'),promptEl=$('#prompt'),dialogEl=$('#dialog'),toastEl=$('#toast'),actionBtn=$('#action'),panel=$('#panel');
+let toastTimer=0;
+function toast(msg){toastEl.textContent=msg;toastEl.hidden=false;clearTimeout(toastTimer);toastTimer=setTimeout(()=>toastEl.hidden=true,3000);}
+const questTexts={
+shells:()=>game.shells.size>=8?"Retourne voir Tomas sur le ponton avec tes coquillages.":`Rapporte 8 coquillages à Tomas (${game.shells.size}/8). Cherche sur la plage et le ponton.`,
+cat:()=>game.catFollow?"Ramène Pistache à Anaé, devant sa maison.":"Retrouve Pistache, le chat d'Anaé, sur les hauteurs du village.",
+crabs:()=>game.crabsCaught>=3?"Retourne voir Lila sur la plage.":`Attrape 3 crabes sur la plage pour Lila (${game.crabsCaught}/3). Approche-toi vite et appuie sur E.`,
+bread:()=>{const left=['marco','tomas','oro'].filter(k=>!game.delivered[k]);return left.length?`Livre le pain de Pia à ${left.map(k=>NAMES[k]).join(', ')}.`:"Retourne voir Pia, près du ponton.";},
+treasure:()=>"Trésor de Marco : « Sous le palmier qui penche vers la mer, à l'ouest de la crique, là où le sable touche la roche. » Creuse avec E.",
+fish:()=>game.fish>=3?"Apporte les 3 poissons à Anaé pour sa soupe.":`Pêche 3 poissons au bout du ponton (${game.fish}/3).`,
+notes:()=>game.notes.size>=3?"Rapporte les partitions à Bastien, sur la terrasse du haut.":`Retrouve les 3 partitions de Bastien (${game.notes.size}/3). Le vent les a dispersées.`};
+function objective(){const active=game.log.filter(id=>game.quests[id]===1);if(active.length)return active.slice(-2).reverse().map(id=>'• '+questTexts[id]()).join('\n');
+const q=game.quests;if(q.shells===0)return"Explore l'île et parle aux habitants. Tomas t'attend sur le ponton.";const todo=[['cat','Anaé, dans le village, a besoin d\'aide.'],['crabs','Lila, sur la plage, a une idée de jeu.'],['bread','Pia, près du ponton, sort son pain du four.'],['treasure','Marco, sur la plage, a trouvé quelque chose.'],['fish','Reparle à Tomas : il a une canne à te prêter.'],['notes','Bastien joue de la guitare sur la terrasse du haut. Va l\'écouter.']].filter(([k])=>q[k]===0);
+if(todo.length)return todo[0][1];const disc=Object.keys(game.discovered).length;if(disc<3)return`Découvre tous les lieux de l'île (${disc}/3). Il reste ${places.filter(p=>!game.discovered[p.id]).map(p=>p.name.toLowerCase()).join(', ')}.`;
+return stars()>=TOTAL?"Tu as tout découvert. Va saluer Oro au belvédère, puis profite de la fête !":"Continue d'explorer.";}
+function inventory(){const it=[];const bread=game.quests.bread===1?3-Object.keys(game.delivered).length:0;if(bread>0)it.push(`🍞 ×${bread}`);if(game.quests.fish>=1)it.push('🎣 canne');if(game.fish>0&&game.quests.fish===1)it.push(`🐟 ×${game.fish}`);if(game.quests.treasure===1)it.push('🗺️ carte');if(game.dug)it.push('⚓ ancre d\'or');if(game.notes.size&&game.quests.notes===1)it.push(`🎵 ×${game.notes.size}`);return it.join('  ');}
+function refreshHUD(){stats.textContent=`🐚 ${game.shells.size}/12 · ⭐ ${stars()}/${TOTAL} · ${dayIcon()}`;questText.textContent=objective();const inv=inventory();invEl.hidden=!inv;invEl.textContent=inv;}
+function startQuest(id){if(game.quests[id]===0){game.quests[id]=1;if(!game.log.includes(id))game.log.push(id);dirty=true;refreshHUD();}}
+function finishQuest(id,msg){game.quests[id]=2;star(msg);}
+function star(msg){toast('⭐ '+msg);sfx('star');refreshHUD();dirty=true;saveGame(true);if(stars()>=TOTAL&&!game.finale){game.finale=true;setTimeout(()=>toast('🏆 Dix étoiles ! Oro t\'attend au belvédère.'),3200);}}
+function say(name,lines,onEnd){dialog={name,lines,i:0,onEnd};showLine();sfx('talk');}
+function showLine(){dialogEl.querySelector('b').textContent=dialog.name;dialogEl.querySelector('p').textContent=dialog.lines[dialog.i];dialogEl.querySelector('i').textContent=(dialog.i<dialog.lines.length-1?'CONTINUER':'FERMER')+' · ESPACE';dialogEl.hidden=false;promptEl.hidden=true;actionBtn.textContent=dialog.i<dialog.lines.length-1?'Suite':'Fermer';actionBtn.hidden=false;}
+function advance(){if(!dialog)return;dialog.i++;if(dialog.i>=dialog.lines.length){const d=dialog;dialog=null;dialogEl.hidden=true;for(const n of npcs)n.talking=false;if(d.onEnd)d.onEnd();refreshHUD();}else{showLine();sfx('talk');}}
+dialogEl.addEventListener('click',advance);
+function linesFor(n){const q=game.quests,sh=game.shells.size,me=game.name||'petit',pick=a=>a[n.said++%a.length];const pre=[];
+if(q.bread===1&&['marco','tomas','oro'].includes(n.id)&&!game.delivered[n.id]){game.delivered[n.id]=true;dirty=true;refreshHUD();pre.push({marco:"Du pain de Pia ? Encore chaud ! Tu me sauves la journée.",tomas:"Une miche de Pia ! Avec un poisson grillé, c'est un festin.",oro:"Le pain de Pia, monté jusqu'ici ? Tu es brave. Merci."}[n.id]);}
+const wrap=r=>{r.lines=[...pre,...r.lines];return r;};
+switch(n.id){
+case'tomas':if(q.shells===0)return wrap({lines:[`Salut, ${me} ! La marée a laissé des coquillages partout sur la plage et le long des rochers.`,"Si tu m'en rapportes huit, je te confie un secret de marin."],end:()=>startQuest('shells')});
+if(q.shells===1&&sh<8)return wrap({lines:[`Il m'en faut huit et tu en as ${sh}. Regarde sur le sable, au bout du ponton et jusqu'au pied des rochers.`]});
+if(q.shells===1)return wrap({lines:["Huit coquillages ! Tu as l'œil, toi.","Voilà le secret : quand le vent tourne, la mer chante. Écoute-la depuis le belvédère.","Le voilier au large, c'est le mien. Un jour, je t'emmènerai de l'autre côté."],end:()=>finishQuest('shells','Tomas te fait confiance')});
+if(q.fish===0)return wrap({lines:["Tiens, prends ma vieille canne. Anaé prépare une soupe pour la fête du village et il lui manque du poisson.","Va au bout du ponton et appuie sur E quand le curseur passe dans la zone verte. Trois poissons, et elle sera aux anges."],end:()=>startQuest('fish')});
+if(q.fish===1&&game.fish<3)return wrap({lines:[`Alors, ça mord ? Tu as ${game.fish} poisson${game.fish>1?'s':''}. Le bout du ponton, c'est là que ça mord le mieux.`]});
+if(q.fish===1)return wrap({lines:["Trois beaux poissons ! File les porter à Anaé avant que les mouettes s'en mêlent."]});
+return wrap({lines:[pick(["Belle journée pour la pêche, non ?","Les mouettes me volent la moitié de mes prises.","Le vieux Oro dit qu'il voit le continent depuis le belvédère. Moi, je vois surtout des nuages.","La nuit, la mer devient toute noire et les lanternes s'allument. C'est mon moment préféré."])]});
+case'anae':if(q.fish===1&&game.fish>=3)return wrap({lines:["Trois poissons ! Ma soupe sera la meilleure de la fête.","Tiens, goûte : une louche pour toi, et ma reconnaissance éternelle."],end:()=>finishQuest('fish','La soupe d\'Anaé est sauvée')});
+if(q.cat===0)return wrap({lines:[`Ah, une nouvelle tête ! Tu t'appelles ${me}, c'est ça ? Mon chat Pistache a encore filé.`,"Il adore traîner sur les hauteurs, près des maisons du haut. Ramène-le-moi, veux-tu ?"],end:()=>startQuest('cat')});
+if(q.cat===1&&!game.catFollow)return wrap({lines:["Pistache doit être quelque part au-dessus du village. Approche-toi de lui et appelle-le, il te suivra."]});
+if(q.cat===1&&game.catFollow&&Math.hypot(cat.x-n.x,cat.z-n.z)<4)return wrap({lines:["Pistache ! Te voilà, vilain chat.",`Merci mille fois, ${me}. Tiens, prends ces figues du jardin, elles sont excellentes.`],end:()=>{game.catFollow=false;cat.home=[n.home[0]+.6,n.home[1]+.4];cat.state='idle';cat.t=1;finishQuest('cat','Pistache est rentré');}});
+if(q.cat===1)return wrap({lines:["Pistache ne te suit plus ? Va le rechercher, il n'a pas pu aller bien loin."]});
+return wrap({lines:[pick(["Pistache ronronne. Tout va bien dans le monde.","Les toits d'argile, c'est mon grand-père qui les a posés.","Si tu montes au belvédère, dis bonjour à Oro de ma part.","Bastien joue tous les soirs sur la terrasse du haut. Écoute, ça porte jusqu'ici."])]});
+case'lila':if(q.crabs===0)return wrap({lines:["Tu sais courir vite ? Les crabes de la plage, eux, oui !","On fait un jeu : attrape-m'en trois. Il faut les coincer contre les rochers et appuyer sur E. Prêt ?"],end:()=>startQuest('crabs')});
+if(q.crabs===1&&game.crabsCaught<3)return wrap({lines:[`${game.crabsCaught} sur 3 ! Cours après eux, ils se cachent près des rochers et du ponton.`]});
+if(q.crabs===1)return wrap({lines:["Trois crabes ! Tu es plus rapide que Marco.","Je les relâche, hein. Ils ont une famille, les crabes."],end:()=>{for(const c of crabs)c.hidden=false;finishQuest('crabs','Champion des crabes');}});
+return wrap({lines:[pick(["Tu as vu les mouettes ? Elles tournent au-dessus de la crique toute la journée.","Papa dit que du belvédère on voit jusqu'au continent !","J'ai compté : il y a douze coquillages sur toute l'île. Enfin, je crois.","Le bateau blanc, c'est celui de Tomas. Il fait le tour de l'île tous les matins.","La nuit, il y a des lucioles sur la terrasse d'Anaé. Des centaines ! Bon, quatorze."])]});
+case'pia':if(q.bread===0)return wrap({lines:["Tu sens ? Mon pain sort du four. Tu veux bien m'aider ?","Porte une miche à Marco sur la plage, une à Tomas sur le ponton et une à Oro, tout en haut. Reviens me voir après."],end:()=>{game.delivered={};startQuest('bread');}});
+if(q.bread===1&&Object.keys(game.delivered).length<3)return wrap({lines:[`Il reste ${['marco','tomas','oro'].filter(k=>!game.delivered[k]).map(k=>NAMES[k]).join(' et ')} à livrer. Le pain se garde, mais pas éternellement !`]});
+if(q.bread===1)return wrap({lines:["Tout le monde a eu son pain ? Tu es un amour.","Garde la dernière miche pour toi. Et reviens quand tu veux, le four est toujours chaud."],end:()=>finishQuest('bread','Livraison de pain accomplie')});
+return wrap({lines:[pick(["Bienvenue à Azura. Ici, tout le monde se connaît.","Les escaliers sont raides, mais la vue vaut le détour.","Mon four est allumé, tu sens le pain ?","À la fête du village, on danse jusqu'au lever du soleil."])]});
+case'marco':if(q.treasure===0)return wrap({lines:["Regarde ce que j'ai trouvé dans un vieux tonneau : une carte, avec un poème !","« Sous le palmier qui penche vers la mer, à l'ouest de la crique, là où le sable touche la roche. »","Moi j'ai le vertige et les crabes me font peur. Va creuser, on partage !"],end:()=>startQuest('treasure')});
+if(q.treasure===1)return wrap({lines:["Alors, ce trésor ? Un palmier qui penche vers la mer, à l'ouest de la crique… Il y a une croix dans le sable, paraît-il."]});
+if(q.treasure===2&&!n.thanked){n.thanked=true;return wrap({lines:["Une ancre d'or ! On est riches ! Enfin… on est contents.","Garde-la, tu l'as bien méritée. Moi je garde le poème."]});}
+return wrap({lines:[pick(["J'ai tressé ce chapeau moi-même. Le tien n'est pas mal non plus.","Les tuiles rouges, il faut les changer après chaque tempête.","Un jour je construirai une maison tout en haut, près de la tour.","Le soir, je regarde les lanternes s'allumer une à une. Ça vaut tous les trésors."])]});
+case'bastien':if(q.notes===0)return wrap({lines:["♪ Sur l'île d'Azura, les toits sont d'argile… ♪ Ah, bonjour !","Le vent a emporté mes trois partitions. Une vers le ponton, une vers le parvis d'Anaé, une vers le belvédère, je crois.","Sans elles, je joue toujours la même chanson. Tu veux bien les retrouver ?"],end:()=>startQuest('notes')});
+if(q.notes===1&&game.notes.size<3)return wrap({lines:[`${game.notes.size} sur 3. Elles brillent un peu, tu ne peux pas les rater.`]});
+if(q.notes===1)return wrap({lines:["Mes partitions ! ♪ Écoute celle-ci… ♪","Je l'appellerai « La ballade de "+me+" ». Elle sera jouée à la fête, promis."],end:()=>finishQuest('notes','La ballade de '+me)});
+return wrap({lines:[pick(["♪ Quand le vent tourne, la mer chante… ♪ C'est Oro qui m'a soufflé les paroles.","Le meilleur public, c'est Pistache. Il ronronne en rythme.","Un jour, je jouerai sur le voilier de Tomas, en pleine mer."])]});
+case'oro':if(stars()>=TOTAL&&!n.final){n.final=true;return wrap({lines:[`${me}, tu as découvert tous les secrets d'Azura, jusqu'au dernier.`,"L'île se souviendra de toi. Regarde vers la mer : ce soir, le village fait la fête en ton honneur.","Reviens quand tu veux : le vent, la mer et nous serons là."],end:()=>{game.fireworksUntil=game.playtime+40;toast('🎆 Feu d\'artifice au-dessus de la crique !');dirty=true;saveGame(true);}});}
+if(n.final)return wrap({lines:[pick(["Regarde la mer. Elle chante pour toi ce soir.","Le feu d'artifice, c'est Tomas qui le tire depuis son voilier."])],end:()=>{if(game.fireworksUntil<game.playtime)game.fireworksUntil=game.playtime+30;}});
+return wrap({lines:[pick(["Bienvenue au belvédère. Peu de gens grimpent jusqu'ici.","Écoute… Quand le vent tourne, la mer chante. Tomas ne l'a pas inventé.","Ce drapeau, je le hisse chaque matin depuis quarante ans.","Quand tu auras aidé tout le monde, reviens me voir. J'aurai quelque chose à te dire."])]});
+case'cat':if(q.cat===1&&!game.catFollow)return wrap({lines:["Pistache miaule, se frotte contre ta jambe… et te suit !"],end:()=>{game.catFollow=true;cat.state='idle';}});
+return wrap({lines:["Pistache ronronne et se roule sur le dos. Tu lui grattes le ventre."],end:()=>sfx('purr')});}}
+function talkTo(n){const d=linesFor(n);if(!d)return;n.talking=true;say(n.cat?'Pistache':n.name,d.lines,d.end);}
+function nearThing(){let best=null,bd=1.8;for(const n of npcs){if(n.cat&&!(game.quests.cat===1&&!game.catFollow)&&game.quests.cat!==2)continue;const d=Math.hypot(n.x-player.x,n.z-player.z);if(d<bd&&Math.abs(n.y-player.y)<1.2){bd=d;best={type:'npc',n,label:n.cat?(game.quests.cat===2?'Caresser Pistache':'Appeler Pistache'):'Parler à '+n.name,btn:n.cat?'Câlin':'Parler'};}}
+if(game.quests.crabs===1&&game.crabsCaught<3)for(const c of crabs){if(c.hidden)continue;const d=Math.hypot(c.x-player.x,c.z-player.z);if(d<Math.min(bd,1.0)){bd=d;best={type:'crab',c,label:'Attraper le crabe',btn:'Hop !'};}}
+if(game.quests.treasure===1&&!game.dug){const d=Math.hypot(digSpot.x-player.x,digSpot.z-player.z);if(d<Math.min(bd,1.3)){bd=d;best={type:'dig',label:'Creuser ici',btn:'Creuser'};}}
+if(game.quests.fish>=1){const d=Math.hypot(fishSpot.x-player.x,fishSpot.z-player.z);if(d<Math.min(bd,1.4)&&Math.abs(fishSpot.y-player.y)<.6){bd=d;best={type:'fish',label:'Pêcher',btn:'Pêcher'};}}
+return best;}
+function interact(){if(minigame){fishingHit();return;}if(dialog){advance();return;}if(!playing||!panel.hidden)return;const th=nearThing();if(!th)return;
+if(th.type==='npc')talkTo(th.n);
+else if(th.type==='crab'){th.c.hidden=true;game.crabsCaught++;sfx('catch');toast(`🦀 Crabe attrapé ! ${game.crabsCaught}/3`);dirty=true;refreshHUD();if(game.crabsCaught>=3)setTimeout(()=>toast('Retourne voir Lila !'),1500);}
+else if(th.type==='dig'){game.dug=true;sfx('dig');setTimeout(()=>{toast('⚓ Une ancre d\'or ! Le trésor de Marco est réel.');finishQuest('treasure','Le trésor est découvert');},700);}
+else if(th.type==='fish')startFishing();}
+
+// ---------- mini-jeu de pêche ----------
+const fishingEl=$('#fishing'),cursorEl=fishingEl.querySelector('.cursor'),zoneEl=fishingEl.querySelector('.zone');
+function startFishing(){const speed=1.1+Math.min(game.fish,6)*.22,zw=Math.max(.14,.26-game.fish*.02),zx=.2+Math.random()*(.8-zw-.2);minigame={pos:0,dir:1,speed,zx,zw};zoneEl.style.left=(zx*100)+'%';zoneEl.style.width=(zw*100)+'%';fishingEl.hidden=false;promptEl.hidden=true;actionBtn.textContent='Ferre !';actionBtn.hidden=false;sfx('cast');player.heading=0;}
+function updateFishing(dt){if(!minigame)return;minigame.pos+=minigame.dir*minigame.speed*dt;if(minigame.pos>1){minigame.pos=1;minigame.dir=-1;}if(minigame.pos<0){minigame.pos=0;minigame.dir=1;}cursorEl.style.left=(minigame.pos*100)+'%';}
+function fishingHit(){const m=minigame;minigame=null;fishingEl.hidden=true;if(m.pos>=m.zx&&m.pos<=m.zx+m.zw){sfx('catch');if(game.quests.fish===1&&game.fish<3){game.fish++;toast(`🐟 Poisson attrapé ! ${game.fish}/3`);if(game.fish>=3)setTimeout(()=>toast('Porte-les à Anaé, dans le village.'),1600);}else toast('🐟 Un beau poisson ! Tu le relâches.');dirty=true;refreshHUD();}else{sfx('fail');toast('Raté ! Il s\'est échappé…');}}
+function cancelFishing(){minigame=null;fishingEl.hidden=true;}
+
+// ---------- caméra ----------
+const presets={village:{theta:.13,phi:1.14,r:38,target:[0,7,1.6]},port:{theta:-.27,phi:1.27,r:24,target:[-.3,3.7,5.5]},summit:{theta:.46,phi:1.12,r:22,target:[.4,11,-4.7]}};
+let current={theta:0,phi:1.1,r:9,target:[0,1,9]},goal=structuredClone(current),auto=false,drag=false,lastTime=0,frameCount=0;
+const cam={mode:'follow'};
+let cssW=0,cssH=0,eye=[0,0,0],vp,camK=1;
+let pointers=new Map(),lastPinch=0;
+function setView(key){if(key==='play'){cam.mode='follow';if(goal.r>18)goal.r=9;goal.phi=clamp(goal.phi,.5,1.35);}else{cam.mode='cine';goal=structuredClone(presets[key]);}
+document.querySelectorAll('[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view===key));}
+function custom(){if(cam.mode==='cine')document.querySelectorAll('[data-view]').forEach(b=>b.classList.remove('active'));}
+let tapStart=null;
+canvas.addEventListener('pointerdown',e=>{canvas.setPointerCapture(e.pointerId);pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});drag=true;lastPinch=0;tapStart=[e.clientX,e.clientY];});
+canvas.addEventListener('pointermove',e=>{if(!pointers.has(e.pointerId))return;let old=pointers.get(e.pointerId);pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
+if(pointers.size===1){goal.theta-=(e.clientX-old.x)*.005;goal.phi=clamp(goal.phi-(e.clientY-old.y)*.004,.35,1.46);}
+else{let [a,b]=[...pointers.values()];let dist=Math.hypot(a.x-b.x,a.y-b.y);if(lastPinch)goal.r=clamp(goal.r*lastPinch/dist,4,65);lastPinch=dist;}custom();});
+const release=e=>{if(tapStart&&pointers.has(e.pointerId)&&Math.hypot(e.clientX-tapStart[0],e.clientY-tapStart[1])<6&&(dialog||minigame))interact();pointers.delete(e.pointerId);drag=pointers.size>0;lastPinch=0;tapStart=null;};
+canvas.addEventListener('pointerup',release);canvas.addEventListener('pointercancel',release);canvas.addEventListener('lostpointercapture',release);
+canvas.addEventListener('wheel',e=>{e.preventDefault();goal.r=clamp(goal.r*Math.exp(e.deltaY*.001),4,65);},{passive:false});
+canvas.addEventListener('contextmenu',e=>e.preventDefault());
+document.querySelectorAll('[data-view]').forEach(b=>b.addEventListener('click',()=>setView(b.dataset.view)));
+$('#plus').onclick=()=>goal.r=clamp(goal.r*.84,4,65);
+$('#minus').onclick=()=>goal.r=clamp(goal.r*1.18,4,65);
+$('#reset').onclick=()=>{setView('play');goal.r=9;goal.phi=1.1;goal.theta=player.heading+PI;};
+$('#rotate').onclick=()=>{auto=!auto;$('#rotate').classList.toggle('active',auto);$('#rotate').setAttribute('aria-pressed',String(auto));$('#rotate').setAttribute('aria-label',auto?'Arrêter la rotation automatique':'Activer la rotation automatique');};
+const fullButton=$('#fullscreen');
+if(!document.documentElement.requestFullscreen)fullButton.hidden=true;else fullButton.onclick=async()=>{try{if(document.fullscreenElement)await document.exitFullscreen();else await document.documentElement.requestFullscreen();}catch(e){console.warn('Fullscreen unavailable',e);}};
+
+// ---------- entrées ----------
+const keys={};
+const keyMap={KeyW:'up',ArrowUp:'up',KeyS:'down',ArrowDown:'down',KeyA:'left',ArrowLeft:'left',KeyD:'right',ArrowRight:'right',ShiftLeft:'run',ShiftRight:'run'};
+window.addEventListener('keydown',e=>{if(e.target instanceof HTMLInputElement)return;if(e.target instanceof HTMLButtonElement&&(e.key==='Enter'||e.key===' '))return;if(keyMap[e.code]){keys[keyMap[e.code]]=true;e.preventDefault();return;}
+switch(e.code){case'KeyE':case'Space':case'Enter':interact();e.preventDefault();break;case'Escape':if(minigame)cancelFishing();else if(dialog){dialog=null;dialogEl.hidden=true;for(const n of npcs)n.talking=false;}else togglePanel();break;case'KeyH':dbg.hidden=!dbg.hidden;break;case'KeyM':mapEl.hidden=!mapEl.hidden;try{localStorage.setItem('azura-map',mapEl.hidden?'0':'1');}catch(x){}break;case'Equal':case'NumpadAdd':goal.r=clamp(goal.r*.9,4,65);break;case'Minus':case'NumpadSubtract':goal.r=clamp(goal.r*1.1,4,65);break;case'Home':$('#reset').onclick();break;}});
+window.addEventListener('keyup',e=>{if(keyMap[e.code])keys[keyMap[e.code]]=false;});
+window.addEventListener('blur',()=>{for(const k in keys)keys[k]=false;});
+const stick=$('#stick'),knob=stick.querySelector('i');let stickId=null,stickVec=[0,0];
+function moveStick(e){const r=stick.getBoundingClientRect();let dx=e.clientX-(r.left+r.width/2),dy=e.clientY-(r.top+r.height/2);const l=Math.hypot(dx,dy),max=r.width*.36;if(l>max){dx*=max/l;dy*=max/l;}knob.style.transform=`translate(${dx}px,${dy}px)`;stickVec=[dx/max,-dy/max];}
+stick.addEventListener('pointerdown',e=>{stickId=e.pointerId;stick.setPointerCapture(e.pointerId);moveStick(e);e.preventDefault();});
+stick.addEventListener('pointermove',e=>{if(e.pointerId===stickId)moveStick(e);});
+const endStick=e=>{if(e.pointerId===stickId){stickId=null;stickVec=[0,0];knob.style.transform='';}};
+stick.addEventListener('pointerup',endStick);stick.addEventListener('pointercancel',endStick);stick.addEventListener('lostpointercapture',endStick);
+actionBtn.addEventListener('click',interact);
+function togglePanel(){if(!playing)return;panel.hidden=!panel.hidden;if(!panel.hidden){$('#panel-info').textContent=`${game.name?game.name+' · ':''}${game.shells.size} coquillages · ${stars()} étoiles sur ${TOTAL} · ${doneCount(game.quests)} quêtes terminées · ${fmtTime(game.playtime)} de jeu`;$('#restart').textContent='Recommencer une nouvelle partie';restartArmed=false;}}
+let restartArmed=false;
+$('#menu').onclick=togglePanel;$('#resume').onclick=togglePanel;$('#save-now').onclick=()=>{saveGame(false);panel.hidden=true;};
+$('#restart').onclick=()=>{if(!restartArmed){restartArmed=true;$('#restart').textContent='Confirmer : effacer la progression ?';return;}clearSave();location.reload();};
+window.addEventListener('pagehide',()=>{if(playing)saveGame(true);});
+window.addEventListener('beforeunload',()=>{if(playing)saveGame(true);});
+
+// ---------- mini-carte ----------
+const mapEl=$('#map');
+try{if(localStorage.getItem('azura-map')==='0')mapEl.hidden=true;}catch(e){}
+const mapBase=document.createElement('canvas');mapBase.width=HN;mapBase.height=HN;
+{const c=mapBase.getContext('2d'),img=c.createImageData(HN,HN);for(let iz=0;iz<HN;iz++)for(let ix=0;ix<HN;ix++){const i=iz*HN+ix,h=H[i],o=(iz*HN+ix)*4;let r,g,b;
+if(h<=SEA){const deep=clamp(-h/4,0,1);r=20+40*(1-deep);g=140-50*deep;b=170-20*deep;}
+else if(h<1.3){r=240;g=222;b=170;}
+else{const v=clamp((h-1)/13,0,1);r=150+70*v;g=140+65*v;b=118+60*v;if(blocked[i]){r=205;g=110;b=60;}else if(!reach[i]){r*=.82;g*=.82;b*=.8;}}
+img.data[o]=r;img.data[o+1]=g;img.data[o+2]=b;img.data[o+3]=255;}c.putImageData(img,0,0);}
+function drawMap(){const c=mapEl.getContext('2d');c.clearRect(0,0,HN,HN);c.drawImage(mapBase,0,0);const P=(x,z)=>[(x+16)/HS,(z+16)/HS];const dot=(x,z,col,r=5)=>{const [px,pz]=P(x,z);c.fillStyle=col;c.beginPath();c.arc(px,pz,r,0,TAU);c.fill();};
+if(game.quests.shells===1)for(const s of shellSpots)if(!game.shells.has(s.id))dot(s.x,s.z,'#ff9fc4',4);
+if(game.quests.notes===1)for(const s of noteSpots)if(!game.notes.has(s.id))dot(s.x,s.z,'#c9a0ff',4);
+if(game.quests.treasure===1&&!game.dug)dot(digSpot.x,digSpot.z,'#ffd166',5);
+if(game.quests.fish===1&&game.fish<3)dot(fishSpot.x,fishSpot.z,'#7ae7ff',5);
+const q=game.quests,nd=Object.keys(game.delivered).length;
+for(const n of npcs){if(n.cat)continue;const ready={tomas:q.shells===0||(q.shells===1&&game.shells.size>=8)||(q.shells===2&&q.fish===0)||(q.bread===1&&!game.delivered.tomas),anae:q.cat===0||(q.cat===1&&game.catFollow)||(q.fish===1&&game.fish>=3),lila:q.crabs===0||(q.crabs===1&&game.crabsCaught>=3),pia:q.bread===0||(q.bread===1&&nd>=3),marco:q.treasure===0||(q.bread===1&&!game.delivered.marco),bastien:q.notes===0||(q.notes===1&&game.notes.size>=3),oro:(stars()>=TOTAL&&!n.final)||(q.bread===1&&!game.delivered.oro)}[n.id];
+dot(n.x,n.z,ready?'#ffd166':'#fff8ea',ready?6:4);if(ready){c.fillStyle='#2c3f40';c.font='bold 9px Arial';c.textAlign='center';const [px,pz]=P(n.x,n.z);c.fillText('!',px,pz+3.5);}}
+const [px,pz]=P(player.x,player.z);c.save();c.translate(px,pz);c.rotate(-player.heading);c.fillStyle='#fff';c.strokeStyle='#1d5661';c.lineWidth=2;c.beginPath();c.moveTo(0,-9);c.lineTo(6,6);c.lineTo(0,3);c.lineTo(-6,6);c.closePath();c.fill();c.stroke();c.restore();}
+
+// ---------- démarrage ----------
+function showStart(){const s=loadSave();$('#loading-title').hidden=true;$('#loading-help').hidden=true;document.querySelector('.sun').hidden=true;$('#start').hidden=false;
+if(s){$('#continue').hidden=false;$('#continue-info').textContent=`${s.name?s.name+' · ':''}🐚 ${(s.shells||[]).length}/12 · ⭐ ${Object.keys(s.discovered||{}).length+doneCount(s.quests||{})}/${TOTAL} · ${fmtTime(s.playtime||0)}`;$('#new').textContent='Nouvelle partie';$('#name').hidden=true;
+let armed=false;$('#new').onclick=()=>{if(!armed){armed=true;$('#new').textContent='Confirmer : effacer la partie sauvegardée ?';$('#name').hidden=false;return;}clearSave();startGame(null);};$('#continue').onclick=()=>startGame(s);}
+else $('#new').onclick=()=>startGame(null);
+$('#name').addEventListener('keydown',e=>{if(e.key==='Enter')$('#new').click();});}
+function startGame(save){if(save)applySave(save);else{game.name=($('#name').value||'').trim().slice(0,14);goal.theta=player.heading+PI;goal.phi=1.1;goal.r=9;Object.assign(current,structuredClone(goal));}
+cam.mode='follow';playing=true;refreshHUD();const l=$('#loading');l.style.opacity=0;l.style.pointerEvents='none';setTimeout(()=>l.remove(),650);gesture();
+setTimeout(()=>toast(save?`Bon retour sur Azura${game.name?', '+game.name:''} !`:`Bienvenue sur Azura${game.name?', '+game.name:''}. Marche jusqu'au ponton pour rencontrer Tomas.`),700);}
+
+// ---------- animation / déplacement ----------
+// ---------- animation ----------
+function turnToward(a,b,k){let d=((b-a+PI)%TAU+TAU)%TAU-PI;return a+d*Math.min(1,k);}
+function moveEntity(e,dx,dz,speed,dt){const l=Math.hypot(dx,dz)||1;dx/=l;dz/=l;e.heading=turnToward(e.heading,Math.atan2(dx,dz)+(e.crab?PI/2:0),dt*11);const moved=tryMove(e,dx*speed*dt,dz*speed*dt,.13*e.scale);e.speed=moved?speed:0;e.phase+=(moved?speed:1.2)*dt*(e.cat?9:e.crab?16:4.6)/e.scale;e.amp+=((moved?1:.3)-e.amp)*(1-Math.exp(-dt*10));return moved;}
+function idleEntity(e,dt){e.speed=0;e.amp+=(0-e.amp)*(1-Math.exp(-dt*8));}
+function groundEntity(e,dt){const h=cellH(e.x,e.z);e.y+=(h-e.y)*(1-Math.exp(-dt*14));}
+function npcThink(n,dt,t){
+if(n.talking){n.heading=turnToward(n.heading,Math.atan2(player.x-n.x,player.z-n.z),dt*6);idleEntity(n,dt);n.look=0;}
+else if(n.cat&&game.catFollow){const dx=player.x-n.x,dz=player.z-n.z,d=Math.hypot(dx,dz);if(d>1.4){const moved=moveEntity(n,dx,dz,Math.min(3.4,player.speed+1.6),dt);if((!moved&&d>2.5)||d>9){const [x,z]=snap(player.x-Math.sin(player.heading)*.8,player.z-Math.cos(player.heading)*.8,2);n.x=x;n.z=z;n.y=cellH(x,z);}}else idleEntity(n,dt);}
+else if(n.state==='idle'){idleEntity(n,dt);n.t-=dt;if(!n.cat)n.look=Math.sin(t*.6+n.x)*.35;if(n.t<=0&&(dayF>.25||n.cat)){for(let k=0;k<6;k++){const a=Math.random()*TAU,r=Math.random()*n.leash,x=n.home[0]+Math.cos(a)*r,z=n.home[1]+Math.sin(a)*r,i=cellIndex(x,z);if(i>=0&&reach[i]){n.target=[x,z];n.state='walk';n.fails=0;break;}}n.t=1.5+Math.random()*4;}}
+else{n.look=0;const dx=n.target[0]-n.x,dz=n.target[1]-n.z,d=Math.hypot(dx,dz);if(d<.15||!moveEntity(n,dx,dz,n.walk,dt))if(d<.15||++n.fails>8){n.state='idle';n.t=1+Math.random()*3;}}
+groundEntity(n,dt);}
+function crabThink(c,dt,t){if(c.hidden)return;const dx=c.x-player.x,dz=c.z-player.z,d=Math.hypot(dx,dz);
+if(game.quests.crabs===1&&game.crabsCaught<3&&d<2.4){if(!moveEntity(c,dx+Math.sin(c.id*3+t*2)*.5,dz+Math.cos(c.id*2+t)*.5,2.3,dt))moveEntity(c,-dz,dx,2.3,dt);c.state='idle';c.t=.5;if(Math.random()<dt*1.5)sfx('crab');}
+else if(c.state==='idle'){idleEntity(c,dt);c.t-=dt;if(c.t<=0){const a=Math.random()*TAU,r=Math.random()*2.2;c.target=[c.home[0]+Math.cos(a)*r,c.home[1]+Math.sin(a)*r];c.state='walk';c.t=2+Math.random()*4;}}
+else{const tx=c.target[0]-c.x,tz=c.target[1]-c.z,td=Math.hypot(tx,tz);if(td<.12||!moveEntity(c,tx,tz,.7,dt)){c.state='idle';c.t=1+Math.random()*3;}}
+groundEntity(c,dt);}
+const drawList=[];
+function update(dt,t){
+if(playing)game.playtime+=dt;updateClock(dt);
+let ix=0,iy=0;if(playing&&!dialog&&!minigame&&panel.hidden){ix=(keys.right?1:0)-(keys.left?1:0)+stickVec[0];iy=(keys.up?1:0)-(keys.down?1:0)+stickVec[1];}
+let mag=Math.hypot(ix,iy);if(mag>1){ix/=mag;iy/=mag;mag=1;}
+if(mag>.08){if(cam.mode!=='follow')setView('play');const f=norm([current.target[0]-eye[0],0,current.target[2]-eye[2]]),r=[-f[2],0,f[0]];const px=player.x,pz=player.z;moveEntity(player,f[0]*iy+r[0]*ix,f[2]*iy+r[2]*ix,(keys.run||mag>.97&&stickId!==null?4.3:2.7)*Math.min(1,mag*1.3),dt);if(Math.hypot(player.x-px,player.z-pz)>0)dirty=true;}
+else{idleEntity(player,dt);player.look=Math.sin(t*.5)*.25*(1-player.amp);}
+groundEntity(player,dt);
+for(const n of npcs)npcThink(n,dt,t);
+for(const c of crabs)crabThink(c,dt,t);
+updateFishing(dt);
+if(playing){for(const s of shellSpots){if(game.shells.has(s.id))continue;if(Math.hypot(s.x-player.x,s.z-player.z)<.65&&Math.abs(s.y-player.y)<.8){game.shells.add(s.id);sfx('pick');toast(`🐚 Coquillage trouvé ! ${game.shells.size}/12`);refreshHUD();dirty=true;saveGame(true);}}
+if(game.quests.notes===1)for(const s of noteSpots){if(game.notes.has(s.id))continue;if(Math.hypot(s.x-player.x,s.z-player.z)<.7&&Math.abs(s.y-player.y)<.8){game.notes.add(s.id);sfx('pick');toast(`🎵 Partition retrouvée ! ${game.notes.size}/3`);refreshHUD();dirty=true;saveGame(true);}}
+for(const p of places)if(!game.discovered[p.id]&&player.y>p.minY&&Math.hypot(p.x-player.x,p.z-player.z)<p.r){game.discovered[p.id]=true;star('Lieu découvert : '+p.name);}
+const th=(dialog||minigame)?null:nearThing();promptEl.hidden=!th;if(th){promptEl.querySelector('span').textContent=th.label;actionBtn.textContent=th.btn;}
+actionBtn.hidden=!(th||dialog||minigame);
+if(dirty&&performance.now()-lastSave>6000)saveGame(true);
+if((frameCount&31)===0)stats.textContent=`🐚 ${game.shells.size}/12 · ⭐ ${stars()}/${TOTAL} · ${dayIcon()}`;}
+// poses
+drawList.length=0;
+poseHuman(player,t);drawList.push({mesh:player.mesh,bones:player.bones,n:6,mode:4});
+for(const n of npcs){if(n.cat)poseCat(n,t);else poseHuman(n,t);drawList.push({mesh:n.mesh,bones:n.bones,n:6,mode:4});}
+for(const c of crabs){if(c.hidden)continue;poseCrab(c,t);drawList.push({mesh:crabMesh,bones:c.bones,n:3,mode:4});}
+const spin=(list,mesh,taken,hover)=>{for(const s of list){if(taken.has(s.id))continue;const b=s.bones||(s.bones=new Float32Array(32));const root=mm(T(s.x,s.y+hover+Math.sin(t*2.2+s.id)*.05,s.z),RY(t*1.3+s.id));setBone(b,0,root);setBone(b,1,mm(root,T(Math.cos(t*3+s.id)*.24,.14+Math.sin(t*4.1+s.id)*.06,Math.sin(t*3+s.id)*.24)));drawList.push({mesh,bones:b,n:2,mode:4});
+const rb=s.ring||(s.ring=new Float32Array(16));setBone(rb,0,mm(T(s.x,s.y+.04,s.z),SC(1+Math.sin(t*2.2+s.id)*.12)));drawList.push({mesh:ringMesh,bones:rb,n:1,mode:5,noShadow:true});}};
+spin(shellSpots,shellMesh,game.shells,.08);
+if(game.quests.notes===1)spin(noteSpots,noteMesh,game.notes,.25);
+if(game.quests.treasure===1&&!game.dug){setBone(crossBones,0,T(digSpot.x,digSpot.y+.02,digSpot.z));drawList.push({mesh:crossMesh,bones:crossBones,n:1,mode:5,noShadow:true});}
+if(game.dug){const root=T(digSpot.x,digSpot.y,digSpot.z);setBone(chestBones,0,root);setBone(chestBones,1,mm(root,piv([0,.32,-.2],RX(-1.9))));drawList.push({mesh:chestMesh,bones:chestBones,n:2,mode:4});}
+for(const g of gulls){const a=t*g.w+g.ph,dir=Math.sign(g.w),x=g.cx+Math.cos(a)*g.R,z=g.cz+Math.sin(a)*g.R,y=g.h+Math.sin(t*.7+g.ph)*.8,heading=Math.atan2(-Math.sin(a)*dir,Math.cos(a)*dir);const glide=Math.sin(t*.45+g.ph)>.2?.12:1,flap=Math.sin(t*9+g.ph)*.6*glide;
+const root=mm(T(x,y,z),RY(heading),RZ(-dir*.25));setBone(g.bones,0,root);setBone(g.bones,1,mm(root,RZ(flap)));setBone(g.bones,2,mm(root,RZ(-flap)));drawList.push({mesh:gullMesh,bones:g.bones,n:3,mode:4});}
+{const b=boats.moored;setBone(b.bones,0,mm(T(b.x,b.y+Math.sin(t*1.1)*.05,b.z),RY(b.rot),RX(Math.sin(t*1.3+1)*.03),RZ(Math.sin(t*.9)*.05)));drawList.push({mesh:mooredBoat,bones:b.bones,n:1,mode:4});
+const s=boats.sail;s.a=t*.04;const x=Math.cos(s.a)*19,z=-1.3+Math.sin(s.a)*17.5,heading=Math.atan2(-Math.sin(s.a)*19,Math.cos(s.a)*17.5);const root=mm(T(x,.5+Math.sin(t*1.4)*.08,z),RY(heading),RZ(.06+Math.sin(t*.8)*.04),RX(Math.sin(t*1.1)*.03));setBone(s.bones,0,root);setBone(s.bones,1,mm(root,RY(.35+Math.sin(t*2.6)*.06)));drawList.push({mesh:sailBoat,bones:s.bones,n:2,mode:4});}
+{const b=flagBones;setBone(b,0,mm(T(...flagBase),RY(.6+Math.sin(t*.3)*.25)));drawList.push({mesh:flagMesh,bones:b,n:1,mode:3});}
+chimneys.forEach((c,ci)=>{const b=smokeBones[ci];for(let k=0;k<6;k++){const life=(t*.22+k/6+ci*.37)%1,sc=Math.sin(life*PI)*(.5+life*1.6);setBone(b,k,mm(T(c[0]+Math.sin(life*4+k+ci)*.18+life*life*1.2,c[1]+life*2.6,c[2]+Math.cos(life*3+k)*.15+life*.5),SC(Math.max(.01,sc))));}drawList.push({mesh:smokeMesh,bones:b,n:6,mode:2,noShadow:true});});
+for(const l of lanterns){setBone(l.bones,0,mm(T(l.x,l.y,l.z),RY(Math.atan2(-l.x,-l.z))));drawList.push({mesh:lanternMesh,bones:l.bones,n:1,mode:4});drawList.push({mesh:lanternGlow,bones:l.bones,n:1,mode:7,noShadow:true});}
+if(dayF<.85){const vis=1-dayF/.85;fireflies.forEach((f,i)=>{const a=t*.35+f.ph+Math.sin(t*.9+i)*.6,x=f.cx+Math.cos(a)*f.r,z=f.cz+Math.sin(a*1.3)*f.r*.8,y=f.cy+f.h+Math.sin(t*1.7+i*2)*.3,blink=.5+.5*Math.sin(t*4+i*1.7);setBone(fireflyBones,i,mm(T(x,y,z),SC(vis*(.4+blink))));});drawList.push({mesh:fireflyMesh,bones:fireflyBones,n:14,mode:7,noShadow:true});}
+if(game.fireworksUntil>game.playtime){const age=game.playtime-(game.fireworksUntil-40);burstMeshes.forEach((m,bi)=>{const period=2.6,local=(age+bi*.65)%period,cycle=Math.floor((age+bi*.65)/period),rnd2=k=>Math.abs(Math.sin(cycle*12.9898+bi*78.233+k*37.7)*43758.5453)%1;const cx=-4+rnd2(1)*10,cz=17+rnd2(2)*8,cy=9+rnd2(3)*5;const b=burstBones[bi];if(local<.8){for(let k=0;k<12;k++)setBone(b,k,mm(T(cx,cy*local/.8+.5,cz),SC(.35)));m.boomed=false;}else{const e=(local-.8)/1.8,r=e*(2-e)*3.5;if(!m.boomed){m.boomed=true;sfx('boom');}for(let k=0;k<12;k++){const th=k/12*TAU,ph=(k%3)*1.1+bi;setBone(b,k,mm(T(cx+Math.cos(th)*Math.cos(ph)*r,cy+Math.sin(ph)*r*.7-e*e*1.5,cz+Math.sin(th)*Math.cos(ph)*r),SC(Math.max(.01,(1-e)*1.4))));}}drawList.push({mesh:m,bones:b,n:12,mode:8,noShadow:true});});}
+}
+const flagBones=new Float32Array(16),smokeBones=chimneys.map(()=>new Float32Array(96)),burstBones=burstMeshes.map(()=>new Float32Array(16*12));
+
+
+// anim.js — poses procédurales (marche, bras, tête, chat, crabe). Appelées par update() avec l'entité et le temps.
+// Propriétaire : ANIMATION (GPT-6 Astra). Contrat : poseHuman(e,t)/poseCat(e,t)/poseCrab(e,t) remplissent e.bones (Float32Array 16 matrices).
+function poseHuman(e,t){const s=e.scale,B=e.bones,a=e.amp,ph=e.phase,bob=Math.abs(Math.sin(ph))*.045*a*s+Math.sin(t*2)*.006;
+const root=mm(T(e.x,e.y+bob,e.z),RY(e.heading));const swing=Math.sin(ph)*.85*a,sway=Math.sin(t*1.7+e.x*3)*.05*(1-a);let armL=-Math.sin(ph)*.7*a+sway,armR=Math.sin(ph)*.7*a-sway,rzL=-.08,rzR=.08;
+if(e.pose==='guitar'&&a<.5&&!e.talking){const k=1-a*2;armL=mix(armL,-1.15,k);rzL=mix(rzL,.55,k);armR=mix(armR,-.75+Math.sin(t*7)*.12,k);rzR=mix(rzR,-.25,k);}
+if(e.id==='tomas'&&a<.5&&!e.talking){const k=1-a*2;armR=mix(armR,-.5+Math.sin(t*.8)*.05,k);}
+setBone(B,0,root);
+setBone(B,1,mm(root,piv([-.1*s,.62*s,0],RX(swing))));setBone(B,2,mm(root,piv([.1*s,.62*s,0],RX(-swing))));
+setBone(B,3,mm(root,piv([-.28*s,1.08*s,0],mm(RX(armL),RZ(rzL)))));setBone(B,4,mm(root,piv([.28*s,1.08*s,0],mm(RX(armR),RZ(rzR)))));
+setBone(B,5,mm(root,piv([0,1.16*s,0],mm(RY(e.look),RX(Math.sin(t*.9+e.z)*.03*(1-a))))));}
+function poseCat(e,t){const B=e.bones,a=e.amp,ph=e.phase,root=mm(T(e.x,e.y+Math.abs(Math.sin(ph))*.02*a,e.z),RY(e.heading));const sw=Math.sin(ph)*.7*a;
+setBone(B,0,root);setBone(B,1,mm(root,piv([-.07,.2,.14],RX(sw))));setBone(B,4,mm(root,piv([.07,.2,-.14],RX(sw))));setBone(B,2,mm(root,piv([.07,.2,.14],RX(-sw))));setBone(B,3,mm(root,piv([-.07,.2,-.14],RX(-sw))));
+setBone(B,5,mm(root,piv([0,.3,-.2],mm(RY(Math.sin(t*2.3+e.x)*.5),RX(Math.sin(t*1.1)*.2)))));}
+function poseCrab(e,t){const B=e.bones,root=mm(T(e.x,e.y+.01,e.z),RY(e.heading));const sw=Math.sin(e.phase)*.35*e.amp+Math.sin(t*3+e.id)*.04;setBone(B,0,root);setBone(B,1,mm(root,piv([-.12,.06,0],RZ(sw))));setBone(B,2,mm(root,piv([.12,.06,0],RZ(-sw))));}
+
+// render.js — ombres, cibles de rendu (MSAA/HDR), reflets planaires, SSAO, eau, bloom, image finale, qualité adaptative, boucle render().
+// Propriétaire : GAMEPLAY (Claude Code) pour la structure ; DESIGN pour les réglages visuels (voir shaders.js).
+// ---------- ombres : carte statique cuite une fois + copie par image pour les objets mobiles ----------
+const shadowSize=2048;
+function depthTex(){const t=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,t);gl.texImage2D(gl.TEXTURE_2D,0,gl.DEPTH_COMPONENT24,shadowSize,shadowSize,0,gl.DEPTH_COMPONENT,gl.UNSIGNED_INT,null);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.NEAREST);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.NEAREST);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);return t;}
+function depthFbo(t){const f=gl.createFramebuffer();gl.bindFramebuffer(gl.FRAMEBUFFER,f);gl.framebufferTexture2D(gl.FRAMEBUFFER,gl.DEPTH_ATTACHMENT,gl.TEXTURE_2D,t,0);gl.drawBuffers([gl.NONE]);gl.readBuffer(gl.NONE);if(gl.checkFramebufferStatus(gl.FRAMEBUFFER)!==gl.FRAMEBUFFER_COMPLETE)throw Error('Shadow framebuffer incomplete');return f;}
+const shadowStatic=depthTex(),shadowStaticFbo=depthFbo(shadowStatic),shadowTexture=depthTex(),shadowFbo=depthFbo(shadowTexture);
+const lightVP=matmul(ortho(-24,24,-24,24,1,105),lookAt([-25,47,30],[0,6,0]));
+gl.bindFramebuffer(gl.FRAMEBUFFER,shadowStaticFbo);gl.enable(gl.DEPTH_TEST);gl.disable(gl.CULL_FACE);gl.viewport(0,0,shadowSize,shadowSize);gl.clear(gl.DEPTH_BUFFER_BIT);
+gl.useProgram(depthProgram);gl.uniformMatrix4fv(depthLoc.uVP,false,lightVP);gl.uniformMatrix4fv(depthLoc.uBones,false,I4);gl.uniform1i(depthLoc.uMode,0);
+gl.bindVertexArray(solid.vao);gl.enable(gl.POLYGON_OFFSET_FILL);gl.polygonOffset(1.1,1.8);gl.drawArrays(gl.TRIANGLES,0,solid.count);gl.disable(gl.POLYGON_OFFSET_FILL);gl.bindVertexArray(null);gl.bindFramebuffer(gl.FRAMEBUFFER,null);
+
+// ---------- rendu : MSAA, reflets planaires, SSAO, eau avec réfraction, bloom, tone mapping ----------
+function invert4(m){const a=m,o=new Float32Array(16);const a00=a[0],a01=a[1],a02=a[2],a03=a[3],a10=a[4],a11=a[5],a12=a[6],a13=a[7],a20=a[8],a21=a[9],a22=a[10],a23=a[11],a30=a[12],a31=a[13],a32=a[14],a33=a[15];
+const b00=a00*a11-a01*a10,b01=a00*a12-a02*a10,b02=a00*a13-a03*a10,b03=a01*a12-a02*a11,b04=a01*a13-a03*a11,b05=a02*a13-a03*a12,b06=a20*a31-a21*a30,b07=a20*a32-a22*a30,b08=a20*a33-a23*a30,b09=a21*a32-a22*a31,b10=a21*a33-a23*a31,b11=a22*a33-a23*a32;
+let det=b00*b11-b01*b10+b02*b09+b03*b08-b04*b07+b05*b06;if(!det)return o;det=1/det;
+o[0]=(a11*b11-a12*b10+a13*b09)*det;o[1]=(a02*b10-a01*b11-a03*b09)*det;o[2]=(a31*b05-a32*b04+a33*b03)*det;o[3]=(a22*b04-a21*b05-a23*b03)*det;o[4]=(a12*b08-a10*b11-a13*b07)*det;o[5]=(a00*b11-a02*b08+a03*b07)*det;o[6]=(a32*b02-a30*b05-a33*b01)*det;o[7]=(a20*b05-a22*b02+a23*b01)*det;o[8]=(a10*b10-a11*b08+a13*b06)*det;o[9]=(a01*b08-a00*b10-a03*b06)*det;o[10]=(a30*b04-a31*b02+a33*b00)*det;o[11]=(a21*b02-a20*b04-a23*b00)*det;o[12]=(a11*b07-a10*b09-a12*b06)*det;o[13]=(a00*b09-a01*b07+a02*b06)*det;o[14]=(a31*b01-a30*b03-a32*b00)*det;o[15]=(a20*b03-a21*b01+a22*b00)*det;return o;}
+const Q={level:3,auto:true,refl:true,ssao:true,bloom:true,dpr:1.5};
+try{const q=localStorage.getItem('azura-quality');if(q&&q!=='auto'){Q.auto=false;Q.level=clamp(parseInt(q,10)||3,1,3);}}catch(e){}
+function applyQuality(){Q.refl=Q.level>=3;Q.ssao=Q.level>=2;Q.bloom=true;Q.dpr=[1,1.25,1.5][Q.level-1];resize();}
+function qualityLabel(){return Q.auto?'Auto ('+['Fluide','Élevée','Ultra'][Q.level-1]+')':['Fluide','Élevée','Ultra'][Q.level-1];}
+function cycleQuality(){if(Q.auto){Q.auto=false;Q.level=3;}else if(Q.level>1)Q.level--;else{Q.auto=true;Q.level=3;}try{localStorage.setItem('azura-quality',Q.auto?'auto':String(Q.level));}catch(e){}applyQuality();$('#quality').textContent='Qualité graphique : '+qualityLabel();}
+$('#quality').onclick=cycleQuality;
+const RT={};let W=0,H2=0;const HDR=!!(gl.getExtension('EXT_color_buffer_half_float')||gl.getExtension('EXT_color_buffer_float'));const CF=HDR?gl.RGBA16F:gl.RGBA8,CT=HDR?gl.HALF_FLOAT:gl.UNSIGNED_BYTE;
+function tex2d(w,h,internal,format,type,filter){const t=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,t);gl.texImage2D(gl.TEXTURE_2D,0,internal,w,h,0,format,type,null);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,filter);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,filter);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);return t;}
+function fboOf(color,depth){const f=gl.createFramebuffer();gl.bindFramebuffer(gl.FRAMEBUFFER,f);if(color)gl.framebufferTexture2D(gl.FRAMEBUFFER,gl.COLOR_ATTACHMENT0,gl.TEXTURE_2D,color,0);if(depth)gl.framebufferTexture2D(gl.FRAMEBUFFER,gl.DEPTH_ATTACHMENT,gl.TEXTURE_2D,depth,0);const st=gl.checkFramebufferStatus(gl.FRAMEBUFFER);if(st!==gl.FRAMEBUFFER_COMPLETE)throw Error('Framebuffer incomplete '+st);return f;}
+function makeTargets(){for(const k in RT){const v=RT[k];if(v&&v.fbo)gl.deleteFramebuffer(v.fbo);if(v&&v.tex)gl.deleteTexture(v.tex);if(v&&v.rb)gl.deleteRenderbuffer(v.rb);if(v&&v.rbd)gl.deleteRenderbuffer(v.rbd);delete RT[k];}
+W=canvas.width;H2=canvas.height;const w2=Math.ceil(W/2),h2=Math.ceil(H2/2),w4=Math.ceil(W/4),h4=Math.ceil(H2/4);
+const samples=Math.min(Q.msaa??4,gl.getParameter(gl.MAX_SAMPLES));
+{const fbo=gl.createFramebuffer();gl.bindFramebuffer(gl.FRAMEBUFFER,fbo);const rb=gl.createRenderbuffer();gl.bindRenderbuffer(gl.RENDERBUFFER,rb);gl.renderbufferStorageMultisample(gl.RENDERBUFFER,samples,CF,W,H2);gl.framebufferRenderbuffer(gl.FRAMEBUFFER,gl.COLOR_ATTACHMENT0,gl.RENDERBUFFER,rb);const rbd=gl.createRenderbuffer();gl.bindRenderbuffer(gl.RENDERBUFFER,rbd);gl.renderbufferStorageMultisample(gl.RENDERBUFFER,samples,gl.DEPTH_COMPONENT24,W,H2);gl.framebufferRenderbuffer(gl.FRAMEBUFFER,gl.DEPTH_ATTACHMENT,gl.RENDERBUFFER,rbd);if(gl.checkFramebufferStatus(gl.FRAMEBUFFER)!==gl.FRAMEBUFFER_COMPLETE)throw Error('MSAA framebuffer incomplete');RT.msaa={fbo,rb,rbd};}
+{const tex=tex2d(W,H2,CF,gl.RGBA,CT,gl.LINEAR),depth=tex2d(W,H2,gl.DEPTH_COMPONENT24,gl.DEPTH_COMPONENT,gl.UNSIGNED_INT,gl.NEAREST);RT.scene={fbo:fboOf(tex,depth),tex};RT.depth={tex:depth};}
+{const depth=tex2d(W,H2,gl.DEPTH_COMPONENT24,gl.DEPTH_COMPONENT,gl.UNSIGNED_INT,gl.NEAREST);const tex=tex2d(W,H2,CF,gl.RGBA,CT,gl.LINEAR);RT.comp={fbo:fboOf(tex,depth),tex};RT.depth2={fbo:fboOf(null,depth),tex:depth};}
+{const tex=tex2d(w2,h2,gl.RGBA8,gl.RGBA,gl.UNSIGNED_BYTE,gl.LINEAR);RT.ao={fbo:fboOf(tex,null),tex};const tex2=tex2d(w2,h2,gl.RGBA8,gl.RGBA,gl.UNSIGNED_BYTE,gl.LINEAR);RT.aoBlur={fbo:fboOf(tex2,null),tex:tex2};}
+{const tex=tex2d(w4,h4,CF,gl.RGBA,CT,gl.LINEAR);RT.bloomA={fbo:fboOf(tex,null),tex,w:w4,h:h4};const tex2=tex2d(w4,h4,CF,gl.RGBA,CT,gl.LINEAR);RT.bloomB={fbo:fboOf(tex2,null),tex:tex2,w:w4,h:h4};}
+{const fbo=gl.createFramebuffer();gl.bindFramebuffer(gl.FRAMEBUFFER,fbo);const tex=tex2d(w2,h2,CF,gl.RGBA,CT,gl.LINEAR);gl.framebufferTexture2D(gl.FRAMEBUFFER,gl.COLOR_ATTACHMENT0,gl.TEXTURE_2D,tex,0);const rbd=gl.createRenderbuffer();gl.bindRenderbuffer(gl.RENDERBUFFER,rbd);gl.renderbufferStorage(gl.RENDERBUFFER,gl.DEPTH_COMPONENT24,w2,h2);gl.framebufferRenderbuffer(gl.FRAMEBUFFER,gl.DEPTH_ATTACHMENT,gl.RENDERBUFFER,rbd);if(gl.checkFramebufferStatus(gl.FRAMEBUFFER)!==gl.FRAMEBUFFER_COMPLETE)throw Error('Reflection framebuffer incomplete');RT.refl={fbo,tex,rbd,w:w2,h:h2};}
+RT.w2=w2;RT.h2=h2;gl.bindFramebuffer(gl.FRAMEBUFFER,null);}
+const EXPO=HDR?1:.62;
+function resize(){cssW=canvas.clientWidth;cssH=canvas.clientHeight;const dpr=Math.min(window.devicePixelRatio||1,Q.dpr);canvas.width=Math.max(2,Math.floor(cssW*dpr));canvas.height=Math.max(2,Math.floor(cssH*dpr));makeTargets();}
+applyQuality();window.addEventListener('resize',resize);
+for(const t of[shadowStatic,shadowTexture]){gl.bindTexture(gl.TEXTURE_2D,t);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_COMPARE_MODE,gl.COMPARE_REF_TO_TEXTURE);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_COMPARE_FUNC,gl.LEQUAL);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);}
+let visible=true,perfAcc=0,perfN=0;
+document.addEventListener('visibilitychange',()=>{visible=!document.hidden;if(visible){lastTime=performance.now();requestAnimationFrame(render);}else if(playing)saveGame(true);});
+canvas.addEventListener('webglcontextlost',e=>{e.preventDefault();visible=false;if(playing)saveGame(true);$('#error').hidden=false;});
+canvas.addEventListener('webglcontextrestored',()=>location.reload());
+const dbg=$('#debug');
+function drawDebug(){const c=dbg.getContext('2d');const img=c.createImageData(HN,HN);for(let iz=0;iz<HN;iz++)for(let ix=0;ix<HN;ix++){const i=iz*HN+ix,h=H[i],o=(iz*HN+ix)*4;let r,g,b;if(h<=SEA){r=30;g=90;b=160;}else{const v=clamp((h+1)/16,0,1)*255;r=g=b=v;if(reach[i]){g=Math.min(255,v+90);r*=.55;b*=.55;}}img.data[o]=r;img.data[o+1]=g;img.data[o+2]=b;img.data[o+3]=255;}c.putImageData(img,0,0);
+const dot=(x,z,col)=>{c.fillStyle=col;c.fillRect((x+16)/HS-2,(z+16)/HS-2,5,5);};dot(player.x,player.z,'#f00');for(const n of npcs)dot(n.x,n.z,n.cat?'#fa0':'#fff');for(const s of shellSpots)if(!game.shells.has(s.id))dot(s.x,s.z,'#f0f');}
+function drawStatic(m,mode){gl.uniform1i(locations.uMode,mode);gl.bindVertexArray(m.vao);gl.drawArrays(gl.TRIANGLES,0,m.count);}
+function fsQuad(){gl.bindVertexArray(null);gl.drawArrays(gl.TRIANGLES,0,3);}
+let projM,invProjM,reflVP=null;
+function drawScene(VP,eyeV,t,clip){const inv=invert4(VP);
+gl.disable(gl.DEPTH_TEST);gl.useProgram(skyProgram);gl.uniformMatrix4fv(skyLoc.uInvVP,false,inv);gl.uniform3fv(skyLoc.uEye,eyeV);gl.uniform1f(skyLoc.uDay,dayF);gl.uniform1f(skyLoc.uDusk,duskF);gl.uniform1f(skyLoc.uTime,t);gl.uniform1f(skyLoc.uExpo,EXPO);fsQuad();gl.enable(gl.DEPTH_TEST);
+gl.useProgram(mainProgram);gl.uniformMatrix4fv(locations.uVP,false,VP);gl.uniformMatrix4fv(locations.uLight,false,lightVP);gl.uniform3fv(locations.uEye,eyeV);gl.uniform1f(locations.uTime,t);gl.uniform1f(locations.uShadowTexel,1/shadowSize);gl.uniform1f(locations.uDay,dayF);gl.uniform1f(locations.uDusk,duskF);gl.uniform1f(locations.uClip,clip);gl.uniform1f(locations.uExpo,EXPO);gl.uniform1f(locations.uDbg,Q.dbg||0);
+gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,shadowTexture);gl.uniform1i(locations.uShadow,0);
+if(Q.flat){gl.useProgram(flatProgram);gl.uniformMatrix4fv(gl.getUniformLocation(flatProgram,'uVP'),false,VP);gl.bindVertexArray(solid.vao);gl.drawArrays(gl.TRIANGLES,0,solid.count);gl.bindVertexArray(null);return;}
+gl.uniformMatrix4fv(locations.uBones,false,I4);drawStatic(clouds,6);drawStatic(solid,0);
+for(const d of drawList){gl.uniform1i(locations.uMode,d.mode);gl.uniformMatrix4fv(locations.uBones,false,d.bones.subarray(0,d.n*16));gl.bindVertexArray(d.mesh.vao);gl.drawArrays(gl.TRIANGLES,0,d.mesh.count);}
+gl.bindVertexArray(null);}
+function bindTex(unit,tex,loc){gl.activeTexture(gl.TEXTURE0+unit);gl.bindTexture(gl.TEXTURE_2D,tex);gl.uniform1i(loc,unit);}
+function render(time){if(!visible)return;const rawDt=(time-lastTime)/1000||.016;let dt=Math.min(.05,rawDt);lastTime=time;const t=time*.001;
+update(dt,t);
+if(auto&&!drag)goal.theta+=dt*.10;
+if(cam.mode==='follow')goal.target=[player.x,player.y+1.05,player.z];
+const easing=1-Math.exp(-dt*(cam.mode==='follow'?9:7));
+for(let k of['theta','phi','r'])current[k]+=(goal[k]-current[k])*easing;
+current.target=current.target.map((v,i)=>v+(goal.target[i]-v)*easing);
+let aspect=cssW/cssH,fit=aspect<1?1/Math.pow(aspect,.53):1,r=current.r*fit;
+eye=add(current.target,[Math.sin(current.theta)*Math.sin(current.phi)*r,Math.cos(current.phi)*r,Math.cos(current.theta)*Math.sin(current.phi)*r]);
+if(cam.mode==='follow'){let k=1;for(let i=2;i<=20;i++){const f=i/20,px=current.target[0]+(eye[0]-current.target[0])*f,py=current.target[1]+(eye[1]-current.target[1])*f,pz=current.target[2]+(eye[2]-current.target[2])*f;if(heightAt(px,pz)+.45>py){k=Math.max(.12,(i-1.5)/20);break;}}camK+=(k-camK)*(k<camK?.6:1-Math.exp(-dt*3));if(camK<.999)eye=add(current.target,mul(sub(eye,current.target),camK));const hg=heightAt(eye[0],eye[2]);if(eye[1]<hg+.6)eye[1]=hg+.6;}
+if(eye[1]<.35)eye[1]=.35;
+const NEAR=.2,FAR=260;projM=perspective(43*PI/180,aspect,NEAR,FAR);invProjM=invert4(projM);vp=matmul(projM,lookAt(eye,current.target));
+// ombres dynamiques
+gl.bindFramebuffer(gl.READ_FRAMEBUFFER,shadowStaticFbo);gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER,shadowFbo);gl.blitFramebuffer(0,0,shadowSize,shadowSize,0,0,shadowSize,shadowSize,gl.DEPTH_BUFFER_BIT,gl.NEAREST);
+gl.bindFramebuffer(gl.FRAMEBUFFER,shadowFbo);gl.viewport(0,0,shadowSize,shadowSize);gl.enable(gl.DEPTH_TEST);gl.depthMask(true);gl.useProgram(depthProgram);gl.uniformMatrix4fv(depthLoc.uVP,false,lightVP);gl.uniform1f(depthLoc.uTime,t);gl.enable(gl.POLYGON_OFFSET_FILL);gl.polygonOffset(1.1,1.8);
+for(const d of drawList){if(d.noShadow)continue;gl.uniform1i(depthLoc.uMode,d.mode===3?3:4);gl.uniformMatrix4fv(depthLoc.uBones,false,d.bones.subarray(0,d.n*16));gl.bindVertexArray(d.mesh.vao);gl.drawArrays(gl.TRIANGLES,0,d.mesh.count);}
+gl.disable(gl.POLYGON_OFFSET_FILL);gl.bindVertexArray(null);
+// reflets planaires (caméra miroir sous le plan d'eau)
+if(Q.refl){const eyeR=[eye[0],-eye[1],eye[2]],tgtR=[current.target[0],-current.target[1],current.target[2]];reflVP=matmul(projM,lookAt(eyeR,tgtR));gl.bindFramebuffer(gl.FRAMEBUFFER,RT.refl.fbo);gl.viewport(0,0,RT.refl.w,RT.refl.h);gl.clearColor(.5,.7,.9,0);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);drawScene(reflVP,eyeR,t,1);}else reflVP=null;
+// scène opaque en MSAA
+gl.bindFramebuffer(gl.FRAMEBUFFER,RT.msaa.fbo);gl.viewport(0,0,W,H2);gl.clearColor(.55,.79,.88,0);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);drawScene(vp,eye,t,0);
+// résolution MSAA → texture couleur + 2 copies de profondeur
+gl.bindFramebuffer(gl.READ_FRAMEBUFFER,RT.msaa.fbo);gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER,RT.scene.fbo);gl.blitFramebuffer(0,0,W,H2,0,0,W,H2,gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT,gl.NEAREST);
+gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER,RT.depth2.fbo);gl.blitFramebuffer(0,0,W,H2,0,0,W,H2,gl.DEPTH_BUFFER_BIT,gl.NEAREST);
+gl.disable(gl.DEPTH_TEST);gl.depthMask(false);
+// SSAO
+if(Q.ssao){gl.bindFramebuffer(gl.FRAMEBUFFER,RT.ao.fbo);gl.viewport(0,0,RT.w2,RT.h2);gl.useProgram(ssaoProgram);bindTex(0,RT.depth.tex,ssaoLoc.uDepth);gl.uniformMatrix4fv(ssaoLoc.uProj,false,projM);gl.uniformMatrix4fv(ssaoLoc.uInvProj,false,invProjM);gl.uniform2f(ssaoLoc.uRes,RT.w2,RT.h2);fsQuad();
+gl.bindFramebuffer(gl.FRAMEBUFFER,RT.aoBlur.fbo);gl.useProgram(blurProgram);bindTex(0,RT.ao.tex,blurLoc.uTex);gl.uniform2f(blurLoc.uTexel,1/RT.w2,1/RT.h2);fsQuad();}
+// composition (AO) puis eau avec réfraction/profondeur/reflets
+gl.bindFramebuffer(gl.FRAMEBUFFER,RT.comp.fbo);gl.viewport(0,0,W,H2);gl.useProgram(compositeProgram);bindTex(0,RT.scene.tex,compLoc.uScene);bindTex(1,Q.ssao?RT.aoBlur.tex:RT.scene.tex,compLoc.uAO);gl.uniform1f(compLoc.uAOStrength,Q.ssao?.85:0);fsQuad();
+if(Q.water!==false){gl.enable(gl.DEPTH_TEST);gl.depthMask(false);gl.useProgram(waterProgram);gl.uniformMatrix4fv(waterLoc.uVP,false,vp);gl.uniform1f(waterLoc.uTime,t);gl.uniform3fv(waterLoc.uEye,eye);gl.uniform1f(waterLoc.uDay,dayF);gl.uniform1f(waterLoc.uDusk,duskF);gl.uniform2f(waterLoc.uRes,W,H2);gl.uniform1f(waterLoc.uNear,NEAR);gl.uniform1f(waterLoc.uFar,FAR);gl.uniform1f(waterLoc.uHasRefl,reflVP?1:0);gl.uniform1f(waterLoc.uExpo,EXPO);if(reflVP)gl.uniformMatrix4fv(waterLoc.uReflVP,false,reflVP);
+bindTex(0,RT.scene.tex,waterLoc.uScene);bindTex(1,RT.depth.tex,waterLoc.uDepth);bindTex(2,RT.refl.tex,waterLoc.uRefl);gl.bindVertexArray(ocean.vao);gl.drawArrays(gl.TRIANGLES,0,ocean.count);gl.bindVertexArray(null);}
+gl.disable(gl.DEPTH_TEST);gl.depthMask(true);
+// bloom
+if(Q.bloom){gl.bindFramebuffer(gl.FRAMEBUFFER,RT.bloomA.fbo);gl.viewport(0,0,RT.bloomA.w,RT.bloomA.h);gl.useProgram(brightProgram);bindTex(0,RT.comp.tex,brightLoc.uTex);fsQuad();
+gl.useProgram(gaussProgram);for(let i=0;i<2;i++){gl.bindFramebuffer(gl.FRAMEBUFFER,RT.bloomB.fbo);bindTex(0,RT.bloomA.tex,gaussLoc.uTex);gl.uniform2f(gaussLoc.uDir,1.3/RT.bloomA.w,0);fsQuad();gl.bindFramebuffer(gl.FRAMEBUFFER,RT.bloomA.fbo);bindTex(0,RT.bloomB.tex,gaussLoc.uTex);gl.uniform2f(gaussLoc.uDir,0,1.3/RT.bloomA.h);fsQuad();}}
+// image finale
+gl.bindFramebuffer(gl.FRAMEBUFFER,null);gl.viewport(0,0,W,H2);gl.useProgram(finalProgram);bindTex(0,Q.raw?(Q.raw==='scene'?RT.scene.tex:Q.raw==='ao'?RT.aoBlur.tex:Q.raw==='refl'?RT.refl.tex:RT.comp.tex):RT.comp.tex,finalLoc.uScene);gl.uniform1f(finalLoc.uRaw,Q.raw?(Q.raw==='alpha'?2:1):0);bindTex(1,Q.bloom?RT.bloomA.tex:RT.comp.tex,finalLoc.uBloom);gl.uniform1f(finalLoc.uBloomK,Q.bloom?.55:0);gl.uniform1f(finalLoc.uTime,t);gl.uniform1f(finalLoc.uDay,dayF);gl.uniform1f(finalLoc.uGain,HDR?1.0:1.6);fsQuad();
+gl.enable(gl.DEPTH_TEST);
+if(!dbg.hidden)drawDebug();
+if(!mapEl.hidden&&playing&&(frameCount&1)===0)drawMap();
+frameCount++;
+if(frameCount===2){window.azuraBoot?.ready();showStart();}
+if(frameCount>60&&Q.auto&&rawDt<.25&&document.visibilityState==='visible'){perfAcc+=rawDt;perfN++;if(perfN>=150){const avg=perfAcc/perfN;perfAcc=0;perfN=0;if(avg>1/24&&Q.level>1){Q.level--;applyQuality();toast('Qualité graphique ajustée pour rester fluide ('+qualityLabel()+')');}}}
+requestAnimationFrame(render);}
+
+window.__AZURA__={triangles:solid.count/3,vertices:solid.count,views:Object.keys(presets),seed:1729,reachCount,blocked,player,npcs,crabs,shellSpots,noteSpots,digSpot,fishSpot,lanterns,game,H,reach,HN,HS,cellH,reachAt:(x,z)=>reach[cellIndex(x,z)],teleport:(x,z)=>{const p=snap(x,z);player.x=p[0];player.z=p[1];player.y=cellH(p[0],p[1]);},talk:id=>talkTo(npcs.find(n=>n.id===id)),start:()=>startGame(loadSave()),save:saveGame,setClock:v=>{game.clock=v;},interact,stars,Q,applyQuality,HDR,dayF:()=>dayF,step:(dt=.016)=>update(dt,performance.now()*.001),closeDialog:()=>{while(dialog)advance();}};
+refreshHUD();
+requestAnimationFrame(render);
+
+})();
+</script></body></html>

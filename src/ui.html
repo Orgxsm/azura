@@ -1,0 +1,122 @@
+<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no"><meta name="theme-color" content="#087c8d"><title>Azura · L'île aux toits d'argile</title><style>
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#70c5dd;font-family:Arial,Helvetica,sans-serif;color:#fff;-webkit-user-select:none;user-select:none}
+canvas#world{display:block;width:100%;height:100%;touch-action:none;cursor:grab}
+canvas#world:active{cursor:grabbing}
+header{position:absolute;top:26px;left:34px;right:34px;display:flex;justify-content:space-between;align-items:flex-start;pointer-events:none;text-shadow:0 2px 20px #23586b55}
+.brand{display:flex;gap:14px;align-items:center}
+.brand-mark{font-family:Georgia,serif;font-size:34px;border:1px solid #ffffff80;border-radius:50%;width:51px;height:51px;display:grid;place-items:center}
+h1{font-size:23px;font-weight:500;letter-spacing:8px;margin:0 0 7px}
+header p{margin:0;font-size:12px;letter-spacing:1.6px}
+.hud{display:flex;flex-direction:column;align-items:flex-end;gap:8px;pointer-events:none}
+.badge{font-size:12px;letter-spacing:1.5px;border:1px solid #ffffff65;border-radius:30px;padding:9px 16px;background:#0b536133;backdrop-filter:blur(10px);white-space:nowrap}
+#quest{font-size:12px;line-height:1.45;max-width:260px;text-align:right;background:#11434c66;backdrop-filter:blur(10px);border:1px solid #ffffff30;border-radius:14px;padding:8px 12px}
+#quest b{display:block;font-size:10px;letter-spacing:2px;opacity:.75;font-weight:400;margin-bottom:3px}
+.views{position:absolute;left:50%;bottom:86px;transform:translateX(-50%);display:flex;background:#11434c85;backdrop-filter:blur(16px);padding:6px;border:1px solid #ffffff40;border-radius:40px;gap:3px;box-shadow:0 8px 35px #123e4220}
+button{font:inherit;color:inherit;border:0;cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+button:focus-visible{outline:3px solid #ffdd9c;outline-offset:4px}
+.views button{white-space:nowrap;padding:12px 18px;border-radius:30px;background:transparent;font-size:14px;transition:background .2s}
+.views button:hover{background:#ffffff20}
+.views button.active{background:#fff4df;color:#344b46;box-shadow:0 2px 6px #0001}
+.tools{position:absolute;right:30px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:3px;padding:7px;background:#11434c70;border:1px solid #ffffff40;backdrop-filter:blur(16px);border-radius:32px}
+.tools button{background:none;border-radius:50%;height:42px;width:42px;font-size:22px;font-weight:300}
+.tools button:hover,.tools button.active{background:#fff3}
+.tools span{height:1px;background:#fff3;margin:3px 9px}
+footer{position:absolute;bottom:28px;left:38px;right:38px;display:flex;justify-content:space-between;align-items:center;gap:20px;text-shadow:0 1px 12px #14394380;pointer-events:none}
+.location,.edition{font-size:10px;letter-spacing:1.6px}
+.location{display:flex;align-items:center;gap:10px}
+.location i{width:5px;height:5px;background:#ffe0a3;border-radius:50%}
+.location b{font-weight:400;opacity:.6;border-left:1px solid #fff7;padding-left:10px}
+.hint{font-size:12px;letter-spacing:.3px;opacity:.9;text-align:center}
+.hint em{padding:0 10px;font-style:normal}
+.hint kbd{font:inherit;border:1px solid #fff8;border-radius:5px;padding:1px 5px;background:#ffffff18}
+.edition{opacity:.65}
+#loading{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#afdcd9;z-index:10;color:#276168;transition:opacity .6s;padding:28px;text-align:center}
+#loading p{font-family:Georgia,serif;font-size:20px;max-width:500px}
+#loading-help{font-size:16px;line-height:1.6;max-width:470px}
+.sun{width:36px;height:36px;border-radius:50%;background:#fff2bb;box-shadow:0 0 70px #fff9;animation:breathe 1s infinite alternate}
+@keyframes breathe{to{transform:scale(1.2)}}
+#start{display:flex;flex-direction:column;align-items:center;gap:12px;margin-top:10px}
+#start h2{font-family:Georgia,serif;font-weight:400;font-size:40px;letter-spacing:10px;margin:0;color:#1d5661}
+#start .sub{font-size:13px;letter-spacing:3px;opacity:.7;margin-bottom:20px}
+#start button{padding:14px 30px;border-radius:30px;background:#1d5661;color:#fff4df;font-size:15px;min-width:260px;letter-spacing:.5px;box-shadow:0 8px 30px #1d566140}
+#start button.secondary{background:#ffffffa0;color:#1d5661;box-shadow:none}
+#start small{display:block;font-size:12px;opacity:.75;margin-top:4px;letter-spacing:.5px}
+#error{position:absolute;inset:25%;padding:30px;border-radius:20px;background:#154f5d;z-index:20;text-align:center;overflow:auto}
+#error button{padding:12px 20px;border-radius:20px;background:#fff;color:#154f5d}
+#error-detail{font:13px/1.5 monospace;overflow-wrap:anywhere;opacity:.8}
+#dialog{position:absolute;left:50%;bottom:150px;transform:translateX(-50%);width:min(620px,calc(100% - 40px));background:#fff8ea;color:#2c3f40;border-radius:18px;padding:16px 22px 14px;box-shadow:0 12px 40px #0d3a4240;cursor:pointer;animation:pop .18s ease-out}
+@keyframes pop{from{transform:translateX(-50%) translateY(10px);opacity:0}}
+#dialog b{display:block;font-size:11px;letter-spacing:2.5px;color:#b0642c;margin-bottom:6px}
+#dialog p{margin:0;font-size:16px;line-height:1.5;font-family:Georgia,serif}
+#dialog i{position:absolute;right:16px;bottom:10px;font-size:11px;letter-spacing:1px;opacity:.55;font-style:normal}
+#prompt{position:absolute;left:50%;bottom:150px;transform:translateX(-50%);background:#11434ccc;backdrop-filter:blur(10px);border:1px solid #ffffff40;border-radius:30px;padding:10px 18px;font-size:13px;pointer-events:none;white-space:nowrap}
+#prompt kbd{font:inherit;border:1px solid #fff8;border-radius:5px;padding:1px 6px;margin-right:6px;background:#ffffff18}
+#toast{position:absolute;left:50%;top:110px;transform:translateX(-50%);background:#fff4df;color:#344b46;border-radius:30px;padding:10px 20px;font-size:14px;pointer-events:none;box-shadow:0 8px 30px #0d3a4230;animation:toast .3s ease-out;white-space:nowrap;max-width:calc(100% - 30px)}
+@keyframes toast{from{transform:translateX(-50%) translateY(-12px);opacity:0}}
+#stick{position:absolute;left:34px;bottom:34px;width:130px;height:130px;border-radius:50%;background:#11434c40;border:1px solid #ffffff50;backdrop-filter:blur(8px);touch-action:none;display:none}
+#stick i{position:absolute;left:50%;top:50%;width:56px;height:56px;margin:-28px 0 0 -28px;border-radius:50%;background:#fff4dfcc;box-shadow:0 4px 14px #0004}
+#action{position:absolute;right:34px;bottom:44px;width:78px;height:78px;border-radius:50%;background:#fff4dfe6;color:#344b46;font-size:14px;letter-spacing:1px;display:none;box-shadow:0 8px 24px #0d3a4240;line-height:1.15}
+#menu{position:absolute;top:26px;left:50%;transform:translateX(-50%);background:#11434c70;border:1px solid #ffffff40;backdrop-filter:blur(16px);border-radius:30px;padding:9px 18px;font-size:12px;letter-spacing:2px}
+#panel{position:absolute;inset:0;background:#0b3b4488;backdrop-filter:blur(6px);z-index:8;display:flex;align-items:center;justify-content:center}
+#panel div{background:#fff8ea;color:#2c3f40;border-radius:22px;padding:26px 30px;width:min(420px,calc(100% - 40px));display:flex;flex-direction:column;gap:10px;text-align:center}
+#panel h2{font-family:Georgia,serif;font-weight:400;letter-spacing:6px;margin:0 0 4px;color:#1d5661}
+#panel p{margin:0 0 10px;font-size:13px;opacity:.75;line-height:1.5}
+#panel button{padding:13px 22px;border-radius:30px;background:#1d5661;color:#fff4df;font-size:14px}
+#panel button.secondary{background:#e9e0cc;color:#1d5661}
+#panel button.danger{background:#f1d4c8;color:#8d3a1d}
+#debug{position:absolute;left:20px;top:110px;width:220px;height:220px;image-rendering:pixelated;border:1px solid #fff8;border-radius:8px;pointer-events:none}
+#name{font:inherit;font-size:15px;padding:12px 18px;border-radius:30px;border:1px solid #1d566150;background:#ffffffb0;color:#1d5661;text-align:center;width:260px;outline:none}
+#name:focus{border-color:#1d5661}
+#map{position:absolute;left:34px;bottom:70px;width:190px;height:190px;border-radius:14px;border:1px solid #ffffff60;box-shadow:0 8px 30px #0d3a4230;background:#0b536180;pointer-events:none}
+#fishing{position:absolute;left:50%;bottom:150px;transform:translateX(-50%);width:min(420px,calc(100% - 40px));background:#fff8ea;color:#2c3f40;border-radius:18px;padding:16px 22px 18px;box-shadow:0 12px 40px #0d3a4240;text-align:center}
+#fishing b{display:block;font-size:11px;letter-spacing:2.5px;color:#b0642c;margin-bottom:8px}
+#fishing p{margin:0 0 12px;font-family:Georgia,serif;font-size:15px}
+.bar{position:relative;height:22px;border-radius:11px;background:#d8e6e5;overflow:hidden}
+.bar .zone{position:absolute;top:0;bottom:0;background:#5d9b74;border-radius:11px}
+.bar .cursor{position:absolute;top:-2px;width:6px;height:26px;background:#b0642c;border-radius:3px;margin-left:-3px}
+#fishing small{display:block;margin-top:10px;font-size:11px;letter-spacing:1px;opacity:.6}
+#quest-text{white-space:pre-line}
+#inv{font-size:11px;opacity:.85;margin-top:5px;letter-spacing:.5px}
+[hidden]{display:none!important}
+@media(pointer:coarse){#stick,#action{display:block}.hint .kb{display:none}#map{display:none}}
+@media(max-width:650px){
+header{top:max(18px,env(safe-area-inset-top));left:18px;right:18px}
+.brand-mark{display:none}
+h1{font-size:20px;letter-spacing:6px;margin-bottom:4px}
+header p{font-size:10px}
+.badge{font-size:10px;padding:7px 10px;letter-spacing:1px}
+#quest{font-size:11px;max-width:190px}
+.tools{right:12px;padding:4px;top:auto;bottom:150px;transform:none}
+.tools button{width:37px;height:37px}
+.views{top:max(90px,calc(env(safe-area-inset-top) + 70px));bottom:auto;left:18px;transform:none;padding:4px}
+.views button{padding:9px 11px;font-size:12px}
+#menu{top:auto;bottom:max(140px,calc(env(safe-area-inset-bottom) + 132px));left:auto;right:auto;transform:none;left:50%;transform:translateX(-50%)}
+footer{left:18px;right:18px;bottom:max(12px,env(safe-area-inset-bottom));justify-content:center}
+.location,.edition{display:none}
+.hint{font-size:11px}
+#dialog,#prompt,#fishing{bottom:180px}
+#dialog p{font-size:15px}
+#error{inset:20% 8%}
+#start h2{font-size:32px}
+}
+</style></head><body>
+<canvas id="world" aria-label="Village tropical en trois dimensions. Utilise les flèches ou le joystick pour marcher, glisse pour tourner la caméra."></canvas>
+<canvas id="debug" width="400" height="400" hidden></canvas>
+<div id="loading"><span class="sun"></span><p id="loading-title">Cet aperçu ne lance pas la 3D</p><div id="loading-help">Sur iPhone, l’aperçu d’un fichier peut afficher la page sans exécuter le jeu.<br>Utilise le lien du site dans Safari, ou ouvre ce fichier dans un navigateur sur ordinateur.</div>
+<div id="start" hidden><h2>AZURA</h2><span class="sub">L'ÎLE AUX TOITS D'ARGILE</span><button id="continue" hidden>Reprendre l'aventure<small id="continue-info"></small></button><input id="name" placeholder="Ton prénom (optionnel)" maxlength="14" autocomplete="off"><button id="new" class="secondary">Nouvelle partie</button></div></div>
+<header><div class="brand"><span class="brand-mark">A</span><div><h1>AZURA</h1><p>L'île aux toits d'argile</p></div></div>
+<div class="hud"><span class="badge" id="stats">🐚 0/12 · ⭐ 0/10 · ☀️</span><div id="quest"><b>OBJECTIF</b><span id="quest-text">Explore l'île et parle aux habitants.</span><div id="inv" hidden></div></div></div></header>
+<button id="menu" aria-label="Menu du jeu">MENU</button>
+<aside class="views" aria-label="Points de vue"><button data-view="play" class="active">Jouer</button><button data-view="village">Le village</button><button data-view="port">La crique</button><button data-view="summit">Le belvédère</button></aside>
+<div class="tools"><button id="rotate" aria-label="Activer la rotation automatique" title="Rotation automatique">↻</button><span></span><button id="plus" aria-label="Zoom avant">+</button><button id="minus" aria-label="Zoom arrière">−</button><span></span><button id="reset" aria-label="Revenir sur le personnage" title="Revenir sur le personnage">⌂</button><button id="fullscreen" aria-label="Plein écran" title="Plein écran">⛶</button><span></span><button id="sound" aria-label="Couper le son" title="Son">🔊</button></div>
+<canvas id="map" width="400" height="400" aria-label="Carte de l'île"></canvas>
+<div id="fishing" hidden><b>PÊCHE</b><p>Appuie sur <kbd>E</kbd> quand le curseur est dans la zone verte.</p><div class="bar"><div class="zone"></div><div class="cursor"></div></div><small>ÉCHAP · ABANDONNER</small></div>
+<div id="stick" aria-hidden="true"><i></i></div>
+<button id="action" hidden>Parler</button>
+<div id="prompt" hidden><kbd>E</kbd><span></span></div>
+<div id="dialog" hidden><b></b><p></p><i>ESPACE · CONTINUER</i></div>
+<div id="toast" hidden></div>
+<div id="panel" hidden><div><h2>AZURA</h2><p id="panel-info"></p><button id="save-now">Sauvegarder maintenant</button><button id="quality" class="secondary">Qualité graphique : Auto</button><button id="resume" class="secondary">Reprendre</button><button id="restart" class="danger">Recommencer une nouvelle partie</button></div></div>
+<footer><span class="location"><i></i> ARCHIPEL D'AZURA <b>01</b></span><span class="hint" id="hint"><span class="kb"><kbd>ZQSD</kbd> ou flèches pour marcher <em>·</em> <kbd>E</kbd> parler <em>·</em> <kbd>Maj</kbd> courir <em>·</em> <kbd>M</kbd> carte <em>·</em> </span>Glisser pour tourner la caméra</span><span class="edition">SAUVEGARDE AUTO</span></footer>
+<div id="error" hidden><h2>La 3D n'a pas pu démarrer</h2><p>Essaie de rouvrir cette page dans Safari ou Chrome avec WebGL activé.</p><button onclick="location.reload()">Réessayer</button></div>
