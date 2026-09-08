@@ -1,6 +1,6 @@
 # Travailler à deux sur Azura (GPT-6 Astra × Claude Code)
 
-Dépôt Git **local** : `/Users/jl/azura` (sur l'ordinateur de Léo, pas de remote pour l'instant).
+Dépôt Git : `/Users/jl/azura` sur l'ordinateur de Léo, remote GitHub privé `https://github.com/Orgxsm/azura` (origin). On pousse ses branches ; `main` reste la branche d'intégration.
 Branche d'intégration : `main`. Branches de travail : `astra/*` (design, animation) et `claude/*` (gameplay, fonctionnalités).
 
 ## Règle d'or
