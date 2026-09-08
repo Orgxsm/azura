@@ -14,7 +14,7 @@ Emplacements proposés (x, z en mètres, la mer à y = 0) :
 ## Phase 1 — Île du Phare + voyage en bateau
 
 ### Astra (design / animation)
-- [ ] `src/islands/phare.js` : relief (ellipsoïdes de roche comme Azura, mais plus élancé), phare (tour haute, lanterne émissive mode 7 au sommet, galerie), 3–4 maisons, escalier taillé de la crique jusqu'au phare, un ponton d'accostage à (34, −5) orienté vers Azura. Déclarer `platforms` et `stairs` pour que tout soit praticable (voir COLLAB.md §1). Rester dans x ∈ [20, 48], z ∈ [−32, −4].
+- [~] `src/islands/phare.js` : relief (ellipsoïdes de roche comme Azura, mais plus élancé), phare (tour haute, lanterne émissive mode 7 au sommet, galerie), 3–4 maisons, escalier taillé de la crique jusqu'au phare, un ponton d'accostage à (34, −5) orienté vers Azura. Déclarer `platforms` et `stairs` pour que tout soit praticable (voir COLLAB.md §1). Rester dans x ∈ [20, 48], z ∈ [−32, −4].
 - [ ] `src/rig.js` : maillage du gardien du phare (vieux marin, ciré jaune, lanterne à la main) et d'une chèvre (4 pattes, cornes). `src/anim.js` : `poseGoat(e,t)`.
 - [ ] Animation du voilier en traversée : voile qui se gonfle, gîte, sillage (mousse) — proposer dans `rig.js` / `shaders.js`.
 - [ ] Faisceau tournant du phare la nuit (géométrie translucide mode 7 ou effet dans `shaders.js`).
@@ -29,8 +29,8 @@ Emplacements proposés (x, z en mètres, la mer à y = 0) :
 - [ ] Sauvegarde v3 compatible v1/v2.
 
 ### Interface entre les deux (à faire en premier, ensemble)
-- [ ] Claude publie dans `src/islands/README.md` le gabarit d'un fichier d'île (fonction `buildIsland_phare()` appelée depuis `island.js` après Azura, tableaux à remplir, zone de coordonnées).
-- [ ] Astra livre une première version du relief seul (sans bâtiments) pour que Claude branche la praticabilité et le bateau dessus, puis complète.
+- [x] Claude publie dans `src/islands/README.md` le gabarit d'un fichier d'île (fonction `buildIsland_phare()` appelée depuis `island.js` après Azura, tableaux à remplir, zone de coordonnées).
+- [x] Astra livre une première version du relief seul (livraison 1 intégrée le 9 sept. 2026, commit sur `astra/design` → `main`) (sans bâtiments) pour que Claude branche la praticabilité et le bateau dessus, puis complète.
 
 ## Phase 2 (après validation par Léo)
 - [ ] Îlot Sauvage, Baie des Pêcheurs.
@@ -38,5 +38,6 @@ Emplacements proposés (x, z en mètres, la mer à y = 0) :
 - [ ] Événements jour/nuit (marché le matin, fête le soir).
 
 ## Notes
+- **Retour de Claude sur la livraison 1 du Phare** : contrat de coordonnées parfait, aléa bien isolé, rien de cassé. Visuellement, le relief est encore une masse lisse : pour la suite, casser la silhouette (vires, éboulis, deux ou trois paliers de roche comme les `tiers` d'Azura), garder la crique sud-est dégagée, et prévoir l'escalier taillé de la crique (y≈0,6) au plateau (y=12,5) avec des paliers `platforms` tous les 3–4 m de dénivelé. Les ombres et la praticabilité au-delà de x,z∈[−16,16] arrivent avec l'extension de `world.js` (Claude, en cours).
 - Le fichier joué par Léo est `~/Downloads/Azura-3D.html` (copié par `build.py`).
 - Sauvegarde dans `localStorage` du navigateur, clé `azura-save-v1` (format v2).
