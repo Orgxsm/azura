@@ -1,10 +1,10 @@
 // render.js — ombres, cibles de rendu (MSAA/HDR), reflets planaires, SSAO, eau, bloom, image finale, qualité adaptative, boucle render().
 // Propriétaire : GAMEPLAY (Claude Code) pour la structure ; DESIGN pour les réglages visuels (voir shaders.js).
 // ---------- ombres : carte statique cuite une fois + copie par image pour les objets mobiles ----------
-const shadowSize=gl.getParameter(gl.MAX_TEXTURE_SIZE)>=4096?4096:2048;
-function depthTex(){const t=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,t);gl.texImage2D(gl.TEXTURE_2D,0,gl.DEPTH_COMPONENT24,shadowSize,shadowSize,0,gl.DEPTH_COMPONENT,gl.UNSIGNED_INT,null);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.NEAREST);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.NEAREST);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);return t;}
+const shadowSize=gl.getParameter(gl.MAX_TEXTURE_SIZE)>=4096?4096:2048,shadow2Size=1024;
+function depthTex(sz=shadowSize){const t=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,t);gl.texImage2D(gl.TEXTURE_2D,0,gl.DEPTH_COMPONENT24,sz,sz,0,gl.DEPTH_COMPONENT,gl.UNSIGNED_INT,null);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.NEAREST);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.NEAREST);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);return t;}
 function depthFbo(t){const f=gl.createFramebuffer();gl.bindFramebuffer(gl.FRAMEBUFFER,f);gl.framebufferTexture2D(gl.FRAMEBUFFER,gl.DEPTH_ATTACHMENT,gl.TEXTURE_2D,t,0);gl.drawBuffers([gl.NONE]);gl.readBuffer(gl.NONE);if(gl.checkFramebufferStatus(gl.FRAMEBUFFER)!==gl.FRAMEBUFFER_COMPLETE)throw Error('Shadow framebuffer incomplete');return f;}
-const shadowStatic=depthTex(),shadowStaticFbo=depthFbo(shadowStatic),shadowTexture=depthTex(),shadowFbo=depthFbo(shadowTexture);
+const shadowStatic=depthTex(),shadowStaticFbo=depthFbo(shadowStatic),shadowTexture=depthTex(shadow2Size),shadowFbo=depthFbo(shadowTexture);let lightVP2=I4;
 const lightDir=norm([-25,47,30]),lightCenter=[WORLD.x0+WORLD.size/2,5,WORLD.z0+WORLD.size/2];const lightVP=matmul(ortho(-72,72,-72,72,1,260),lookAt(add(lightCenter,mul(lightDir,120)),lightCenter));
 gl.bindFramebuffer(gl.FRAMEBUFFER,shadowStaticFbo);gl.enable(gl.DEPTH_TEST);gl.disable(gl.CULL_FACE);gl.viewport(0,0,shadowSize,shadowSize);gl.clear(gl.DEPTH_BUFFER_BIT);
 gl.useProgram(depthProgram);gl.uniformMatrix4fv(depthLoc.uVP,false,lightVP);gl.uniformMatrix4fv(depthLoc.uBones,false,I4);gl.uniform1i(depthLoc.uMode,0);
@@ -17,7 +17,7 @@ let det=b00*b11-b01*b10+b02*b09+b03*b08-b04*b07+b05*b06;if(!det)return o;det=1/d
 o[0]=(a11*b11-a12*b10+a13*b09)*det;o[1]=(a02*b10-a01*b11-a03*b09)*det;o[2]=(a31*b05-a32*b04+a33*b03)*det;o[3]=(a22*b04-a21*b05-a23*b03)*det;o[4]=(a12*b08-a10*b11-a13*b07)*det;o[5]=(a00*b11-a02*b08+a03*b07)*det;o[6]=(a32*b02-a30*b05-a33*b01)*det;o[7]=(a20*b05-a22*b02+a23*b01)*det;o[8]=(a10*b10-a11*b08+a13*b06)*det;o[9]=(a01*b08-a00*b10-a03*b06)*det;o[10]=(a30*b04-a31*b02+a33*b00)*det;o[11]=(a21*b02-a20*b04-a23*b00)*det;o[12]=(a11*b07-a10*b09-a12*b06)*det;o[13]=(a00*b09-a01*b07+a02*b06)*det;o[14]=(a31*b01-a30*b03-a32*b00)*det;o[15]=(a20*b03-a21*b01+a22*b00)*det;return o;}
 const Q={level:3,auto:true,refl:true,ssao:true,bloom:true,dpr:1.5};
 try{const q=localStorage.getItem('azura-quality');if(q&&q!=='auto'){Q.auto=false;Q.level=clamp(parseInt(q,10)||3,1,3);}}catch(e){}
-function applyQuality(){Q.refl=Q.level>=3;Q.ssao=Q.level>=2;Q.bloom=true;Q.dpr=[1,1.25,1.5][Q.level-1];resize();}
+function applyQuality(){Q.refl=Q.level>=3;Q.ssao=Q.level>=2;Q.bloom=true;Q.dpr=[.85,1,1.25][Q.level-1];resize();}
 function qualityLabel(){return Q.auto?'Auto ('+['Fluide','Élevée','Ultra'][Q.level-1]+')':['Fluide','Élevée','Ultra'][Q.level-1];}
 function cycleQuality(){if(Q.auto){Q.auto=false;Q.level=3;}else if(Q.level>1)Q.level--;else{Q.auto=true;Q.level=3;}try{localStorage.setItem('azura-quality',Q.auto?'auto':String(Q.level));}catch(e){}applyQuality();$('#quality').textContent='Qualité graphique : '+qualityLabel();}
 $('#quality').onclick=cycleQuality;
@@ -32,13 +32,13 @@ const samples=Math.min(Q.msaa??4,gl.getParameter(gl.MAX_SAMPLES));
 {const depth=tex2d(W,H2,gl.DEPTH_COMPONENT24,gl.DEPTH_COMPONENT,gl.UNSIGNED_INT,gl.NEAREST);const tex=tex2d(W,H2,CF,gl.RGBA,CT,gl.LINEAR);RT.comp={fbo:fboOf(tex,depth),tex};RT.depth2={fbo:fboOf(null,depth),tex:depth};}
 {const tex=tex2d(w2,h2,gl.RGBA8,gl.RGBA,gl.UNSIGNED_BYTE,gl.LINEAR);RT.ao={fbo:fboOf(tex,null),tex};const tex2=tex2d(w2,h2,gl.RGBA8,gl.RGBA,gl.UNSIGNED_BYTE,gl.LINEAR);RT.aoBlur={fbo:fboOf(tex2,null),tex:tex2};}
 {const tex=tex2d(w4,h4,CF,gl.RGBA,CT,gl.LINEAR);RT.bloomA={fbo:fboOf(tex,null),tex,w:w4,h:h4};const tex2=tex2d(w4,h4,CF,gl.RGBA,CT,gl.LINEAR);RT.bloomB={fbo:fboOf(tex2,null),tex:tex2,w:w4,h:h4};}
-{const fbo=gl.createFramebuffer();gl.bindFramebuffer(gl.FRAMEBUFFER,fbo);const tex=tex2d(w2,h2,CF,gl.RGBA,CT,gl.LINEAR);gl.framebufferTexture2D(gl.FRAMEBUFFER,gl.COLOR_ATTACHMENT0,gl.TEXTURE_2D,tex,0);const rbd=gl.createRenderbuffer();gl.bindRenderbuffer(gl.RENDERBUFFER,rbd);gl.renderbufferStorage(gl.RENDERBUFFER,gl.DEPTH_COMPONENT24,w2,h2);gl.framebufferRenderbuffer(gl.FRAMEBUFFER,gl.DEPTH_ATTACHMENT,gl.RENDERBUFFER,rbd);if(gl.checkFramebufferStatus(gl.FRAMEBUFFER)!==gl.FRAMEBUFFER_COMPLETE)throw Error('Reflection framebuffer incomplete');RT.refl={fbo,tex,rbd,w:w2,h:h2};}
+{const fbo=gl.createFramebuffer();gl.bindFramebuffer(gl.FRAMEBUFFER,fbo);const w3=Math.ceil(W/3),h3=Math.ceil(H2/3);const tex=tex2d(w3,h3,CF,gl.RGBA,CT,gl.LINEAR);gl.framebufferTexture2D(gl.FRAMEBUFFER,gl.COLOR_ATTACHMENT0,gl.TEXTURE_2D,tex,0);const rbd=gl.createRenderbuffer();gl.bindRenderbuffer(gl.RENDERBUFFER,rbd);gl.renderbufferStorage(gl.RENDERBUFFER,gl.DEPTH_COMPONENT24,w3,h3);gl.framebufferRenderbuffer(gl.FRAMEBUFFER,gl.DEPTH_ATTACHMENT,gl.RENDERBUFFER,rbd);if(gl.checkFramebufferStatus(gl.FRAMEBUFFER)!==gl.FRAMEBUFFER_COMPLETE)throw Error('Reflection framebuffer incomplete');RT.refl={fbo,tex,rbd,w:w3,h:h3};}
 RT.w2=w2;RT.h2=h2;gl.bindFramebuffer(gl.FRAMEBUFFER,null);}
 const EXPO=HDR?1:.62;
 function resize(){cssW=canvas.clientWidth;cssH=canvas.clientHeight;const dpr=Math.min(window.devicePixelRatio||1,Q.dpr);canvas.width=Math.max(2,Math.floor(cssW*dpr));canvas.height=Math.max(2,Math.floor(cssH*dpr));makeTargets();}
 applyQuality();window.addEventListener('resize',resize);
 for(const t of[shadowStatic,shadowTexture]){gl.bindTexture(gl.TEXTURE_2D,t);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_COMPARE_MODE,gl.COMPARE_REF_TO_TEXTURE);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_COMPARE_FUNC,gl.LEQUAL);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);}
-let visible=true,perfAcc=0,perfN=0;
+let visible=true,perfAcc=0,perfN=0,fpsAcc=0,fpsN=0,lastFps=0;const fpsEl=$('#fps');
 document.addEventListener('visibilitychange',()=>{visible=!document.hidden;if(visible){lastTime=performance.now();requestAnimationFrame(render);}else if(playing)saveGame(true);});
 canvas.addEventListener('webglcontextlost',e=>{e.preventDefault();visible=false;if(playing)saveGame(true);$('#error').hidden=false;});
 canvas.addEventListener('webglcontextrestored',()=>location.reload());
@@ -46,14 +46,18 @@ const dbg=$('#debug');
 function drawDebug(){if(dbg.width!==HN){dbg.width=HN;dbg.height=HN;}const c=dbg.getContext('2d');const img=c.createImageData(HN,HN);for(let iz=0;iz<HN;iz++)for(let ix=0;ix<HN;ix++){const i=iz*HN+ix,h=H[i],o=(iz*HN+ix)*4;let r,g,b;if(h<=SEA){r=30;g=90;b=160;}else{const v=clamp((h+1)/16,0,1)*255;r=g=b=v;if(reach[i]){g=Math.min(255,v+90);r*=.55;b*=.55;}}img.data[o]=r;img.data[o+1]=g;img.data[o+2]=b;img.data[o+3]=255;}c.putImageData(img,0,0);
 const dot=(x,z,col)=>{c.fillStyle=col;c.fillRect((x-WORLD.x0)/HS-2,(z-WORLD.z0)/HS-2,5,5);};dot(player.x,player.z,'#f00');for(const n of npcs)dot(n.x,n.z,n.cat?'#fa0':'#fff');for(const s of shellSpots)if(!game.shells.has(s.id))dot(s.x,s.z,'#f0f');}
 function drawStatic(m,mode){gl.uniform1i(locations.uMode,mode);gl.bindVertexArray(m.vao);gl.drawArrays(gl.TRIANGLES,0,m.count);}
+function frustumPlanes(m){const P=[];for(let i=0;i<3;i++)for(const sgn of[1,-1]){P.push([m[3]+sgn*m[i],m[7]+sgn*m[4+i],m[11]+sgn*m[8+i],m[15]+sgn*m[12+i]]);}return P;}
+function sphereVisible(P,c,r){for(const p of P){const l=Math.hypot(p[0],p[1],p[2])||1;if((p[0]*c[0]+p[1]*c[1]+p[2]*c[2]+p[3])/l<-r)return false;}return true;}
+let drawnRanges=0;
+function drawSolid(VP){const P=frustumPlanes(VP);gl.uniform1i(locations.uMode,0);gl.bindVertexArray(solid.vao);drawnRanges=0;for(const r of solidRanges){const isl=r.id&&islands.find(i=>i.id===r.id);if(isl&&!sphereVisible(P,[isl.center[0],9,isl.center[1]],isl.r+16))continue;gl.drawArrays(gl.TRIANGLES,r.start,r.end-r.start);drawnRanges++;}}
 function fsQuad(){gl.bindVertexArray(null);gl.drawArrays(gl.TRIANGLES,0,3);}
 let projM,invProjM,reflVP=null;
 function drawScene(VP,eyeV,t,clip){const inv=invert4(VP);
 gl.disable(gl.DEPTH_TEST);gl.useProgram(skyProgram);gl.uniformMatrix4fv(skyLoc.uInvVP,false,inv);gl.uniform3fv(skyLoc.uEye,eyeV);gl.uniform1f(skyLoc.uDay,dayF);gl.uniform1f(skyLoc.uDusk,duskF);gl.uniform1f(skyLoc.uTime,t);gl.uniform1f(skyLoc.uExpo,EXPO);fsQuad();gl.enable(gl.DEPTH_TEST);
 gl.useProgram(mainProgram);gl.uniformMatrix4fv(locations.uVP,false,VP);gl.uniformMatrix4fv(locations.uLight,false,lightVP);gl.uniform3fv(locations.uEye,eyeV);gl.uniform1f(locations.uTime,t);gl.uniform1f(locations.uShadowTexel,1/shadowSize);gl.uniform1f(locations.uDay,dayF);gl.uniform1f(locations.uDusk,duskF);gl.uniform1f(locations.uClip,clip);gl.uniform1f(locations.uExpo,EXPO);gl.uniform1f(locations.uDbg,Q.dbg||0);
-gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,shadowTexture);gl.uniform1i(locations.uShadow,0);
+gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,shadowStatic);gl.uniform1i(locations.uShadow,0);gl.activeTexture(gl.TEXTURE1);gl.bindTexture(gl.TEXTURE_2D,shadowTexture);gl.uniform1i(locations.uShadow2,1);gl.uniformMatrix4fv(locations.uLight2,false,lightVP2);gl.uniform1f(locations.uShadowTexel2,1/shadow2Size);
 if(Q.flat){gl.useProgram(flatProgram);gl.uniformMatrix4fv(gl.getUniformLocation(flatProgram,'uVP'),false,VP);gl.bindVertexArray(solid.vao);gl.drawArrays(gl.TRIANGLES,0,solid.count);gl.bindVertexArray(null);return;}
-gl.uniformMatrix4fv(locations.uBones,false,I4);drawStatic(clouds,6);drawStatic(solid,0);
+gl.uniformMatrix4fv(locations.uBones,false,I4);drawStatic(clouds,6);drawSolid(VP);
 for(const d of drawList){gl.uniform1i(locations.uMode,d.mode);gl.uniformMatrix4fv(locations.uBones,false,d.bones.subarray(0,d.n*16));gl.bindVertexArray(d.mesh.vao);gl.drawArrays(gl.TRIANGLES,0,d.mesh.count);}
 gl.bindVertexArray(null);}
 function bindTex(unit,tex,loc){gl.activeTexture(gl.TEXTURE0+unit);gl.bindTexture(gl.TEXTURE_2D,tex);gl.uniform1i(loc,unit);}
@@ -70,8 +74,8 @@ if(cam.mode==='follow'){let k=1;for(let i=2;i<=20;i++){const f=i/20,px=current.t
 if(eye[1]<.35)eye[1]=.35;
 const NEAR=.2,FAR=260;projM=perspective(43*PI/180,aspect,NEAR,FAR);invProjM=invert4(projM);vp=matmul(projM,lookAt(eye,current.target));
 // ombres dynamiques
-gl.bindFramebuffer(gl.READ_FRAMEBUFFER,shadowStaticFbo);gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER,shadowFbo);gl.blitFramebuffer(0,0,shadowSize,shadowSize,0,0,shadowSize,shadowSize,gl.DEPTH_BUFFER_BIT,gl.NEAREST);
-gl.bindFramebuffer(gl.FRAMEBUFFER,shadowFbo);gl.viewport(0,0,shadowSize,shadowSize);gl.enable(gl.DEPTH_TEST);gl.depthMask(true);gl.useProgram(depthProgram);gl.uniformMatrix4fv(depthLoc.uVP,false,lightVP);gl.uniform1f(depthLoc.uTime,t);gl.enable(gl.POLYGON_OFFSET_FILL);gl.polygonOffset(1.1,1.8);
+{const c=[player.x,player.y+.8,player.z];lightVP2=matmul(ortho(-11,11,-11,11,1,90),lookAt(add(c,mul(lightDir,45)),c));}
+gl.bindFramebuffer(gl.FRAMEBUFFER,shadowFbo);gl.viewport(0,0,shadow2Size,shadow2Size);gl.enable(gl.DEPTH_TEST);gl.depthMask(true);gl.clear(gl.DEPTH_BUFFER_BIT);gl.useProgram(depthProgram);gl.uniformMatrix4fv(depthLoc.uVP,false,lightVP2);gl.uniform1f(depthLoc.uTime,t);gl.enable(gl.POLYGON_OFFSET_FILL);gl.polygonOffset(1.1,1.8);
 for(const d of drawList){if(d.noShadow)continue;gl.uniform1i(depthLoc.uMode,d.mode===3?3:4);gl.uniformMatrix4fv(depthLoc.uBones,false,d.bones.subarray(0,d.n*16));gl.bindVertexArray(d.mesh.vao);gl.drawArrays(gl.TRIANGLES,0,d.mesh.count);}
 gl.disable(gl.POLYGON_OFFSET_FILL);gl.bindVertexArray(null);
 // reflets planaires (caméra miroir sous le plan d'eau)
@@ -100,9 +104,10 @@ if(!dbg.hidden)drawDebug();
 if(!mapEl.hidden&&playing&&(frameCount&1)===0)drawMap();
 frameCount++;
 if(frameCount===2){window.azuraBoot?.ready();showStart();}
+fpsAcc+=rawDt;fpsN++;if(fpsAcc>=.5){const f=Math.round(fpsN/fpsAcc);fpsAcc=0;fpsN=0;lastFps=f;if(!fpsEl.hidden)fpsEl.textContent=f+' im/s · '+qualityLabel()+' · '+W+'×'+H2+' · îles '+drawnRanges;}
 if(frameCount>60&&Q.auto&&rawDt<.25&&document.visibilityState==='visible'){perfAcc+=rawDt;perfN++;if(perfN>=150){const avg=perfAcc/perfN;perfAcc=0;perfN=0;if(avg>1/24&&Q.level>1){Q.level--;applyQuality();toast('Qualité graphique ajustée pour rester fluide ('+qualityLabel()+')');}}}
 requestAnimationFrame(render);}
 
-window.__AZURA__={triangles:solid.count/3,vertices:solid.count,views:Object.keys(presets),seed:1729,reachCount,blocked,islands,voyage,startVoyage,currentIsland,player,npcs,crabs,goats,shellSpots,noteSpots,digSpot,fishSpot,lanterns,game,H,reach,HN,HS,cellH,reachAt:(x,z)=>reach[cellIndex(x,z)],teleport:(x,z)=>{const p=snap(x,z);player.x=p[0];player.z=p[1];player.y=cellH(p[0],p[1]);},talk:id=>talkTo(npcs.find(n=>n.id===id)),start:()=>startGame(loadSave()),save:saveGame,setClock:v=>{game.clock=v;},interact,stars,Q,applyQuality,HDR,dayF:()=>dayF,step:(dt=.016)=>update(dt,performance.now()*.001),look:(theta,phi,r,target)=>{cam.mode='cine';goal={theta,phi,r,target:[...target]};Object.assign(current,structuredClone(goal));},closeDialog:()=>{while(dialog)advance();}};
+window.__AZURA__={triangles:solid.count/3,vertices:solid.count,views:Object.keys(presets),seed:1729,reachCount,blocked,islands,voyage,startVoyage,currentIsland,player,npcs,crabs,goats,shellSpots,noteSpots,digSpot,fishSpot,lanterns,game,H,reach,HN,HS,cellH,reachAt:(x,z)=>reach[cellIndex(x,z)],teleport:(x,z)=>{const p=snap(x,z);player.x=p[0];player.z=p[1];player.y=cellH(p[0],p[1]);},talk:id=>talkTo(npcs.find(n=>n.id===id)),start:()=>startGame(loadSave()),save:saveGame,setClock:v=>{game.clock=v;},interact,stars,Q,applyQuality,HDR,fps:()=>lastFps,dayF:()=>dayF,step:(dt=.016)=>update(dt,performance.now()*.001),look:(theta,phi,r,target)=>{cam.mode='cine';goal={theta,phi,r,target:[...target]};Object.assign(current,structuredClone(goal));},closeDialog:()=>{while(dialog)advance();}};
 refreshHUD();
 requestAnimationFrame(render);

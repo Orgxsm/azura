@@ -10,9 +10,12 @@ const fbo=gl.createFramebuffer();gl.bindFramebuffer(gl.FRAMEBUFFER,fbo);gl.frame
 if(gl.checkFramebufferStatus(gl.FRAMEBUFFER)!==gl.FRAMEBUFFER_COMPLETE)throw Error('Heightmap framebuffer incomplete');
 gl.viewport(0,0,HN,HN);gl.clearColor(0,0,0,1);gl.enable(gl.DEPTH_TEST);gl.disable(gl.CULL_FACE);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
 gl.useProgram(hmProgram);gl.uniformMatrix4fv(gl.getUniformLocation(hmProgram,'uVP'),false,new Float32Array([1/WH,0,0,0,0,0,-1/20,0,0,1/WH,0,0,-WCX/WH,-WCZ/WH,0,1]));
-gl.bindVertexArray(solid.vao);gl.drawArrays(gl.TRIANGLES,0,solid.count);gl.bindVertexArray(null);
+const uGreen=gl.getUniformLocation(hmProgram,'uGreen');gl.uniform1f(uGreen,0);gl.bindVertexArray(solid.vao);gl.drawArrays(gl.TRIANGLES,0,solid.count);gl.bindVertexArray(null);
 const px=new Uint8Array(HN*HN*4);gl.readPixels(0,0,HN,HN,gl.RGBA,gl.UNSIGNED_BYTE,px);
 for(let i=0;i<HN*HN;i++)H[i]=((px[i*4]+px[i*4+1]/255)/255)*30-5;
+// Second passage : feuillage seul (buissons bas = obstacles, canopées ignorées)
+gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);gl.uniform1f(uGreen,1);gl.bindVertexArray(solid.vao);gl.drawArrays(gl.TRIANGLES,0,solid.count);gl.bindVertexArray(null);gl.readPixels(0,0,HN,HN,gl.RGBA,gl.UNSIGNED_BYTE,px);
+var foliageTop=new Float32Array(HN*HN);for(let i=0;i<HN*HN;i++)foliageTop[i]=((px[i*4]+px[i*4+1]/255)/255)*30-5;
 gl.bindFramebuffer(gl.FRAMEBUFFER,null);gl.deleteFramebuffer(fbo);gl.deleteTexture(tex);gl.deleteRenderbuffer(rb);
 }
 const cellIndex=(x,z)=>{const ix=Math.floor((x-WORLD.x0)/HS),iz=Math.floor((z-WORLD.z0)/HS);return ix<0||iz<0||ix>=HN||iz>=HN?-1:iz*HN+ix;};
@@ -26,6 +29,8 @@ const x0=Math.min(a[0],b[0])-hw,x1=Math.max(a[0],b[0])+hw,z0=Math.min(a[2],b[2])
 for(let z=z0;z<=z1;z+=HS)for(let x=x0;x<=x1;x+=HS){const i=cellIndex(x,z);if(i<0)continue;const px=x-((x-WORLD.x0)%HS)+HS/2,pz=z-((z-WORLD.z0)%HS)+HS/2;let t=((px-a[0])*dx+(pz-a[2])*dz)/(len*len);if(t<-.02||t>1.02)continue;t=clamp(t,0,1);const perp=Math.abs((px-a[0])*dz-(pz-a[2])*dx)/len;if(perp>hw||perp>=stairDist[i])continue;stairDist[i]=perp;H[i]=a[1]+(b[1]-a[1])*t-.01;}}
 // Les emprises des maisons et des tours sont interdites : on ne grimpe jamais sur un toit.
 const blocked=new Uint8Array(HN*HN);
+for(let i=0;i<HN*HN;i++){const d=foliageTop[i]-H[i];if(d>.45&&d<1.7&&stairDist[i]>=1e9&&H[i]>SEA)blocked[i]=1;}
+for(const p of platforms)for(let z=p.z-p.r;z<=p.z+p.r;z+=HS)for(let x=p.x-p.r;x<=p.x+p.r;x+=HS){const i=cellIndex(x,z);if(i>=0&&Math.hypot(x-p.x,z-p.z)<=p.r)blocked[i]=0;}
 for(const t of terraces){const m=t.round?.15:.3,R=Math.max(t.w,t.d)/2+m+HS,c=Math.cos(t.rot),sn=Math.sin(t.rot);for(let z=t.z-R;z<=t.z+R;z+=HS)for(let x=t.x-R;x<=t.x+R;x+=HS){const i=cellIndex(x,z);if(i<0)continue;const dx=x-t.x,dz=z-t.z;let inside;if(t.round)inside=Math.hypot(dx,dz)<=t.w/2+m;else{const lx=dx*c-dz*sn,lz=dx*sn+dz*c;inside=Math.abs(lx)<=t.w/2+m&&Math.abs(lz)<=t.d/2+m;}if(inside)blocked[i]=1;}}
 
 const SPAWN=islands[0].spawn;

@@ -25,7 +25,14 @@ def build():
             names += sorted(os.path.relpath(p, SRC) for p in glob.glob(os.path.join(SRC, n)))
         else:
             names.append(n)
-    js = '\n'.join(read(n) for n in names)
+    parts = []
+    for n in names:
+        src = read(n)
+        if n.startswith('islands/'):
+            iid = os.path.splitext(os.path.basename(n))[0]
+            src = "sceneMarks.push({id:'%s',start:verts.length/9});\n" % iid + src + "\nsceneMarks[sceneMarks.length-1].end=verts.length/9;\n"
+        parts.append(src)
+    js = '\n'.join(parts)
     html = ui + '\n' + boot + '<script>\n(function(){\n' + js + '\n})();\n</script></body></html>\n'
     os.makedirs(DIST, exist_ok=True)
     out = os.path.join(DIST, 'Azura-3D.html')

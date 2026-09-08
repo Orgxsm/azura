@@ -195,7 +195,7 @@ if(!document.documentElement.requestFullscreen)fullButton.hidden=true;else fullB
 const keys={};
 const keyMap={KeyW:'up',ArrowUp:'up',KeyS:'down',ArrowDown:'down',KeyA:'left',ArrowLeft:'left',KeyD:'right',ArrowRight:'right',ShiftLeft:'run',ShiftRight:'run'};
 window.addEventListener('keydown',e=>{if(e.target instanceof HTMLInputElement)return;if(e.target instanceof HTMLButtonElement&&(e.key==='Enter'||e.key===' '))return;if(keyMap[e.code]){keys[keyMap[e.code]]=true;e.preventDefault();return;}
-switch(e.code){case'KeyE':case'Space':case'Enter':interact();e.preventDefault();break;case'Escape':if(minigame)cancelFishing();else if(dialog){dialog=null;dialogEl.hidden=true;for(const n of npcs)n.talking=false;}else togglePanel();break;case'KeyH':dbg.hidden=!dbg.hidden;break;case'KeyM':mapEl.hidden=!mapEl.hidden;try{localStorage.setItem('azura-map',mapEl.hidden?'0':'1');}catch(x){}break;case'Equal':case'NumpadAdd':goal.r=clamp(goal.r*.9,4,65);break;case'Minus':case'NumpadSubtract':goal.r=clamp(goal.r*1.1,4,65);break;case'Home':$('#reset').onclick();break;}});
+switch(e.code){case'KeyE':case'Space':case'Enter':interact();e.preventDefault();break;case'Escape':if(minigame)cancelFishing();else if(dialog){dialog=null;dialogEl.hidden=true;for(const n of npcs)n.talking=false;}else togglePanel();break;case'KeyH':dbg.hidden=!dbg.hidden;break;case'KeyF':fpsEl.hidden=!fpsEl.hidden;break;case'KeyM':mapEl.hidden=!mapEl.hidden;try{localStorage.setItem('azura-map',mapEl.hidden?'0':'1');}catch(x){}break;case'Equal':case'NumpadAdd':goal.r=clamp(goal.r*.9,4,65);break;case'Minus':case'NumpadSubtract':goal.r=clamp(goal.r*1.1,4,65);break;case'Home':$('#reset').onclick();break;}});
 window.addEventListener('keyup',e=>{if(keyMap[e.code])keys[keyMap[e.code]]=false;});
 window.addEventListener('blur',()=>{for(const k in keys)keys[k]=false;});
 const stick=$('#stick'),knob=stick.querySelector('i');let stickId=null,stickVec=[0,0];
@@ -205,7 +205,7 @@ stick.addEventListener('pointermove',e=>{if(e.pointerId===stickId)moveStick(e);}
 const endStick=e=>{if(e.pointerId===stickId){stickId=null;stickVec=[0,0];knob.style.transform='';}};
 stick.addEventListener('pointerup',endStick);stick.addEventListener('pointercancel',endStick);stick.addEventListener('lostpointercapture',endStick);
 actionBtn.addEventListener('click',interact);
-function togglePanel(){if(!playing)return;panel.hidden=!panel.hidden;if(!panel.hidden){$('#panel-info').textContent=`${game.name?game.name+' · ':''}${game.shells.size} coquillages · ${stars()} étoiles sur ${TOTAL} · ${doneCount(game.quests)} quêtes terminées · ${fmtTime(game.playtime)} de jeu`;$('#restart').textContent='Recommencer une nouvelle partie';restartArmed=false;}}
+function togglePanel(){if(!playing)return;panel.hidden=!panel.hidden;if(!panel.hidden){$('#panel-info').textContent=`${game.name?game.name+' · ':''}${game.shells.size} coquillages · ${stars()} étoiles sur ${TOTAL} · ${doneCount(game.quests)} quêtes terminées · ${fmtTime(game.playtime)} de jeu`;$('#restart').textContent='Recommencer une nouvelle partie';restartArmed=false;$('#quality').textContent='Qualité graphique : '+qualityLabel()+(lastFps?' · '+lastFps+' im/s':'');}}
 let restartArmed=false;
 $('#menu').onclick=togglePanel;$('#resume').onclick=togglePanel;$('#save-now').onclick=()=>{saveGame(false);panel.hidden=true;};
 $('#restart').onclick=()=>{if(!restartArmed){restartArmed=true;$('#restart').textContent='Confirmer : effacer la progression ?';return;}clearSave();location.reload();};
@@ -251,11 +251,12 @@ function turnToward(a,b,k){let d=((b-a+PI)%TAU+TAU)%TAU-PI;return a+d*Math.min(1
 function moveEntity(e,dx,dz,speed,dt){const l=Math.hypot(dx,dz)||1;dx/=l;dz/=l;e.heading=turnToward(e.heading,Math.atan2(dx,dz)+(e.crab?PI/2:0),dt*11);const moved=tryMove(e,dx*speed*dt,dz*speed*dt,.13*e.scale);e.speed=moved?speed:0;e.phase+=(moved?speed:1.2)*dt*(e.cat?9:e.crab?16:4.6)/e.scale;e.amp+=((moved?1:.3)-e.amp)*(1-Math.exp(-dt*10));return moved;}
 function idleEntity(e,dt){e.speed=0;e.amp+=(0-e.amp)*(1-Math.exp(-dt*8));}
 function groundEntity(e,dt){const h=cellH(e.x,e.z);e.y+=(h-e.y)*(1-Math.exp(-dt*14));}
-function npcThink(n,dt,t){
+function unstick(e){if(reach[cellIndex(e.x,e.z)])return false;const p=snap(e.x,e.z,2.5);e.x=p[0];e.z=p[1];e.y=cellH(p[0],p[1]);return true;}
+function npcThink(n,dt,t){if(n.moved===false&&n.state==='walk'){n.stuckT=(n.stuckT||0)+dt;if(n.stuckT>1.5){n.stuckT=0;unstick(n);n.state='idle';n.t=.5;}}else n.stuckT=0;
 if(n.talking){n.heading=turnToward(n.heading,Math.atan2(player.x-n.x,player.z-n.z),dt*6);idleEntity(n,dt);n.look=0;}
 else if(n.cat&&game.catFollow){const dx=player.x-n.x,dz=player.z-n.z,d=Math.hypot(dx,dz);if(d>1.4){const moved=moveEntity(n,dx,dz,Math.min(3.4,player.speed+1.6),dt);if((!moved&&d>2.5)||d>9){const [x,z]=snap(player.x-Math.sin(player.heading)*.8,player.z-Math.cos(player.heading)*.8,2);n.x=x;n.z=z;n.y=cellH(x,z);}}else idleEntity(n,dt);}
 else if(n.state==='idle'){idleEntity(n,dt);n.t-=dt;if(!n.cat)n.look=Math.sin(t*.6+n.x)*.35;if(n.t<=0&&(dayF>.25||n.cat)){for(let k=0;k<6;k++){const a=Math.random()*TAU,r=Math.random()*n.leash,x=n.home[0]+Math.cos(a)*r,z=n.home[1]+Math.sin(a)*r,i=cellIndex(x,z);if(i>=0&&reach[i]){n.target=[x,z];n.state='walk';n.fails=0;break;}}n.t=1.5+Math.random()*4;}}
-else{n.look=0;const dx=n.target[0]-n.x,dz=n.target[1]-n.z,d=Math.hypot(dx,dz);if(d<.15||!moveEntity(n,dx,dz,n.walk,dt))if(d<.15||++n.fails>8){n.state='idle';n.t=1+Math.random()*3;}}
+else{n.look=0;const dx=n.target[0]-n.x,dz=n.target[1]-n.z,d=Math.hypot(dx,dz);n.moved=d>=.15&&moveEntity(n,dx,dz,n.walk,dt);if(d<.15||!n.moved)if(d<.15||++n.fails>8){n.state='idle';n.t=1+Math.random()*3;}}
 groundEntity(n,dt);}
 function crabThink(c,dt,t){if(c.hidden)return;const dx=c.x-player.x,dz=c.z-player.z,d=Math.hypot(dx,dz);const hunted=c.goat?(game.quests.goats===1&&game.goatsCaught<3):(game.quests.crabs===1&&game.crabsCaught<3);
 if(hunted&&d<(c.goat?3.2:2.4)){const sp=c.goat?2.6:2.3;if(!moveEntity(c,dx+Math.sin(c.id*3+t*2)*.5,dz+Math.cos(c.id*2+t)*.5,sp,dt))moveEntity(c,-dz,dx,sp,dt);c.state='idle';c.t=.5;if(Math.random()<dt*1.5)sfx('crab');}
@@ -267,7 +268,8 @@ function update(dt,t){
 if(playing)game.playtime+=dt;updateClock(dt);
 let ix=0,iy=0;if(playing&&!dialog&&!minigame&&panel.hidden&&!voyage.active){ix=(keys.right?1:0)-(keys.left?1:0)+stickVec[0];iy=(keys.up?1:0)-(keys.down?1:0)+stickVec[1];}
 let mag=Math.hypot(ix,iy);if(mag>1){ix/=mag;iy/=mag;mag=1;}
-if(mag>.08){if(cam.mode!=='follow')setView('play');const f=norm([current.target[0]-eye[0],0,current.target[2]-eye[2]]),r=[-f[2],0,f[0]];const px=player.x,pz=player.z;moveEntity(player,f[0]*iy+r[0]*ix,f[2]*iy+r[2]*ix,(keys.run||mag>.97&&stickId!==null?4.3:2.7)*Math.min(1,mag*1.3),dt);if(Math.hypot(player.x-px,player.z-pz)>0)dirty=true;}
+if(mag>.08){if(cam.mode!=='follow')setView('play');const f=norm([current.target[0]-eye[0],0,current.target[2]-eye[2]]),r=[-f[2],0,f[0]];const px=player.x,pz=player.z;const moved=moveEntity(player,f[0]*iy+r[0]*ix,f[2]*iy+r[2]*ix,(keys.run||mag>.97&&stickId!==null?4.3:2.7)*Math.min(1,mag*1.3),dt);if(Math.hypot(player.x-px,player.z-pz)>0)dirty=true;
+if(!moved){player.stuckT=(player.stuckT||0)+dt;if(player.stuckT>.7){player.stuckT=0;let freed=false;for(let a=0;a<TAU&&!freed;a+=TAU/12)freed=tryMove(player,Math.sin(a)*.12,Math.cos(a)*.12,.1);if(!freed&&unstick(player))toast('Tu t\'étais coincé : te revoilà sur le chemin.');}}else player.stuckT=0;}
 else{idleEntity(player,dt);player.look=Math.sin(t*.5)*.25*(1-player.amp);}
 if(voyage.active)updateVoyage(dt);else groundEntity(player,dt);
 for(const n of npcs)npcThink(n,dt,t);

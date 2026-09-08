@@ -6,6 +6,7 @@ for(let s=-len/2;s<len/2;s+=.22)box([d.x+dx*s,d.y-.08,d.z+dz*s],[w,.16,.205],tin
 for(let s=-len/2+.2;s<=len/2;s+=1.2)for(const side of[-1,1]){const px=d.x+dx*s+sx*side*w*.53,pz=d.z+dz*s+sz*side*w*.53;beam([px,-1.4,pz],[px,d.y+.42,pz],.11,palette.wood);cylinder([px,d.y+.3,pz],[px,d.y+.42,pz],.14,.14,color(0xc5b891),8);}
 for(const side of[-1,1]){const px=d.x+sx*side*w*.4,pz=d.z+sz*side*w*.4;beam([px-dx*len/2,d.y-.2,pz-dz*len/2],[px+dx*len/2,d.y-.2,pz+dz*len/2],.13,palette.wood);}}
 const solidVertexCount=verts.length/9;
+const solidRanges=[{id:'azura',start:0,end:sceneMarks.length?sceneMarks[0].start:solidVertexCount}].concat(sceneMarks.map(m=>({id:m.id,start:m.start,end:m.end}))).concat([{id:null,start:sceneMarks.length?sceneMarks[sceneMarks.length-1].end:solidVertexCount,end:solidVertexCount}]).filter(r=>r.end>r.start);
 const sceneData=new Float32Array(verts);verts=[];
 // Ocean geometry is animated entirely in the GPU.
 for(let x=-100;x<100;x+=2)for(let z=-100;z<100;z+=2)quad([x,0,z],[x,0,z+2],[x+2,0,z+2],[x+2,0,z],color(0x159db5));

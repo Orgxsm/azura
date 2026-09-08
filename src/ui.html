@@ -65,6 +65,7 @@ footer{position:absolute;bottom:28px;left:38px;right:38px;display:flex;justify-c
 #panel button{padding:13px 22px;border-radius:30px;background:#1d5661;color:#fff4df;font-size:14px}
 #panel button.secondary{background:#e9e0cc;color:#1d5661}
 #panel button.danger{background:#f1d4c8;color:#8d3a1d}
+#fps{position:absolute;left:34px;top:110px;font:12px/1.4 monospace;background:#11434ccc;border:1px solid #ffffff40;border-radius:10px;padding:6px 10px;pointer-events:none}
 #debug{position:absolute;left:20px;top:110px;width:220px;height:220px;image-rendering:pixelated;border:1px solid #fff8;border-radius:8px;pointer-events:none}
 #name{font:inherit;font-size:15px;padding:12px 18px;border-radius:30px;border:1px solid #1d566150;background:#ffffffb0;color:#1d5661;text-align:center;width:260px;outline:none}
 #name:focus{border-color:#1d5661}
@@ -103,6 +104,7 @@ footer{left:18px;right:18px;bottom:max(12px,env(safe-area-inset-bottom));justify
 </style></head><body>
 <canvas id="world" aria-label="Village tropical en trois dimensions. Utilise les flèches ou le joystick pour marcher, glisse pour tourner la caméra."></canvas>
 <canvas id="debug" width="400" height="400" hidden></canvas>
+<div id="fps" hidden>— im/s</div>
 <div id="loading"><span class="sun"></span><p id="loading-title">Cet aperçu ne lance pas la 3D</p><div id="loading-help">Sur iPhone, l’aperçu d’un fichier peut afficher la page sans exécuter le jeu.<br>Utilise le lien du site dans Safari, ou ouvre ce fichier dans un navigateur sur ordinateur.</div>
 <div id="start" hidden><h2>AZURA</h2><span class="sub">L'ÎLE AUX TOITS D'ARGILE</span><button id="continue" hidden>Reprendre l'aventure<small id="continue-info"></small></button><input id="name" placeholder="Ton prénom (optionnel)" maxlength="14" autocomplete="off"><button id="new" class="secondary">Nouvelle partie</button></div></div>
 <header><div class="brand"><span class="brand-mark">A</span><div><h1>AZURA</h1><p>L'île aux toits d'argile</p></div></div>
@@ -118,5 +120,5 @@ footer{left:18px;right:18px;bottom:max(12px,env(safe-area-inset-bottom));justify
 <div id="dialog" hidden><b></b><p></p><i>ESPACE · CONTINUER</i></div>
 <div id="toast" hidden></div>
 <div id="panel" hidden><div><h2>AZURA</h2><p id="panel-info"></p><button id="save-now">Sauvegarder maintenant</button><button id="quality" class="secondary">Qualité graphique : Auto</button><button id="resume" class="secondary">Reprendre</button><button id="restart" class="danger">Recommencer une nouvelle partie</button></div></div>
-<footer><span class="location"><i></i> ARCHIPEL D'AZURA <b>01</b></span><span class="hint" id="hint"><span class="kb"><kbd>ZQSD</kbd> ou flèches pour marcher <em>·</em> <kbd>E</kbd> parler <em>·</em> <kbd>Maj</kbd> courir <em>·</em> <kbd>M</kbd> carte <em>·</em> </span>Glisser pour tourner la caméra</span><span class="edition">SAUVEGARDE AUTO</span></footer>
+<footer><span class="location"><i></i> ARCHIPEL D'AZURA <b>01</b></span><span class="hint" id="hint"><span class="kb"><kbd>ZQSD</kbd> ou flèches pour marcher <em>·</em> <kbd>E</kbd> parler <em>·</em> <kbd>Maj</kbd> courir <em>·</em> <kbd>M</kbd> carte <em>·</em> <kbd>F</kbd> fluidité <em>·</em> </span>Glisser pour tourner la caméra</span><span class="edition">SAUVEGARDE AUTO</span></footer>
 <div id="error" hidden><h2>La 3D n'a pas pu démarrer</h2><p>Essaie de rouvrir cette page dans Safari ou Chrome avec WebGL activé.</p><button onclick="location.reload()">Réessayer</button></div>

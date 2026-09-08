@@ -38,17 +38,18 @@ c=mix(c,c*.7+duskC,dusk*.8);return c;}`;
 const vertex=`#version 300 es
 precision highp float;precision highp int;
 ${boneChunk}
-uniform mat4 uVP;uniform mat4 uLight;
-out vec3 vPosition;out vec3 vNormal;out vec3 vColor;out vec4 vShadow;
-void main(){vec3 n;vec3 p=animate(n);vPosition=p;vNormal=n;vColor=aColor;vShadow=uLight*vec4(p,1.);gl_Position=uVP*vec4(p,1.);}`;
+uniform mat4 uVP;uniform mat4 uLight;uniform mat4 uLight2;
+out vec3 vPosition;out vec3 vNormal;out vec3 vColor;out vec4 vShadow;out vec4 vShadow2;
+void main(){vec3 n;vec3 p=animate(n);vPosition=p;vNormal=n;vColor=aColor;vShadow=uLight*vec4(p,1.);vShadow2=uLight2*vec4(p,1.);gl_Position=uVP*vec4(p,1.);}`;
 const fragment=`#version 300 es
 precision highp float;precision highp int;
-in vec3 vPosition;in vec3 vNormal;in vec3 vColor;in vec4 vShadow;
-uniform vec3 uEye;uniform float uTime;uniform int uMode;uniform highp sampler2DShadow uShadow;uniform float uShadowTexel;uniform float uDay;uniform float uDusk;uniform float uClip;uniform float uExpo;uniform float uDbg;
+in vec3 vPosition;in vec3 vNormal;in vec3 vColor;in vec4 vShadow;in vec4 vShadow2;
+uniform vec3 uEye;uniform float uTime;uniform int uMode;uniform highp sampler2DShadow uShadow;uniform highp sampler2DShadow uShadow2;uniform float uShadowTexel;uniform float uShadowTexel2;uniform float uDay;uniform float uDusk;uniform float uClip;uniform float uExpo;uniform float uDbg;
 out vec4 outColor;
 ${noiseChunk}
-float shadow(vec3 n){vec3 q=vShadow.xyz/vShadow.w*.5+.5;if(q.x<0.||q.x>1.||q.y<0.||q.y>1.||q.z>1.)return 1.;float bias=max(.00035,.0018*(1.-dot(n,normalize(vec3(-25,40,30)))));
-vec2 o[8]=vec2[](vec2(-.7,-.2),vec2(.7,.2),vec2(-.2,.7),vec2(.2,-.7),vec2(-.5,.5),vec2(.5,-.5),vec2(.5,.6),vec2(-.6,-.6));float s=0.;for(int i=0;i<8;i++)s+=texture(uShadow,vec3(q.xy+o[i]*uShadowTexel*1.9,q.z-bias));return s/8.;}
+float shadow(vec3 n){float bias=max(.00035,.0018*(1.-dot(n,normalize(vec3(-25,40,30)))));vec2 o[8]=vec2[](vec2(-.7,-.2),vec2(.7,.2),vec2(-.2,.7),vec2(.2,-.7),vec2(-.5,.5),vec2(.5,-.5),vec2(.5,.6),vec2(-.6,-.6));float s=1.;
+vec3 q=vShadow.xyz/vShadow.w*.5+.5;if(q.x>0.&&q.x<1.&&q.y>0.&&q.y<1.&&q.z<1.){float a=0.;for(int i=0;i<8;i++)a+=texture(uShadow,vec3(q.xy+o[i]*uShadowTexel*1.9,q.z-bias));s=a/8.;}
+vec3 q2=vShadow2.xyz/vShadow2.w*.5+.5;if(q2.x>0.&&q2.x<1.&&q2.y>0.&&q2.y<1.&&q2.z<1.){float a=0.;for(int i=0;i<8;i++)a+=texture(uShadow2,vec3(q2.xy+o[i]*uShadowTexel2*1.6,q2.z-bias*1.5));s=min(s,a/8.);}return s;}
 float hueOf(vec3 c){float mx=max(c.r,max(c.g,c.b)),mn=min(c.r,min(c.g,c.b)),d=mx-mn;if(d<1e-4)return 0.;float h;if(mx==c.r)h=mod((c.g-c.b)/d,6.);else if(mx==c.g)h=(c.b-c.r)/d+2.;else h=(c.r-c.g)/d+4.;return h*60.;}
 void main(){if(uClip>.5&&vPosition.y<-.03)discard;if(uDbg>.5){outColor=vec4(uDbg>1.5?normalize(vNormal)*.5+.5:vColor,0.);return;}
 vec3 n=normalize(vNormal);vec3 view=normalize(uEye-vPosition);if(dot(n,view)<0.)n=-n;vec3 sun=normalize(vec3(-25,40,30));vec3 c=vColor;float emis=0.;vec3 nightTint=vec3(.16,.2,.36);
@@ -133,9 +134,9 @@ ${noiseChunk}
 vec3 vpos(vec2 uv){float d=texture(uDepth,uv).r;vec4 v=uInvProj*vec4(uv*2.-1.,d*2.-1.,1.);return v.xyz/v.w;}
 void main(){float d0=texture(uDepth,vUV).r;if(d0>=.9999){outColor=vec4(1.);return;}vec3 p=vpos(vUV);vec3 n=normalize(cross(dFdx(p),dFdy(p)));if(dot(n,-p)<0.)n=-n;
 float a=hash(gl_FragCoord.xy)*6.2832;vec3 rv=vec3(cos(a),sin(a),0.);vec3 tg=normalize(rv-n*dot(rv,n));vec3 bt=cross(n,tg);mat3 tbn=mat3(tg,bt,n);
-vec3 K[12]=vec3[](vec3(.1,.05,.08),vec3(-.12,.1,.06),vec3(.05,-.15,.12),vec3(-.2,-.08,.15),vec3(.22,.18,.1),vec3(-.05,.28,.2),vec3(.3,-.25,.18),vec3(-.35,.1,.3),vec3(.15,.4,.32),vec3(-.4,-.35,.25),vec3(.5,.05,.45),vec3(-.2,.55,.5));
-float radius=.7,occ=0.;for(int i=0;i<12;i++){vec3 s=p+tbn*K[i]*radius;vec4 o=uProj*vec4(s,1.);vec2 ouv=o.xy/o.w*.5+.5;if(ouv.x<0.||ouv.x>1.||ouv.y<0.||ouv.y>1.)continue;float sz=vpos(ouv).z;float rc=smoothstep(0.,1.,radius/abs(p.z-sz));occ+=(sz>=s.z+.04?1.:0.)*rc;}
-float ao=1.-occ/12.;outColor=vec4(vec3(ao),1.);}`;
+vec3 K[8]=vec3[](vec3(.1,.05,.08),vec3(-.12,.1,.06),vec3(.05,-.15,.12),vec3(-.2,-.08,.15),vec3(.22,.18,.1),vec3(-.35,.1,.3),vec3(.15,.4,.32),vec3(-.4,-.35,.25));
+float radius=.7,occ=0.;for(int i=0;i<8;i++){vec3 s=p+tbn*K[i]*radius;vec4 o=uProj*vec4(s,1.);vec2 ouv=o.xy/o.w*.5+.5;if(ouv.x<0.||ouv.x>1.||ouv.y<0.||ouv.y>1.)continue;float sz=vpos(ouv).z;float rc=smoothstep(0.,1.,radius/abs(p.z-sz));occ+=(sz>=s.z+.04?1.:0.)*rc;}
+float ao=1.-occ/8.;outColor=vec4(vec3(ao),1.);}`;
 const blurFragment=`#version 300 es
 precision highp float;precision highp int;in vec2 vUV;uniform sampler2D uTex;uniform vec2 uTexel;out vec4 outColor;
 void main(){vec4 s=vec4(0.);for(int x=-2;x<=1;x++)for(int y=-2;y<=1;y++)s+=texture(uTex,vUV+(vec2(float(x),float(y))+.5)*uTexel);outColor=s/16.;}`;
@@ -159,7 +160,7 @@ c=pow(max(c,vec3(0.)),vec3(.96));outColor=vec4(c,1.);}`;
 const hmVertex=`#version 300 es
 precision highp float;layout(location=0) in vec3 aPosition;layout(location=2) in vec3 aColor;uniform mat4 uVP;out float vY;out vec3 vColor;void main(){vY=aPosition.y;vColor=aColor;gl_Position=uVP*vec4(aPosition,1.);}`;
 const hmFragment=`#version 300 es
-precision highp float;in float vY;in vec3 vColor;out vec4 o;void main(){if(vColor.g>vColor.r*1.25&&vColor.g>vColor.b*1.6)discard;float t=clamp((vY+5.)/30.,0.,1.);float hi=floor(t*255.);o=vec4(hi/255.,fract(t*255.),0.,1.);}`;
+precision highp float;in float vY;in vec3 vColor;uniform float uGreen;out vec4 o;void main(){bool g=vColor.g>vColor.r*1.25&&vColor.g>vColor.b*1.6;if(g!=(uGreen>.5))discard;float t=clamp((vY+5.)/30.,0.,1.);float hi=floor(t*255.);o=vec4(hi/255.,fract(t*255.),0.,1.);}`;
 
 const flatV=`#version 300 es
 precision highp float;layout(location=0) in vec3 aPosition;layout(location=1) in vec3 aNormal;layout(location=2) in vec3 aColor;uniform mat4 uVP;out vec3 vC;void main(){vC=aColor*(.6+.4*max(0.,dot(normalize(aNormal),normalize(vec3(-25.,40.,30.)))));gl_Position=uVP*vec4(aPosition,1.);}`;
