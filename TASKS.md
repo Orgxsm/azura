@@ -14,8 +14,9 @@ Emplacements proposés (x, z en mètres, la mer à y = 0) :
 ## Phase 1 — Île du Phare + voyage en bateau
 
 ### Astra (design / animation)
+- [ ] **Personnages arrondis** : Léo veut le style Fae Farm (grosse tête, corps compact, capsules, aplats doux). Claude a livré une première version dans `humanoid()` (rig.js) le 9 sept. ; Astra affine (visages, cheveux, tenues, mains) et passe `catRig/gullRig/crabRig` dans le même style.
 - [~] `src/islands/phare.js` : relief (ellipsoïdes de roche comme Azura, mais plus élancé), phare (tour haute, lanterne émissive mode 7 au sommet, galerie), 3–4 maisons, escalier taillé de la crique jusqu'au phare, un ponton d'accostage à (34, −5) orienté vers Azura. Déclarer `platforms` et `stairs` pour que tout soit praticable (voir COLLAB.md §1). Rester dans x ∈ [20, 48], z ∈ [−32, −4].
-- [ ] `src/rig.js` : maillage du gardien du phare (vieux marin, ciré jaune, lanterne à la main) et d'une chèvre (4 pattes, cornes). `src/anim.js` : `poseGoat(e,t)`.
+- [ ] `src/rig.js` : maillage du gardien du phare (clé `npcMeshes.gardien`) (vieux marin, ciré jaune, lanterne à la main) et d'une chèvre (4 pattes, cornes). `src/anim.js` : `poseGoat(e,t)`.
 - [ ] Animation du voilier en traversée : voile qui se gonfle, gîte, sillage (mousse) — proposer dans `rig.js` / `shaders.js`.
 - [ ] Faisceau tournant du phare la nuit (géométrie translucide mode 7 ou effet dans `shaders.js`).
 - [ ] Polish visuel libre : ce qui te semble améliorer le rendu (ciel, eau, matériaux), en petits commits.
@@ -25,7 +26,7 @@ Emplacements proposés (x, z en mètres, la mer à y = 0) :
 - [x] Registre des îles dans `src/archipel.js` (centre, rayon, apparition, ponton construit automatiquement) et île courante.
 - [x] Voyage en bateau v1 : E devant le voilier au ponton (après la quête des coquillages) → traversée en courbe au large, caméra cinéma, débarquement, sauvegarde de l'île courante. `[ ]` choix de destination quand il y aura 3 îles, voile/sillage animés (Astra).
 - [x] Mini-carte multi-îles (recadrée sur l'île courante, vue archipel pendant la traversée, pontons en bleu).
-- [ ] PNJ, dialogues et quêtes de l'Île du Phare (gardien, chèvres à ramener, lanterne du phare à rallumer), nouveaux lieux à découvrir, étoiles en plus.
+- [x] PNJ, dialogues et quêtes de l'Île du Phare : Elio le gardien (34.5, −22.5), 3 chèvres à rattraper sur les pentes, bidon d'huile à rapporter d'Azura (aller-retour en voilier), lieu « La crique du Phare ». 13 étoiles au total. Maillages provisoires (Oro / chat agrandi) en attendant `npcMeshes.gardien`, `goatMesh` + `poseGoat` d'Astra.
 - [x] Sauvegarde : île courante ajoutée, compatible v1/v2.
 
 ### Interface entre les deux (à faire en premier, ensemble)
@@ -38,6 +39,7 @@ Emplacements proposés (x, z en mètres, la mer à y = 0) :
 - [ ] Événements jour/nuit (marché le matin, fête le soir).
 
 ## Notes
+- 9 sept. 2026 : Astra n'a pas d'accès GitHub en écriture (il peut lire le dépôt public). Le relais se fait par ZIP via Léo, et Claude écrit ses demandes directement dans la conversation ChatGPT « Créer environnement 3D ». Sa session a atteint son quota Work le 9 sept. vers 00:40 (réinitialisation annoncée à 05:06) : livraison 2 du Phare en attente.
 - **Retour de Claude sur la livraison 1 du Phare** : contrat de coordonnées parfait, aléa bien isolé, rien de cassé. Visuellement, le relief est encore une masse lisse : pour la suite, casser la silhouette (vires, éboulis, deux ou trois paliers de roche comme les `tiers` d'Azura), garder la crique sud-est dégagée, et prévoir l'escalier taillé de la crique (y≈0,6) au plateau (y=12,5) avec des paliers `platforms` tous les 3–4 m de dénivelé. Les ombres et la praticabilité au-delà de x,z∈[−16,16] arrivent avec l'extension de `world.js` (Claude, en cours).
 - Le fichier joué par Léo est `~/Downloads/Azura-3D.html` (copié par `build.py`).
 - Sauvegarde dans `localStorage` du navigateur, clé `azura-save-v1` (format v2).
