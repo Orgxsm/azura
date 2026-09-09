@@ -91,3 +91,19 @@ function poseSheep(e,t){
  setBone(B,5,mm(root,piv([0,.66,.32],mm(RY(clamp(e.look??0,-.6,.6)),RX(nod)))));
  setBone(B,6,mm(root,piv([0,.59,-.37],RY(Math.sin(t*2.8)*.16))));
 }
+
+// Lot 5 — origine = sortie du bec, en coordonnées monde ; u = progression
+// du geste .6 s. Ne jamais décaler x/y/z ici en fonction de l'horloge globale.
+// Mode 2 éclairé, sans ombre. Descripteurs indépendants, plusieurs appels permis.
+function waterDropsDraw(x,y,z,u){
+ if(![x,y,z,u].every(Number.isFinite))return null;
+ const p=clamp(u,0,1),bones=new Float32Array(16*6);
+ const envelope=Math.sin(Math.PI*p);
+ for(let i=0;i<6;i++){
+  const q=(p*1.6+i/6)%1,a=i/6*TAU;
+  const spread=.025+.10*q;
+  const size=Math.max(.0001,envelope*Math.sin(Math.PI*q));
+  setBone(bones,i,mm(T(x+Math.cos(a)*spread,y-.38*q*q,z+Math.sin(a)*spread),SC(size)));
+ }
+ return{mesh:waterDropsMesh,bones,n:6,mode:2,noShadow:true};
+}

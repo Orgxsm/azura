@@ -324,5 +324,44 @@ function sheepRig(){
  ]);
 }
 
+// Lot 5 — Basile : humanoid à 6 os, scale 1, panier sur le bras gauche.
+function marchandRig(){
+ const teal=color(0x527f78),cream=color(0xf4e6c8),hair=color(0x68503d);
+ const base=humanoid({shirt:cream,sleeve:cream,pants:color(0x555e59),skin:C.skin[1],hair,hat:'beret',hatColor:teal,prop:'basket'});
+ const extra=rig([
+  [0,()=>{
+   // Tablier rayé épousant les volumes du torse et du bassin, sans z-fighting.
+   const front=(x,y)=>Math.max(.185*Math.sqrt(Math.max(0,1-(x/.245)**2-((y-.86)/.30)**2)),.19*Math.sqrt(Math.max(0,1-(x/.25)**2-((y-.70)/.16)**2)))+.012;
+   for(let i=0;i<8;i++)for(let j=0;j<10;j++){
+    const a=-.17+i*.0425,b=a+.0425,c=.62+j*.043,d=c+.043,col=i%2?teal:cream;
+    quad([a,c,front(a,c)],[b,c,front(b,c)],[b,d,front(b,d)],[a,d,front(a,d)],col);
+   }
+   for(const x of[-.105,.105])beam([x,1.05,.15],[x,1.12,.075],.017,teal);
+   box([0,.81,.209],[.14,.09,.013],teal);
+  }],
+  [5,()=>{
+   for(const side of[-1,1])ellipsoid([side*.049,1.26,.277],[.063,.021,.023],hair,9,5,0);
+  }],
+  [3,()=>{
+   for(const side of[-1,1])beam([-.33+side*.10,.51,.06],[-.33+side*.08,.61,.06],.009,palette.trim);
+   beam([-.41,.61,.06],[-.25,.61,.06],.009,palette.trim);
+   for(let j=0;j<3;j++)ellipsoid([-.39+j*.06,.55,.065],[.036,.037,.034],color(j===1?0xa9b85a:0xe2924e),7,4,0);
+  }]
+ ]);
+ const out=new Float32Array(base.length+extra.length);out.set(base);out.set(extra,base.length);return out;
+}
+let waterDropsMesh;
+{
+ const saved=seed;seed=750051;
+ try{
+  npcMeshes.marchand=meshDyn(marchandRig());
+  // Six gouttes tétraédriques : exactement 12 sommets par goutte, un os chacune.
+  waterDropsMesh=meshDyn(rig(Array.from({length:6},(_,i)=>[i,()=>{
+   const A=[0,.036,0],B=[-.016,-.017,.012],C=[.016,-.017,.012],D=[0,-.017,-.018],c=color(0x9edbe8);
+   tri(A,B,C,c);tri(A,C,D,c);tri(A,D,B,c);tri(B,D,C,c);
+  }])));
+ }finally{seed=saved;}
+}
+
 verts=null;
 
