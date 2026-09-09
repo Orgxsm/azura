@@ -1,3 +1,5 @@
+**Jouer en ligne : https://orgxsm.github.io/azura/** (GitHub Pages, servi depuis `docs/index.html`, mis à jour à chaque `python3 build.py` + push sur `main`).
+
 # Azura · L'île aux toits d'argile
 
 Jeu d'exploration 3D dans un seul fichier HTML (WebGL2, aucune dépendance, aucun asset externe).
