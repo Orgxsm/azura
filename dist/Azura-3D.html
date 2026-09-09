@@ -1741,32 +1741,36 @@ function cellFlat(x,z,cell){const h=cellH(x,z);let ok=reach[cellIndex(x,z)]&&!bl
 const farmCells=[];
 for(const a of FARM_AREAS)for(let r=0;r<a.rows;r++)for(let c=0;c<a.cols;c++){const x=a.x0+(c+.5)*a.cell,z=a.z0+(r+.5)*a.cell;if(!cellFlat(x,z,a.cell))continue;farmCells.push({key:a.island+':'+c+':'+r,island:a.island,x,z,y:cellH(x,z),bones:new Float32Array(16),bones2:new Float32Array(16)});}
 // maillages : sol bêché en sillons (sec / arrosé), plants en grille 3×3 par case, 4 stades (graines, pousses, plants, récolte). Style Hay Day : formes rondes, couleurs franches.
+// Chaque maillage contient COPIES exemplaires (os 0..COPIES-1) : farmDraw regroupe les cases par maillage et dessine jusqu'à COPIES cases par appel.
+const COPIES=4;
+function meshDynN(build){const all=[];for(let k=0;k<COPIES;k++){const part=withBone(k,build);for(let i=0;i<part.length;i++)all.push(part[i]);}return meshDyn(new Float32Array(all));}
 const SOIL=color(0x8a5a33),SOIL_WET=color(0x55331c);
-function soilBuild(base){box([0,.03,0],[.98,.06,.98],tint(base,.8));for(const z of[-.31,0,.31])ellipsoid([0,.075,z],[.47,.055,.11],base,10,5,.03);for(const x of[-.49,.49])box([x,.06,0],[.04,.05,.98],tint(base,.7));for(const z of[-.49,.49])box([0,.06,z],[.98,.05,.04],tint(base,.7));}
-const soilMesh=meshDyn(new Float32Array(withBone(0,()=>soilBuild(SOIL))));
-const soilWetMesh=meshDyn(new Float32Array(withBone(0,()=>{soilBuild(SOIL_WET);for(let i=0;i<6;i++)ellipsoid([-.4+i*.16,.1,-.31+(i%3)*.31],[.05,.008,.04],color(0x6d8fa3),6,3,0);})));
+function soilBuild(base){box([0,.03,0],[.98,.06,.98],tint(base,.8));for(const z of[-.31,0,.31])ellipsoid([0,.075,z],[.47,.055,.11],base,8,3,.03);for(const x of[-.49,.49])box([x,.06,0],[.04,.05,.98],tint(base,.7));for(const z of[-.49,.49])box([0,.06,z],[.98,.05,.04],tint(base,.7));}
+const soilMesh=meshDynN(()=>soilBuild(SOIL));
+const soilWetMesh=meshDynN(()=>{soilBuild(SOIL_WET);for(let i=0;i<6;i++)ellipsoid([-.4+i*.16,.1,-.31+(i%3)*.31],[.05,.008,.04],color(0x6d8fa3),5,2,0);});
 const LEAF=color(0x5cbb37),LEAF_D=color(0x3f9a2a),LEAF_Y=color(0x9ed64a);
-function sprout(p,k){beam([p[0],p[1],p[2]],[p[0],p[1]+.07*k,p[2]],.006,LEAF_D);ellipsoid([p[0]-.03*k,p[1]+.07*k,p[2]],[.035*k,.012*k,.022*k],LEAF_Y,6,3,.05);ellipsoid([p[0]+.03*k,p[1]+.075*k,p[2]+.01],[.035*k,.012*k,.022*k],LEAF,6,3,.05);}
-function bush(p,r,h,col){ellipsoid([p[0],p[1]+h*.55,p[2]],[r,h*.5,r],col,9,5,.1);for(let i=0;i<4;i++){const a=i/4*TAU+p[0]*7;ellipsoid([p[0]+Math.cos(a)*r*.7,p[1]+h*.45+(i%2)*h*.2,p[2]+Math.sin(a)*r*.7],[r*.55,h*.28,r*.55],i%2?tint(col,.9):tint(col,1.08),7,4,.1);}}
+const stem=(a,b,r,col)=>cylinder(a,b,r,r*.9,col,4);
+function sprout(p,k){stem([p[0],p[1],p[2]],[p[0],p[1]+.07*k,p[2]],.006,LEAF_D);ellipsoid([p[0]-.03*k,p[1]+.07*k,p[2]],[.035*k,.012*k,.022*k],LEAF_Y,5,2,.05);ellipsoid([p[0]+.03*k,p[1]+.075*k,p[2]+.01],[.035*k,.012*k,.022*k],LEAF,5,2,.05);}
+function bush(p,r,h,col){ellipsoid([p[0],p[1]+h*.55,p[2]],[r,h*.5,r],col,7,4,.1);for(let i=0;i<3;i++){const a=i/3*TAU+p[0]*7;ellipsoid([p[0]+Math.cos(a)*r*.7,p[1]+h*.45+(i%2)*h*.2,p[2]+Math.sin(a)*r*.7],[r*.55,h*.28,r*.55],i%2?tint(col,.9):tint(col,1.08),5,3,.1);}}
 function tomato(p,stage){const [x,y,z]=p;if(stage===1){sprout(p,1.1);return;}const k=stage===2?.7:1;
-beam([x,y,z-.02],[x,y+.5*k,z-.02],.012,color(0xa87848));bush([x,y,z],.11*k,.42*k,stage===2?LEAF_Y:LEAF);
-for(let i=0;i<3;i++){const a=i/3*TAU+x*5;ellipsoid([x+Math.cos(a)*.13*k,y+.12+i*.1*k,z+Math.sin(a)*.13*k],[.07*k,.02*k,.045*k],LEAF_D,6,3,.08);}
-if(stage===3)for(let i=0;i<4;i++){const a=i/4*TAU+z*4+x,rr=.1,py=y+.14+(i%2)*.14;ellipsoid([x+Math.cos(a)*rr,py,z+Math.sin(a)*rr],[.045,.042,.045],i===1?color(0xf1602f):color(0xe23a24),9,6,.02);ellipsoid([x+Math.cos(a)*rr,py+.04,z+Math.sin(a)*rr],[.02,.006,.02],LEAF_D,5,3,0);}
-else for(let i=0;i<3;i++){const a=i/3*TAU+x;ellipsoid([x+Math.cos(a)*.08,y+.18,z+Math.sin(a)*.08],[.02,.02,.02],LEAF_Y,6,4,0);}}
+stem([x,y,z-.02],[x,y+.5*k,z-.02],.012,color(0xa87848));bush([x,y,z],.11*k,.42*k,stage===2?LEAF_Y:LEAF);
+for(let i=0;i<2;i++){const a=i/2*TAU+x*5;ellipsoid([x+Math.cos(a)*.13*k,y+.12+i*.1*k,z+Math.sin(a)*.13*k],[.07*k,.02*k,.045*k],LEAF_D,5,2,.08);}
+if(stage===3)for(let i=0;i<4;i++){const a=i/4*TAU+z*4+x,rr=.1,py=y+.14+(i%2)*.14;ellipsoid([x+Math.cos(a)*rr,py,z+Math.sin(a)*rr],[.045,.042,.045],i===1?color(0xf1602f):color(0xe23a24),6,4,.02);}
+else for(let i=0;i<2;i++){const a=i/2*TAU+x;ellipsoid([x+Math.cos(a)*.08,y+.18,z+Math.sin(a)*.08],[.02,.02,.02],LEAF_Y,4,2,0);}}
 function wheat(p,stage){const [x,y,z]=p;if(stage===1){sprout(p,.8);sprout([x+.05,y,z+.04],.6);return;}const k=stage===2?.62:1,gold=color(0xf0c24a),head=stage===2?LEAF_Y:gold,stalk=stage===2?LEAF:color(0xcfa84c);
-for(let i=0;i<7;i++){const a=i/7*TAU+x*3,r=.045+(i%2)*.02,tx=x+Math.cos(a)*r,tz=z+Math.sin(a)*r,h=.42*k+(i%3)*.05*k,lean=(i%2?1:-1)*.03;beam([tx,y,tz],[tx+lean,y+h,tz+lean],.006,stalk);ellipsoid([tx+lean,y+h+.045*k,tz+lean],[.016,.055*k,.016],head,6,4,.05);if(stage===3)ellipsoid([tx+lean,y+h+.02,tz+lean+.012],[.012,.03,.008],tint(gold,.9),5,3,0);}
-for(let i=0;i<3;i++){const a=i/3*TAU+z*5;ellipsoid([x+Math.cos(a)*.06,y+.12*k,z+Math.sin(a)*.06],[.07*k,.01,.025*k],stage===2?LEAF_D:tint(color(0xb9a24a),1),6,3,.05);}}
+for(let i=0;i<6;i++){const a=i/6*TAU+x*3,r=.045+(i%2)*.02,tx=x+Math.cos(a)*r,tz=z+Math.sin(a)*r,h=.42*k+(i%3)*.05*k,lean=(i%2?1:-1)*.03;stem([tx,y,tz],[tx+lean,y+h,tz+lean],.006,stalk);ellipsoid([tx+lean,y+h+.045*k,tz+lean],[.016,.055*k,.016],head,5,3,.05);}
+for(let i=0;i<2;i++){const a=i/2*TAU+z*5;ellipsoid([x+Math.cos(a)*.06,y+.12*k,z+Math.sin(a)*.06],[.07*k,.01,.025*k],stage===2?LEAF_D:color(0xb9a24a),5,2,.05);}}
 function flower(p,stage){const [x,y,z]=p;if(stage===1){sprout(p,1);return;}const k=stage===2?.75:1,pink=color(0xf46fb0),pale=color(0xffa5d2);
-for(let i=0;i<6;i++){const a=i/6*TAU+x*4;ellipsoid([x+Math.cos(a)*.07*k,y+.035,z+Math.sin(a)*.07*k],[.06*k,.014,.03*k],i%2?LEAF:LEAF_D,6,3,.06);}
-beam([x,y,z],[x,y+.3*k,z],.009,LEAF_D);ellipsoid([x+.03,y+.15*k,z],[.04*k,.01,.02*k],LEAF,6,3,.05);
-if(stage===3){for(let i=0;i<6;i++){const a=i/6*TAU;ellipsoid([x+Math.cos(a)*.055,y+.31,z+Math.sin(a)*.055],[.04,.012,.028],i%2?pink:pale,7,4,.04);}ellipsoid([x,y+.325,z],[.028,.02,.028],color(0xffd54a),8,4,0);}
-else ellipsoid([x,y+.3*k,z],[.028,.035,.028],color(0xc9e07a),7,4,.05);}
+for(let i=0;i<5;i++){const a=i/5*TAU+x*4;ellipsoid([x+Math.cos(a)*.07*k,y+.035,z+Math.sin(a)*.07*k],[.06*k,.014,.03*k],i%2?LEAF:LEAF_D,5,2,.06);}
+stem([x,y,z],[x,y+.3*k,z],.009,LEAF_D);
+if(stage===3){for(let i=0;i<6;i++){const a=i/6*TAU;ellipsoid([x+Math.cos(a)*.055,y+.31,z+Math.sin(a)*.055],[.04,.012,.028],i%2?pink:pale,5,3,.04);}ellipsoid([x,y+.325,z],[.028,.02,.028],color(0xffd54a),6,3,0);}
+else ellipsoid([x,y+.3*k,z],[.028,.035,.028],color(0xc9e07a),5,3,.05);}
 const PLANT={tomate:tomato,ble:wheat,fleur:flower};
 const cropMeshes={};
-for(const id of CROP_IDS){cropMeshes[id]=[0,1,2,3].map(stage=>meshDyn(new Float32Array(withBone(0,()=>{
-const spots=[];for(const z of[-.31,0,.31])for(const x of[-.3,0,.3])spots.push([x+Math.sin(x*9+z*7)*.03,.1,z]);
-if(stage===0){for(const p of spots){ellipsoid([p[0],.115,p[2]],[.022,.012,.016],color(0xe8d7a6),6,3,0);ellipsoid([p[0]+.05,.113,p[2]+.03],[.016,.01,.012],color(0xd9c58c),5,3,0);}return;}
-for(const p of spots)PLANT[id](p,stage);}))));}
+function cropBuild(id,stage){const spots=[];for(const z of[-.31,0,.31])for(const x of[-.3,0,.3])spots.push([x+Math.sin(x*9+z*7)*.03,.1,z]);
+if(stage===0){for(const p of spots){ellipsoid([p[0],.115,p[2]],[.022,.012,.016],color(0xe8d7a6),5,2,0);ellipsoid([p[0]+.05,.113,p[2]+.03],[.016,.01,.012],color(0xd9c58c),4,2,0);}return;}
+for(const p of spots)PLANT[id](p,stage);}
+for(const id of CROP_IDS){cropMeshes[id]=[0,1,2,3].map(stage=>meshDynN(()=>cropBuild(id,stage)));}
 function farmCellAt(){let best=null,bd=.95;for(const c of farmCells){const d=Math.hypot(c.x-player.x,c.z-player.z);if(d<bd&&Math.abs(c.y-player.y)<.6){bd=d;best=c;}}return best;}
 function plotOf(c){return game.plots[c.key]||null;}
 function farmNear(){const c=farmCellAt();if(!c)return coopNear()||homeNear();const p=plotOf(c);
@@ -1790,9 +1794,14 @@ let lastDayIdx=-1;
 function farmUpdate(dt){const dayIdx=Math.floor(game.clock/DAY);if(dayIdx!==lastDayIdx){if(lastDayIdx>=0){for(const k in game.plots)game.plots[k].wet=false;if(game.hens>0&&game.henFedDay===lastDayIdx){game.eggs=Math.min(12,(game.eggs||0)+game.hens);if(playing)toast(`🥚 Les poules ont pondu ${game.hens} œuf${game.hens>1?'s':''} !`);}}lastDayIdx=dayIdx;}
 hensUpdate(dt);sheepUpdate(dt);gestureUpdate(dt);
 if(!playing)return;for(const k in game.plots){const p=game.plots[k];if(!p.crop)continue;const cdef=CROPS[p.crop];if(p.growth<cdef.days)p.growth=Math.min(cdef.days,p.growth+dt/DAY*(p.wet?1:.35));}}
-function farmDraw(t){coopDraw(t);
-if(actGesture&&actGesture.th.act==='water'&&typeof waterDropsDraw==='function'){const B=player.bones,o=64,sc=player.scale||1,px=.3*sc,py=.235*sc,pz=.44*sc;const x=B[o]*px+B[o+4]*py+B[o+8]*pz+B[o+12],y=B[o+1]*px+B[o+5]*py+B[o+9]*pz+B[o+13],z=B[o+2]*px+B[o+6]*py+B[o+10]*pz+B[o+14];const d=waterDropsDraw(x,y,z,actGesture.t/.6);if(d)drawList.push(d);}for(const c of farmCells){const p=plotOf(c);if(!p)continue;setBone(c.bones,0,T(c.x,c.y,c.z));drawList.push({mesh:p.wet?soilWetMesh:soilMesh,bones:c.bones,n:1,mode:4,noShadow:true});
-if(p.crop){const cdef=CROPS[p.crop],f=p.growth/cdef.days,stage=f>=1?3:f>.55?2:f>.15?1:0;const sway=Math.sin(t*1.5+c.x*2)*.04;setBone(c.bones2,0,mm(T(c.x,c.y+.06,c.z),RZ(sway)));drawList.push({mesh:cropMeshes[p.crop][stage],bones:c.bones2,n:1,mode:4});}}}
+const bonePool=[];let poolI=0,farmNoShadow=false;
+function poolBones(){if(poolI>=bonePool.length)bonePool.push(new Float32Array(16*COPIES));return bonePool[poolI++];}
+function farmDraw(t){coopDraw(t);poolI=0;
+if(actGesture&&actGesture.th.act==='water'&&typeof waterDropsDraw==='function'){const B=player.bones,o=64,sc=player.scale||1,px=.3*sc,py=.235*sc,pz=.44*sc;const x=B[o]*px+B[o+4]*py+B[o+8]*pz+B[o+12],y=B[o+1]*px+B[o+5]*py+B[o+9]*pz+B[o+13],z=B[o+2]*px+B[o+6]*py+B[o+10]*pz+B[o+14];const d=waterDropsDraw(x,y,z,actGesture.t/.6);if(d)drawList.push(d);}
+const groups=new Map();const put=(mesh,m,noShadow)=>{const key=noShadow?mesh:mesh.vao;let g=groups.get(key);if(!g){g={mesh,mats:[],noShadow};groups.set(key,g);}g.mats.push(m);};
+for(const c of farmCells){const p=plotOf(c);if(!p||c.island!==game.island)continue;put(p.wet?soilWetMesh:soilMesh,T(c.x,c.y,c.z),true);
+if(p.crop){const cdef=CROPS[p.crop],f=p.growth/cdef.days,stage=f>=1?3:f>.55?2:f>.15?1:0;const sway=Math.sin(t*1.5+c.x*2)*.04;const near=stage===3&&Math.hypot(c.x-player.x,c.z-player.z)<1.6;put(cropMeshes[p.crop][stage],mm(T(c.x,c.y+.06,c.z),RZ(sway)),!near);}}
+for(const g of groups.values()){for(let i=0;i<g.mats.length;i+=COPIES){const B=poolBones();let k=0;for(;k<COPIES&&i+k<g.mats.length;k++)B.set(g.mats[i+k],k*16);if(k<COPIES)B.fill(0,k*16);drawList.push({mesh:g.mesh,bones:B,n:COPIES,mode:4,noShadow:g.noShadow||farmNoShadow,noReflect:true});}}}
 function farmInventory(){const it=[`🪙 ${game.coins}`];for(const id of CROP_IDS){if(game.seeds[id])it.push(`${CROPS[id].icon}🌱×${game.seeds[id]}`);}for(const id in PRODUCE){if(game.produce[id])it.push(`${PRODUCE[id].icon}×${game.produce[id]}`);}if(game.hens)it.push(`🐔×${game.hens}`);return it;}
 function farmSaveData(){return{coins:game.coins,seeds:game.seeds,produce:game.produce,plots:game.plots,harvested:game.harvested||0,seedSel:game.seedSel||0,hens:game.hens||0,henFedDay:game.henFedDay??-1,eggs:game.eggs||0,eggsTotal:game.eggsTotal||0};}
 function farmLoadData(d){game.coins=d.coins??25;game.seeds=d.seeds||{tomate:3};game.produce=d.produce||{};game.plots=d.plots||{};game.harvested=d.harvested||0;game.seedSel=d.seedSel||0;game.hens=d.hens||0;game.henFedDay=d.henFedDay??-1;game.eggs=d.eggs||0;game.eggsTotal=d.eggsTotal||0;hens.length=0;for(let i=0;i<game.hens;i++)addHen(i);}
@@ -2046,7 +2055,7 @@ gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,shadowStatic);gl.unif
 if(Q.flat){gl.useProgram(flatProgram);gl.uniformMatrix4fv(gl.getUniformLocation(flatProgram,'uVP'),false,VP);gl.bindVertexArray(solid.vao);gl.drawArrays(gl.TRIANGLES,0,solid.count);gl.bindVertexArray(null);return;}
 setMain(mainStaticProgram,locationsS);gl.uniform1i(locationsS.uMode,6);gl.bindVertexArray(clouds.vao);gl.drawArrays(gl.TRIANGLES,0,clouds.count);drawSolid(VP,locationsS);
 setMain(mainProgram,locations);gl.uniformMatrix4fv(locations.uBones,false,I4);
-for(const d of drawList){gl.uniform1i(locations.uMode,d.mode);gl.uniformMatrix4fv(locations.uBones,false,d.bones.subarray(0,d.n*16));gl.bindVertexArray(d.mesh.vao);gl.drawArrays(gl.TRIANGLES,0,d.mesh.count);}
+for(const d of drawList){if(clip&&d.noReflect)continue;gl.uniform1i(locations.uMode,d.mode);gl.uniformMatrix4fv(locations.uBones,false,d.bones.subarray(0,d.n*16));gl.bindVertexArray(d.mesh.vao);gl.drawArrays(gl.TRIANGLES,0,d.mesh.count);}
 gl.bindVertexArray(null);}
 function bindTex(unit,tex,loc){gl.activeTexture(gl.TEXTURE0+unit);gl.bindTexture(gl.TEXTURE_2D,tex);gl.uniform1i(loc,unit);}
 function render(time){if(!visible)return;const rawDt=(time-lastTime)/1000||.016;let dt=Math.min(.05,rawDt);lastTime=time;const t=time*.001;
@@ -2097,7 +2106,7 @@ fpsAcc+=rawDt;fpsN++;if(fpsAcc>=.5){const f=Math.round(fpsN/fpsAcc);fpsAcc=0;fps
 if(frameCount>60&&Q.auto&&rawDt<.25&&document.visibilityState==='visible'){perfAcc+=rawDt;perfN++;if(perfN>=150){const avg=perfAcc/perfN;perfAcc=0;perfN=0;if(avg>1/24&&Q.level>1){Q.level--;applyQuality();toast('Qualité graphique ajustée pour rester fluide ('+qualityLabel()+')');}}}
 requestAnimationFrame(render);}
 
-window.__AZURA__={triangles:solid.count/3,vertices:solid.count,views:Object.keys(presets),seed:1729,reachCount,blocked,islands,farmCells,voyage,startVoyage,currentIsland,player,npcs,crabs,goats,shellSpots,noteSpots,digSpot,fishSpot,lanterns,game,H,reach,HN,HS,cellH,reachAt:(x,z)=>reach[cellIndex(x,z)],teleport:(x,z)=>{const p=snap(x,z);player.x=p[0];player.z=p[1];player.y=cellH(p[0],p[1]);},talk:id=>talkTo(npcs.find(n=>n.id===id)),start:()=>startGame(loadSave()),save:saveGame,setClock:v=>{game.clock=v;},interact,stars,Q,applyQuality,HDR,fps:()=>lastFps,bench:(n=20)=>{const px=new Uint8Array(4);const sync=()=>{gl.bindFramebuffer(gl.FRAMEBUFFER,RT.comp.fbo);gl.readPixels(0,0,1,1,gl.RGBA,HDR?gl.HALF_FLOAT:gl.UNSIGNED_BYTE,HDR?new Uint16Array(4):px);gl.bindFramebuffer(gl.FRAMEBUFFER,null);};sync();const t0=performance.now();for(let i=0;i<n;i++)render(performance.now());sync();const total=(performance.now()-t0)/n;const t1=performance.now();for(let i=0;i<n;i++)update(.016,performance.now()*.001);const cpuUpdate=(performance.now()-t1)/n;return{total:+total.toFixed(1),cpuUpdate:+cpuUpdate.toFixed(1)};},dayF:()=>dayF,step:(dt=.016)=>update(dt,performance.now()*.001),look:(theta,phi,r,target)=>{cam.mode='cine';goal={theta,phi,r,target:[...target]};Object.assign(current,structuredClone(goal));},closeDialog:()=>{while(dialog)advance();}};
+window.__AZURA__={farmMeshes:()=>({soil:soilMesh.count,soilWet:soilWetMesh.count,coop:coopMesh.count,hen:henMeshOf().count,crops:Object.fromEntries(CROP_IDS.map(id=>[id,cropMeshes[id].map(m=>m.count)]))}),drawCount:()=>drawList.length,setFarmShadow:v=>{farmNoShadow=!v;},triangles:solid.count/3,vertices:solid.count,views:Object.keys(presets),seed:1729,reachCount,blocked,islands,farmCells,voyage,startVoyage,currentIsland,player,npcs,crabs,goats,shellSpots,noteSpots,digSpot,fishSpot,lanterns,game,H,reach,HN,HS,cellH,reachAt:(x,z)=>reach[cellIndex(x,z)],teleport:(x,z)=>{const p=snap(x,z);player.x=p[0];player.z=p[1];player.y=cellH(p[0],p[1]);},talk:id=>talkTo(npcs.find(n=>n.id===id)),start:()=>startGame(loadSave()),save:saveGame,setClock:v=>{game.clock=v;},interact,stars,Q,applyQuality,HDR,fps:()=>lastFps,bench:(n=20)=>{const px=new Uint8Array(4);const sync=()=>{gl.bindFramebuffer(gl.FRAMEBUFFER,RT.comp.fbo);gl.readPixels(0,0,1,1,gl.RGBA,HDR?gl.HALF_FLOAT:gl.UNSIGNED_BYTE,HDR?new Uint16Array(4):px);gl.bindFramebuffer(gl.FRAMEBUFFER,null);};sync();const t0=performance.now();for(let i=0;i<n;i++)render(performance.now());sync();const total=(performance.now()-t0)/n;const t1=performance.now();for(let i=0;i<n;i++)update(.016,performance.now()*.001);const cpuUpdate=(performance.now()-t1)/n;return{total:+total.toFixed(1),cpuUpdate:+cpuUpdate.toFixed(1)};},dayF:()=>dayF,step:(dt=.016)=>update(dt,performance.now()*.001),look:(theta,phi,r,target)=>{cam.mode='cine';goal={theta,phi,r,target:[...target]};Object.assign(current,structuredClone(goal));},closeDialog:()=>{while(dialog)advance();}};
 refreshHUD();
 requestAnimationFrame(render);
 
