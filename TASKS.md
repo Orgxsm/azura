@@ -14,10 +14,10 @@ Emplacements proposés (x, z en mètres, la mer à y = 0) :
 ## Phase 1 — Île du Phare + voyage en bateau
 
 ### Astra (design / animation)
-- [ ] **Décors qui se chevauchent sur Azura** (retour de Léo) : des arbres traversent des escaliers, des rochers coupent des marches, des buissons empiètent sur les chemins. Passer en revue `island.js` : déplacer ou supprimer les arbres/rochers qui touchent les `stairs(...)` et les `platforms`, garder 0,4 m de dégagement autour des escaliers. Les buissons sont désormais des obstacles pour la marche.
+- [x] (livraison 2, 73 objets retirés) **Décors qui se chevauchent sur Azura** (retour de Léo) : des arbres traversent des escaliers, des rochers coupent des marches, des buissons empiètent sur les chemins. Passer en revue `island.js` : déplacer ou supprimer les arbres/rochers qui touchent les `stairs(...)` et les `platforms`, garder 0,4 m de dégagement autour des escaliers. Les buissons sont désormais des obstacles pour la marche.
 - [ ] **Personnages arrondis** : Léo veut le style Fae Farm (grosse tête, corps compact, capsules, aplats doux). Claude a livré une première version dans `humanoid()` (rig.js) le 9 sept. ; Astra affine (visages, cheveux, tenues, mains) et passe `catRig/gullRig/crabRig` dans le même style.
-- [~] `src/islands/phare.js` : relief (ellipsoïdes de roche comme Azura, mais plus élancé), phare (tour haute, lanterne émissive mode 7 au sommet, galerie), 3–4 maisons, escalier taillé de la crique jusqu'au phare, un ponton d'accostage à (34, −5) orienté vers Azura. Déclarer `platforms` et `stairs` pour que tout soit praticable (voir COLLAB.md §1). Rester dans x ∈ [20, 48], z ∈ [−32, −4].
-- [ ] `src/rig.js` : maillage du gardien du phare (clé `npcMeshes.gardien`) (vieux marin, ciré jaune, lanterne à la main) et d'une chèvre (4 pattes, cornes). `src/anim.js` : `poseGoat(e,t)`.
+- [x] (livraison 2) `src/islands/phare.js` : relief (ellipsoïdes de roche comme Azura, mais plus élancé), phare (tour haute, lanterne émissive mode 7 au sommet, galerie), 3–4 maisons, escalier taillé de la crique jusqu'au phare, un ponton d'accostage à (34, −5) orienté vers Azura. Déclarer `platforms` et `stairs` pour que tout soit praticable (voir COLLAB.md §1). Rester dans x ∈ [20, 48], z ∈ [−32, −4].
+- [x] (livraison 2) `src/rig.js` : maillage du gardien du phare (clé `npcMeshes.gardien`) (vieux marin, ciré jaune, lanterne à la main) et d'une chèvre (4 pattes, cornes). `src/anim.js` : `poseGoat(e,t)`.
 - [ ] Animation du voilier en traversée : voile qui se gonfle, gîte, sillage (mousse) — proposer dans `rig.js` / `shaders.js`.
 - [ ] Faisceau tournant du phare la nuit (géométrie translucide mode 7 ou effet dans `shaders.js`).
 - [ ] Polish visuel libre : ce qui te semble améliorer le rendu (ciel, eau, matériaux), en petits commits.
@@ -39,14 +39,14 @@ Vision : un côté FarmVille 2 / Fae Farm, léger. Camp de base = **Île des Cha
 
 ### Claude (gameplay)
 - [x] Cœur de la ferme (`src/farm.js`) : parcelles validées sur sol plat, bêcher / semer / arroser / récolter, pousse liée aux journées (9 min), 3 cultures (tomate, blé, fleur de sable), pièces 🪙, graines chez Anaé, vente chez Pia, quête « Première récolte ». Parcelle d'essai sur le sable ouest d'Azura, près de Pia, en attendant l'île.
-- [ ] Poules : nourrir, ramasser les œufs ; chèvres du Phare rapatriables.
-- [ ] Progression : agrandir la parcelle, débloquer des graines, décorations (barrières, lanternes, puits), maison du joueur.
-- [ ] Brancher la ferme sur l'Île des Champs quand Astra la livre (registre `FARM_AREAS`), voyage à 3 destinations (choix).
+- [x] Poules (9 sept. 2026) : poulailler sur l'Île des Champs à (−24, 12.7), poules achetées chez Anaé (30 pièces, 4 max), nourries avec 1 blé par jour → 1 œuf par poule le lendemain, ramassage, vente 8 pièces chez Pia, quête « Le poulailler tourne » (3 œufs). Maillage/pose provisoires (`farmHenMesh`/`poseFarmHen` dans farm.js) remplacés automatiquement par `henMesh`/`poseHen` d'Astra. `[ ]` chèvres du Phare rapatriables.
+- [x] Maison du joueur (9 sept. 2026) : porte de la maison des Champs (−35, 3.55) → « Dormir jusqu'au matin » (fondu, saut au lendemain 7 h, pousse et ponte appliquées), point de réapparition de l'île. `[ ]` Progression : débloquer des graines, décorations (barrières, lanternes), agrandissement.
+- [x] Ferme branchée sur l'Île des Champs (64 cases à y=1,2), voyage à 3 destinations avec choix au ponton, lieu « L'Île des Champs » (16 étoiles au total).
 
 ### Astra (design / animation)
-- [ ] `src/islands/champs.js` : île plate en terrasses (2–3 niveaux reliés par `stairs` + `platforms`), grande zone plane cultivable d'au moins 8 m × 8 m (sable/terre), maison du joueur (petite, avec porche), puits, barrières basses, ponton à déclarer en tête de fichier (Claude l'ajoute au registre). Rester dans x ∈ [−46, −18], z ∈ [−2, 24].
-- [ ] Maillages de cultures plus jolis en 3 stades (tomate, blé, fleur) — remplacer `cropMeshes` (bone 0, origine au sol, ≤ 1 m).
-- [ ] Poule (rig + `poseHen`), animation de bêchage/arrosage pour `humanoid` (bras).
+- [x] (livraison 2, 9 sept. 2026) `src/islands/champs.js` : île plate en terrasses (2–3 niveaux reliés par `stairs` + `platforms`), grande zone plane cultivable d'au moins 8 m × 8 m (sable/terre), maison du joueur (petite, avec porche), puits, barrières basses, ponton à déclarer en tête de fichier (Claude l'ajoute au registre). Rester dans x ∈ [−46, −18], z ∈ [−2, 24].
+- [ ] Maillages de cultures plus jolis en 3 stades (tomate, blé, fleur) — remplacer `cropMeshes` (bone 0, origine au sol, ≤ 1 m). Habillage de l'Île des Champs : les terrasses sont encore des dalles nues (herbe, chemins de terre, fleurs, buissons hors du rectangle cultivable, rochers sur les flancs).
+- [ ] Poule : `henMesh` (5 os : 0 corps, 1 tête pivot (0,.27,.06), 2 patte G pivot (−.04,.12,0), 3 patte D pivot (.04,.12,0), 4 queue pivot (0,.24,−.12), ≈ 0,35 m, origine au sol) + `poseHen(e,t)` (e.peck ∈ [0,1] = picorage en cours) ; animation de bêchage/arrosage pour `humanoid` (bras).
 
 ### Plus tard
 - [ ] Îlot Sauvage, Baie des Pêcheurs.
@@ -54,6 +54,7 @@ Vision : un côté FarmVille 2 / Fae Farm, léger. Camp de base = **Île des Cha
 
 ## Notes
 - 9 sept. 2026, 01:50 : profilage sur la Radeon Pro 555X de Léo. Coûts par image avant/après : Fluide 60 → 15 ms, Élevée → 20 ms, Ultra 90 → 45 ms. Gains : bruit en texture (au lieu de fbm au pixel), FXAA au lieu du MSAA 4x HDR, mini-carte mise en cache et rafraîchie à 10 Hz, ombres à 4 prélèvements hors Ultra, programme de sommets sans os pour la géométrie statique. Sonde : `__AZURA__.bench(30)` (ms/image, GPU compris), touche F.
+- 9 sept. 2026, 08:56 : livraison 2 d'Astra intégrée (`astra/design-2` → `main`), tout atteignable (spawn, ferme, porche, puits, gardien, chèvres, paliers du Phare), 16 ms/image en Fluide. Astra lit désormais le dépôt GitHub via son plugin (lecture seule) ; livraison toujours par ZIP.
 - 9 sept. 2026 : Astra n'a pas d'accès GitHub en écriture (il peut lire le dépôt public). Le relais se fait par ZIP via Léo, et Claude écrit ses demandes directement dans la conversation ChatGPT « Créer environnement 3D ». Sa session a atteint son quota Work le 9 sept. vers 00:40 (réinitialisation annoncée à 05:06) : livraison 2 du Phare en attente.
 - **Retour de Claude sur la livraison 1 du Phare** : contrat de coordonnées parfait, aléa bien isolé, rien de cassé. Visuellement, le relief est encore une masse lisse : pour la suite, casser la silhouette (vires, éboulis, deux ou trois paliers de roche comme les `tiers` d'Azura), garder la crique sud-est dégagée, et prévoir l'escalier taillé de la crique (y≈0,6) au plateau (y=12,5) avec des paliers `platforms` tous les 3–4 m de dénivelé. Les ombres et la praticabilité au-delà de x,z∈[−16,16] arrivent avec l'extension de `world.js` (Claude, en cours).
 - Le fichier joué par Léo est `~/Downloads/Azura-3D.html` (copié par `build.py`).
