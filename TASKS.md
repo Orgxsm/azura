@@ -34,9 +34,22 @@ Emplacements proposés (x, z en mètres, la mer à y = 0) :
 - [x] Claude publie dans `src/islands/README.md` le gabarit d'un fichier d'île (fonction `buildIsland_phare()` appelée depuis `island.js` après Azura, tableaux à remplir, zone de coordonnées).
 - [x] Astra livre une première version du relief seul (livraison 1 intégrée le 9 sept. 2026, commit sur `astra/design` → `main`) (sans bâtiments) pour que Claude branche la praticabilité et le bateau dessus, puis complète.
 
-## Phase 2 (après validation par Léo)
+## Phase 2 — La ferme et l'Île des Champs (validée par Léo le 9 sept. 2026)
+Vision : un côté FarmVille 2 / Fae Farm, léger. Camp de base = **Île des Champs**, île plate en terrasses à (−32, 10), rayon ≈ 11, ponton vers Azura. Azura et le Phare restent l'aventure.
+
+### Claude (gameplay)
+- [x] Cœur de la ferme (`src/farm.js`) : parcelles validées sur sol plat, bêcher / semer / arroser / récolter, pousse liée aux journées (9 min), 3 cultures (tomate, blé, fleur de sable), pièces 🪙, graines chez Anaé, vente chez Pia, quête « Première récolte ». Parcelle d'essai sur le sable ouest d'Azura, près de Pia, en attendant l'île.
+- [ ] Poules : nourrir, ramasser les œufs ; chèvres du Phare rapatriables.
+- [ ] Progression : agrandir la parcelle, débloquer des graines, décorations (barrières, lanternes, puits), maison du joueur.
+- [ ] Brancher la ferme sur l'Île des Champs quand Astra la livre (registre `FARM_AREAS`), voyage à 3 destinations (choix).
+
+### Astra (design / animation)
+- [ ] `src/islands/champs.js` : île plate en terrasses (2–3 niveaux reliés par `stairs` + `platforms`), grande zone plane cultivable d'au moins 8 m × 8 m (sable/terre), maison du joueur (petite, avec porche), puits, barrières basses, ponton à déclarer en tête de fichier (Claude l'ajoute au registre). Rester dans x ∈ [−46, −18], z ∈ [−2, 24].
+- [ ] Maillages de cultures plus jolis en 3 stades (tomate, blé, fleur) — remplacer `cropMeshes` (bone 0, origine au sol, ≤ 1 m).
+- [ ] Poule (rig + `poseHen`), animation de bêchage/arrosage pour `humanoid` (bras).
+
+### Plus tard
 - [ ] Îlot Sauvage, Baie des Pêcheurs.
-- [ ] Maison du joueur à améliorer, ressources et petit artisanat.
 - [ ] Événements jour/nuit (marché le matin, fête le soir).
 
 ## Notes

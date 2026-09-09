@@ -2,7 +2,7 @@
 // Propriétaire : GAMEPLAY (Claude Code).
 // ---------- état du jeu ----------
 const SAVE_KEY='azura-save-v1',DAY=540;
-const game={name:'',shells:new Set(),notes:new Set(),quests:{shells:0,cat:0,crabs:0,bread:0,treasure:0,fish:0,notes:0,goats:0,oil:0},goatsCaught:0,oil:false,log:[],discovered:{},playtime:0,clock:DAY*.1,catFollow:false,crabsCaught:0,fish:0,delivered:{},dug:false,fireworksUntil:-1,finale:false,island:'azura'};
+const game={name:'',shells:new Set(),notes:new Set(),quests:{shells:0,cat:0,crabs:0,bread:0,treasure:0,fish:0,notes:0,goats:0,oil:0,farm:0},goatsCaught:0,oil:false,coins:25,seeds:{tomate:3},produce:{},plots:{},harvested:0,seedSel:0,log:[],discovered:{},playtime:0,clock:DAY*.1,catFollow:false,crabsCaught:0,fish:0,delivered:{},dug:false,fireworksUntil:-1,finale:false,island:'azura'};
 let playing=false,dialog=null,dirty=false,lastSave=0,minigame=null;
 const NAMES={tomas:'Tomas',anae:'Anaé',lila:'Lila',oro:'Oro',pia:'Pia',marco:'Marco',bastien:'Bastien',cat:'Pistache',gardien:'Elio'};
 function makeEntity(id,mesh,x,z,o={}){const e=Object.assign({id,mesh,x,z,y:0,heading:PI,phase:0,amp:0,speed:0,bones:new Float32Array(16*6),look:0},o);e.scale=o.scale||1;e.y=cellH(x,z);return e;}
@@ -37,11 +37,11 @@ const boats={moored:{x:-6,y:.53,z:14.1,rot:-.13,bones:new Float32Array(16)},sail
 const chestBones=new Float32Array(32),crossBones=new Float32Array(16);
 
 // ---------- sauvegarde ----------
-function saveGame(silent){const d={v:2,name:game.name,x:player.x,z:player.z,heading:player.heading,cam:{theta:goal.theta,phi:goal.phi,r:goal.r},shells:[...game.shells],notes:[...game.notes],quests:game.quests,log:game.log,discovered:game.discovered,playtime:game.playtime,clock:game.clock,catFollow:game.catFollow,crabsCaught:game.crabsCaught,fish:game.fish,delivered:game.delivered,dug:game.dug,finale:game.finale,island:game.island,goatsCaught:game.goatsCaught,oil:game.oil,cat:[cat.x,cat.z],said:Object.fromEntries(npcs.map(n=>[n.id,n.said])),savedAt:Date.now()};
+function saveGame(silent){const d={v:2,name:game.name,x:player.x,z:player.z,heading:player.heading,cam:{theta:goal.theta,phi:goal.phi,r:goal.r},shells:[...game.shells],notes:[...game.notes],quests:game.quests,log:game.log,discovered:game.discovered,playtime:game.playtime,clock:game.clock,catFollow:game.catFollow,crabsCaught:game.crabsCaught,fish:game.fish,delivered:game.delivered,dug:game.dug,finale:game.finale,island:game.island,goatsCaught:game.goatsCaught,oil:game.oil,farm:farmSaveData(),cat:[cat.x,cat.z],said:Object.fromEntries(npcs.map(n=>[n.id,n.said])),savedAt:Date.now()};
 try{localStorage.setItem(SAVE_KEY,JSON.stringify(d));}catch(e){if(!silent)toast("Sauvegarde impossible sur ce navigateur");return;}dirty=false;lastSave=performance.now();if(!silent)toast('Partie sauvegardée ✓');}
 function loadSave(){try{const d=JSON.parse(localStorage.getItem(SAVE_KEY));return d&&(d.v===1||d.v===2)?d:null;}catch(e){return null;}}
 function clearSave(){try{localStorage.removeItem(SAVE_KEY);}catch(e){}}
-function applySave(d){const [x,z]=snap(d.x,d.z);player.x=x;player.z=z;player.y=cellH(x,z);player.heading=d.heading||PI;game.name=d.name||'';game.shells=new Set(d.shells||[]);game.notes=new Set(d.notes||[]);Object.assign(game.quests,d.quests||{});game.log=d.log||Object.keys(game.quests).filter(k=>game.quests[k]>0);game.discovered=d.discovered||{};game.playtime=d.playtime||0;game.clock=d.clock??DAY*.1;game.catFollow=!!d.catFollow;game.crabsCaught=d.crabsCaught||0;game.fish=d.fish||0;game.delivered=d.delivered||{};game.dug=!!d.dug;game.finale=!!d.finale;game.island=d.island||'azura';game.goatsCaught=d.goatsCaught||0;game.oil=!!d.oil;
+function applySave(d){const [x,z]=snap(d.x,d.z);player.x=x;player.z=z;player.y=cellH(x,z);player.heading=d.heading||PI;game.name=d.name||'';game.shells=new Set(d.shells||[]);game.notes=new Set(d.notes||[]);Object.assign(game.quests,d.quests||{});game.log=d.log||Object.keys(game.quests).filter(k=>game.quests[k]>0);game.discovered=d.discovered||{};game.playtime=d.playtime||0;game.clock=d.clock??DAY*.1;game.catFollow=!!d.catFollow;game.crabsCaught=d.crabsCaught||0;game.fish=d.fish||0;game.delivered=d.delivered||{};game.dug=!!d.dug;game.finale=!!d.finale;game.island=d.island||'azura';game.goatsCaught=d.goatsCaught||0;game.oil=!!d.oil;farmLoadData(d.farm||{});
 if(d.cat){const [cx,cz]=snap(d.cat[0],d.cat[1]);cat.x=cx;cat.z=cz;cat.y=cellH(cx,cz);}
 if(game.quests.cat===2){cat.home=[anae.home[0]+.6,anae.home[1]+.4];}
 for(const n of npcs)n.said=(d.said||{})[n.id]||0;
@@ -49,7 +49,7 @@ if(d.cam){goal.theta=d.cam.theta;goal.phi=clamp(d.cam.phi,.35,1.46);goal.r=clamp
 function fmtTime(s){const m=Math.round(s/60);return m<1?'moins d\'une minute':m<60?m+' min':Math.floor(m/60)+' h '+(m%60)+' min';}
 const doneCount=q=>Object.values(q).filter(v=>v===2).length;
 function stars(){return Object.keys(game.discovered).length+doneCount(game.quests);}
-const TOTAL=13;
+const TOTAL=14;
 
 // ---------- jour / nuit ----------
 let dayF=1,duskF=0;
@@ -69,13 +69,14 @@ treasure:()=>"Trésor de Marco : « Sous le palmier qui penche vers la mer, à l
 fish:()=>game.fish>=3?"Apporte les 3 poissons à Anaé pour sa soupe.":`Pêche 3 poissons au bout du ponton (${game.fish}/3).`,
 notes:()=>game.notes.size>=3?"Rapporte les partitions à Bastien, sur la terrasse du haut.":`Retrouve les 3 partitions de Bastien (${game.notes.size}/3). Le vent les a dispersées.`,
 goats:()=>game.goatsCaught>=3?"Retourne voir Elio, au sommet de l'Île du Phare.":`Rattrape les 3 chèvres d'Elio sur les pentes de l'Île du Phare (${game.goatsCaught}/3). Approche-toi et appuie sur E.`,
+farm:()=>`Récolte 5 légumes ou fleurs sur ta parcelle (${game.harvested||0}/5). Bêche, sème, arrose chaque jour, récolte.`,
 oil:()=>game.oil?"Rapporte le bidon d'huile à Elio, au sommet de l'Île du Phare.":"La lampe du phare est éteinte : va chercher le bidon d'huile chez Tomas, sur le ponton d'Azura (le voilier fait la traversée)."};
 function objective(){const active=game.log.filter(id=>game.quests[id]===1);if(active.length)return active.slice(-2).reverse().map(id=>'• '+questTexts[id]()).join('\n');
-const q=game.quests;if(q.shells===0)return"Explore l'île et parle aux habitants. Tomas t'attend sur le ponton.";const todo=[['cat','Anaé, dans le village, a besoin d\'aide.'],['crabs','Lila, sur la plage, a une idée de jeu.'],['bread','Pia, près du ponton, sort son pain du four.'],['treasure','Marco, sur la plage, a trouvé quelque chose.'],['fish','Reparle à Tomas : il a une canne à te prêter.'],['notes','Bastien joue de la guitare sur la terrasse du haut. Va l\'écouter.'],['goats','Prends le voilier de Tomas : Elio, le gardien du phare, a besoin d\'aide au sommet de son île.']].filter(([k])=>q[k]===0);
+const q=game.quests;if(q.shells===0)return"Explore l'île et parle aux habitants. Tomas t'attend sur le ponton.";const todo=[['cat','Anaé, dans le village, a besoin d\'aide.'],['crabs','Lila, sur la plage, a une idée de jeu.'],['bread','Pia, près du ponton, sort son pain du four.'],['treasure','Marco, sur la plage, a trouvé quelque chose.'],['fish','Reparle à Tomas : il a une canne à te prêter.'],['notes','Bastien joue de la guitare sur la terrasse du haut. Va l\'écouter.'],['goats','Prends le voilier de Tomas : Elio, le gardien du phare, a besoin d\'aide au sommet de son île.'],['farm','Anaé a une parcelle à te confier près de la maison de Pia. Va la voir.']].filter(([k])=>q[k]===0);
 if(todo.length)return todo[0][1];const disc=Object.keys(game.discovered).length;if(disc<places.length)return`Découvre tous les lieux de l'archipel (${disc}/${places.length}). Il reste ${places.filter(p=>!game.discovered[p.id]).map(p=>p.name.toLowerCase()).join(', ')}.`;
 return stars()>=TOTAL?"Tu as tout découvert. Va saluer Oro au belvédère, puis profite de la fête !":"Continue d'explorer.";}
-function inventory(){const it=[];const bread=game.quests.bread===1?3-Object.keys(game.delivered).length:0;if(bread>0)it.push(`🍞 ×${bread}`);if(game.quests.fish>=1)it.push('🎣 canne');if(game.fish>0&&game.quests.fish===1)it.push(`🐟 ×${game.fish}`);if(game.quests.treasure===1)it.push('🗺️ carte');if(game.dug)it.push('⚓ ancre d\'or');if(game.notes.size&&game.quests.notes===1)it.push(`🎵 ×${game.notes.size}`);if(game.oil&&game.quests.oil===1)it.push('🛢️ huile');return it.join('  ');}
-function refreshHUD(){stats.textContent=`🐚 ${game.shells.size}/12 · ⭐ ${stars()}/${TOTAL} · ${dayIcon()}`;questText.textContent=objective();const inv=inventory();invEl.hidden=!inv;invEl.textContent=inv;}
+function inventory(){const it=[];const bread=game.quests.bread===1?3-Object.keys(game.delivered).length:0;if(bread>0)it.push(`🍞 ×${bread}`);if(game.quests.fish>=1)it.push('🎣 canne');if(game.fish>0&&game.quests.fish===1)it.push(`🐟 ×${game.fish}`);if(game.quests.treasure===1)it.push('🗺️ carte');if(game.dug)it.push('⚓ ancre d\'or');if(game.notes.size&&game.quests.notes===1)it.push(`🎵 ×${game.notes.size}`);if(game.oil&&game.quests.oil===1)it.push('🛢️ huile');return it.concat(farmInventory()).join('  ');}
+function refreshHUD(){stats.textContent=`🪙 ${game.coins} · 🐚 ${game.shells.size}/12 · ⭐ ${stars()}/${TOTAL} · ${dayIcon()}`;questText.textContent=objective();const inv=inventory();invEl.hidden=!inv;invEl.textContent=inv;}
 function startQuest(id){if(game.quests[id]===0){game.quests[id]=1;if(!game.log.includes(id))game.log.push(id);dirty=true;refreshHUD();}}
 function finishQuest(id,msg){game.quests[id]=2;star(msg);}
 function star(msg){toast('⭐ '+msg);sfx('star');refreshHUD();dirty=true;saveGame(true);if(stars()>=TOTAL&&!game.finale){game.finale=true;setTimeout(()=>toast('🏆 Dix étoiles ! Oro t\'attend au belvédère.'),3200);}}
@@ -95,7 +96,9 @@ if(q.fish===0)return wrap({lines:["Tiens, prends ma vieille canne. Anaé prépar
 if(q.fish===1&&game.fish<3)return wrap({lines:[`Alors, ça mord ? Tu as ${game.fish} poisson${game.fish>1?'s':''}. Le bout du ponton, c'est là que ça mord le mieux.`]});
 if(q.fish===1)return wrap({lines:["Trois beaux poissons ! File les porter à Anaé avant que les mouettes s'en mêlent."]});
 return wrap({lines:[pick(["Mon voilier t'attend au bout du ponton : place-toi devant lui et appuie sur E, il te mènera à l'Île du Phare.","Belle journée pour la pêche, non ?","Les mouettes me volent la moitié de mes prises.","Le vieux Oro dit qu'il voit le continent depuis le belvédère. Moi, je vois surtout des nuages.","La nuit, la mer devient toute noire et les lanternes s'allument. C'est mon moment préféré."])]});
-case'anae':if(q.fish===1&&game.fish>=3)return wrap({lines:["Trois poissons ! Ma soupe sera la meilleure de la fête.","Tiens, goûte : une louche pour toi, et ma reconnaissance éternelle."],end:()=>finishQuest('fish','La soupe d\'Anaé est sauvée')});
+case'anae':if(q.farm===0&&q.cat>=1)return wrap({lines:[`${me}, tu as l'air de savoir te servir de tes mains. Il y a un coin de sable plat à l'ouest de la plage, entre le ponton et la maison de Pia.`,"Je te donne trois graines de tomate pour commencer. Bêche, sème, arrose chaque matin, et reviens m'acheter des graines quand tu auras vendu ta récolte à Pia."],end:()=>{startQuest('farm');game.seeds.tomate=(game.seeds.tomate||0)+3;refreshHUD();}});
+if(q.farm>=1&&(n.said%3!==2)){n.said++;return wrap({lines:["Tu veux des graines ? Regarde ce que j'ai."],end:()=>openShop('buy')});}
+if(q.fish===1&&game.fish>=3)return wrap({lines:["Trois poissons ! Ma soupe sera la meilleure de la fête.","Tiens, goûte : une louche pour toi, et ma reconnaissance éternelle."],end:()=>finishQuest('fish','La soupe d\'Anaé est sauvée')});
 if(q.cat===0)return wrap({lines:[`Ah, une nouvelle tête ! Tu t'appelles ${me}, c'est ça ? Mon chat Pistache a encore filé.`,"Il adore traîner sur les hauteurs, près des maisons du haut. Ramène-le-moi, veux-tu ?"],end:()=>startQuest('cat')});
 if(q.cat===1&&!game.catFollow)return wrap({lines:["Pistache doit être quelque part au-dessus du village. Approche-toi de lui et appelle-le, il te suivra."]});
 if(q.cat===1&&game.catFollow&&Math.hypot(cat.x-n.x,cat.z-n.z)<4)return wrap({lines:["Pistache ! Te voilà, vilain chat.",`Merci mille fois, ${me}. Tiens, prends ces figues du jardin, elles sont excellentes.`],end:()=>{game.catFollow=false;cat.home=[n.home[0]+.6,n.home[1]+.4];cat.state='idle';cat.t=1;finishQuest('cat','Pistache est rentré');}});
@@ -105,7 +108,8 @@ case'lila':if(q.crabs===0)return wrap({lines:["Tu sais courir vite ? Les crabes 
 if(q.crabs===1&&game.crabsCaught<3)return wrap({lines:[`${game.crabsCaught} sur 3 ! Cours après eux, ils se cachent près des rochers et du ponton.`]});
 if(q.crabs===1)return wrap({lines:["Trois crabes ! Tu es plus rapide que Marco.","Je les relâche, hein. Ils ont une famille, les crabes."],end:()=>{for(const c of crabs)c.hidden=false;finishQuest('crabs','Champion des crabes');}});
 return wrap({lines:[pick(["Tu as vu les mouettes ? Elles tournent au-dessus de la crique toute la journée.","Papa dit que du belvédère on voit jusqu'au continent !","J'ai compté : il y a douze coquillages sur toute l'île. Enfin, je crois.","Le bateau blanc, c'est celui de Tomas. Il fait le tour de l'île tous les matins.","La nuit, il y a des lucioles sur la terrasse d'Anaé. Des centaines ! Bon, quatorze."])]});
-case'pia':if(q.bread===0)return wrap({lines:["Tu sens ? Mon pain sort du four. Tu veux bien m'aider ?","Porte une miche à Marco sur la plage, une à Tomas sur le ponton et une à Oro, tout en haut. Reviens me voir après."],end:()=>{game.delivered={};startQuest('bread');}});
+case'pia':if(q.farm>=1&&Object.values(game.produce).some(v=>v>0))return wrap({lines:["Tu as récolté ? Montre-moi ça, j'achète tout au prix juste."],end:()=>openShop('sell')});
+if(q.bread===0)return wrap({lines:["Tu sens ? Mon pain sort du four. Tu veux bien m'aider ?","Porte une miche à Marco sur la plage, une à Tomas sur le ponton et une à Oro, tout en haut. Reviens me voir après."],end:()=>{game.delivered={};startQuest('bread');}});
 if(q.bread===1&&Object.keys(game.delivered).length<3)return wrap({lines:[`Il reste ${['marco','tomas','oro'].filter(k=>!game.delivered[k]).map(k=>NAMES[k]).join(' et ')} à livrer. Le pain se garde, mais pas éternellement !`]});
 if(q.bread===1)return wrap({lines:["Tout le monde a eu son pain ? Tu es un amour.","Garde la dernière miche pour toi. Et reviens quand tu veux, le four est toujours chaud."],end:()=>finishQuest('bread','Livraison de pain accomplie')});
 return wrap({lines:[pick(["Bienvenue à Azura. Ici, tout le monde se connaît.","Les escaliers sont raides, mais la vue vaut le détour.","Mon four est allumé, tu sens le pain ?","À la fête du village, on danse jusqu'au lever du soleil."])]});
@@ -134,6 +138,7 @@ function nearThing(){let best=null,bd=1.8;for(const n of npcs){if(n.cat&&!(game.
 if(game.quests.crabs===1&&game.crabsCaught<3)for(const c of crabs){if(c.hidden)continue;const d=Math.hypot(c.x-player.x,c.z-player.z);if(d<Math.min(bd,1.0)){bd=d;best={type:'crab',c,label:'Attraper le crabe',btn:'Hop !'};}}
 if(game.quests.goats===1&&game.goatsCaught<3)for(const g of goats){if(g.hidden)continue;const d=Math.hypot(g.x-player.x,g.z-player.z);if(d<Math.min(bd,1.3)){bd=d;best={type:'goat',g,label:'Attraper la chèvre',btn:'Hop !'};}}
 if(game.quests.treasure===1&&!game.dug){const d=Math.hypot(digSpot.x-player.x,digSpot.z-player.z);if(d<Math.min(bd,1.3)){bd=d;best={type:'dig',label:'Creuser ici',btn:'Creuser'};}}
+const fn=farmNear();if(fn){bd=.95;best=fn;}
 const dockIsl=nearDock();if(dockIsl){const dest=islands.find(i=>i.id!==dockIsl.id);if(dest){bd=1.7;best={type:'boat',dest,label:'Embarquer pour '+dest.name,btn:'Embarquer'};}}
 if(game.quests.fish>=1){const d=Math.hypot(fishSpot.x-player.x,fishSpot.z-player.z);if(d<Math.min(bd,1.4)&&Math.abs(fishSpot.y-player.y)<.6){bd=d;best={type:'fish',label:'Pêcher',btn:'Pêcher'};}}
 return best;}
@@ -144,6 +149,7 @@ if(th.type==='npc')talkTo(th.n);
 else if(th.type==='crab'){th.c.hidden=true;game.crabsCaught++;sfx('catch');toast(`🦀 Crabe attrapé ! ${game.crabsCaught}/3`);dirty=true;refreshHUD();if(game.crabsCaught>=3)setTimeout(()=>toast('Retourne voir Lila !'),1500);}
 else if(th.type==='dig'){game.dug=true;sfx('dig');setTimeout(()=>{toast('⚓ Une ancre d\'or ! Le trésor de Marco est réel.');finishQuest('treasure','Le trésor est découvert');},700);}
 else if(th.type==='goat'){th.g.hidden=true;game.goatsCaught++;sfx('catch');toast(`🐐 Chèvre rattrapée ! ${game.goatsCaught}/3`);dirty=true;refreshHUD();if(game.goatsCaught>=3)setTimeout(()=>toast('Retourne voir Elio au sommet !'),1500);}
+else if(th.type==='farm')farmInteract(th);
 else if(th.type==='fish')startFishing();
 else if(th.type==='boat'){if(game.quests.shells<2){toast('Le voilier est à Tomas : rends-lui d\'abord service pour gagner sa confiance.');return;}startVoyage(th.dest.id);}}
 
@@ -197,7 +203,7 @@ if(!document.documentElement.requestFullscreen)fullButton.hidden=true;else fullB
 const keys={};
 const keyMap={KeyW:'up',ArrowUp:'up',KeyS:'down',ArrowDown:'down',KeyA:'left',ArrowLeft:'left',KeyD:'right',ArrowRight:'right',ShiftLeft:'run',ShiftRight:'run'};
 window.addEventListener('keydown',e=>{if(e.target instanceof HTMLInputElement)return;if(e.target instanceof HTMLButtonElement&&(e.key==='Enter'||e.key===' '))return;if(keyMap[e.code]){keys[keyMap[e.code]]=true;e.preventDefault();return;}
-switch(e.code){case'KeyE':case'Enter':interact();e.preventDefault();break;case'Space':jump();e.preventDefault();break;case'Escape':if(minigame)cancelFishing();else if(dialog){dialog=null;dialogEl.hidden=true;for(const n of npcs)n.talking=false;}else togglePanel();break;case'KeyH':dbg.hidden=!dbg.hidden;break;case'KeyF':fpsEl.hidden=!fpsEl.hidden;break;case'KeyM':mapEl.hidden=!mapEl.hidden;try{localStorage.setItem('azura-map',mapEl.hidden?'0':'1');}catch(x){}break;case'Equal':case'NumpadAdd':goal.r=clamp(goal.r*.9,4,65);break;case'Minus':case'NumpadSubtract':goal.r=clamp(goal.r*1.1,4,65);break;case'Home':$('#reset').onclick();break;}});
+switch(e.code){case'KeyE':case'Enter':interact();e.preventDefault();break;case'Space':jump();e.preventDefault();break;case'Escape':if(!shopEl.hidden){shopEl.hidden=true;saveGame(true);}else if(minigame)cancelFishing();else if(dialog){dialog=null;dialogEl.hidden=true;for(const n of npcs)n.talking=false;}else togglePanel();break;case'KeyH':dbg.hidden=!dbg.hidden;break;case'Digit1':case'Digit2':case'Digit3':game.seedSel=parseInt(e.code.slice(5))-1;toast('Graine sélectionnée : '+CROPS[CROP_IDS[game.seedSel]].name);break;case'KeyF':fpsEl.hidden=!fpsEl.hidden;break;case'KeyM':mapEl.hidden=!mapEl.hidden;try{localStorage.setItem('azura-map',mapEl.hidden?'0':'1');}catch(x){}break;case'Equal':case'NumpadAdd':goal.r=clamp(goal.r*.9,4,65);break;case'Minus':case'NumpadSubtract':goal.r=clamp(goal.r*1.1,4,65);break;case'Home':$('#reset').onclick();break;}});
 window.addEventListener('keyup',e=>{if(keyMap[e.code])keys[keyMap[e.code]]=false;});
 window.addEventListener('blur',()=>{for(const k in keys)keys[k]=false;});
 const stick=$('#stick'),knob=stick.querySelector('i');let stickId=null,stickVec=[0,0];
@@ -269,8 +275,8 @@ else{const tx=c.target[0]-c.x,tz=c.target[1]-c.z,td=Math.hypot(tx,tz);if(td<.12|
 groundEntity(c,dt);}
 const drawList=[];
 function update(dt,t){
-if(playing)game.playtime+=dt;updateClock(dt);
-let ix=0,iy=0;if(playing&&!dialog&&!minigame&&panel.hidden&&!voyage.active){ix=(keys.right?1:0)-(keys.left?1:0)+stickVec[0];iy=(keys.up?1:0)-(keys.down?1:0)+stickVec[1];}
+if(playing)game.playtime+=dt;updateClock(dt);farmUpdate(dt);
+let ix=0,iy=0;if(playing&&!dialog&&!minigame&&panel.hidden&&shopEl.hidden&&!voyage.active){ix=(keys.right?1:0)-(keys.left?1:0)+stickVec[0];iy=(keys.up?1:0)-(keys.down?1:0)+stickVec[1];}
 let mag=Math.hypot(ix,iy);if(mag>1){ix/=mag;iy/=mag;mag=1;}
 if(mag>.08){if(cam.mode!=='follow')setView('play');const f=norm([current.target[0]-eye[0],0,current.target[2]-eye[2]]),r=[-f[2],0,f[0]];const px=player.x,pz=player.z;const moved=moveEntity(player,f[0]*iy+r[0]*ix,f[2]*iy+r[2]*ix,(keys.run||mag>.97&&stickId!==null?4.3:2.7)*Math.min(1,mag*1.3),dt);if(Math.hypot(player.x-px,player.z-pz)>0)dirty=true;
 if(!moved){player.stuckT=(player.stuckT||0)+dt;if(player.stuckT>.7){player.stuckT=0;let freed=false;for(let a=0;a<TAU&&!freed;a+=TAU/12)freed=tryMove(player,Math.sin(a)*.12,Math.cos(a)*.12,.1);if(!freed&&unstick(player))toast('Tu t\'étais coincé : te revoilà sur le chemin.');}}else player.stuckT=0;}
@@ -292,6 +298,7 @@ poseHuman(player,t);drawList.push({mesh:player.mesh,bones:player.bones,n:6,mode:
 for(const n of npcs){if(n.cat)poseCat(n,t);else poseHuman(n,t);drawList.push({mesh:n.mesh,bones:n.bones,n:6,mode:4});}
 for(const c of crabs){if(c.hidden)continue;poseCrab(c,t);drawList.push({mesh:crabMesh,bones:c.bones,n:3,mode:4});}
 for(const g of goats){if(g.hidden)continue;goatPose(g,t);drawList.push({mesh:goatMeshOf(),bones:g.bones,n:8,mode:4});}
+farmDraw(t);
 if(game.quests.oil===2){setBone(lighthouseBones,0,mm(T(34,12.5,-24.6),SC(3,3,3)));drawList.push({mesh:lanternGlow,bones:lighthouseBones,n:1,mode:7,noShadow:true});}
 const spin=(list,mesh,taken,hover)=>{for(const s of list){if(taken.has(s.id))continue;const b=s.bones||(s.bones=new Float32Array(32));const root=mm(T(s.x,s.y+hover+Math.sin(t*2.2+s.id)*.05,s.z),RY(t*1.3+s.id));setBone(b,0,root);setBone(b,1,mm(root,T(Math.cos(t*3+s.id)*.24,.14+Math.sin(t*4.1+s.id)*.06,Math.sin(t*3+s.id)*.24)));drawList.push({mesh,bones:b,n:2,mode:4});
 const rb=s.ring||(s.ring=new Float32Array(16));setBone(rb,0,mm(T(s.x,s.y+.04,s.z),SC(1+Math.sin(t*2.2+s.id)*.12)));drawList.push({mesh:ringMesh,bones:rb,n:1,mode:5,noShadow:true});}};
