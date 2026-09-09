@@ -143,7 +143,7 @@ const fn=farmNear();if(fn){bd=.95;best=fn;}
 const dockIsl=nearDock();if(dockIsl){const dests=islands.filter(i=>i.id!==dockIsl.id);if(dests.length){bd=1.7;best={type:'boat',dests,label:dests.length===1?'Embarquer pour '+dests[0].name:'Prendre le voilier',btn:'Embarquer'};}}
 if(game.quests.fish>=1){const d=Math.hypot(fishSpot.x-player.x,fishSpot.z-player.z);if(d<Math.min(bd,1.4)&&Math.abs(fishSpot.y-player.y)<.6){bd=d;best={type:'fish',label:'Pêcher',btn:'Pêcher'};}}
 return best;}
-function jump(){if(dialog||minigame){interact();return;}if(!playing||!panel.hidden||voyage.active||player.air)return;player.air=true;player.vy=4.6;sfx('jump');}
+function jump(){if(dialog||minigame){interact();return;}if(!playing||!panel.hidden||voyage.active||player.air||actGesture)return;player.air=true;player.vy=4.6;sfx('jump');}
 function respawn(){const isl=currentIsland(),home=homeFor(isl.id);const [x,z]=snap(home?home.x:isl.spawn[0],home?home.z+.6:isl.spawn[1],4);player.x=x;player.z=z;player.y=cellH(x,z);player.air=false;player.vy=0;panel.hidden=true;toast('Te revoilà sur '+isl.name+'.');dirty=true;}
 function interact(){if(minigame){fishingHit();return;}if(dialog){advance();return;}if(!playing||!panel.hidden)return;const th=nearThing();if(!th)return;
 if(th.type==='npc')talkTo(th.n);
@@ -278,7 +278,7 @@ groundEntity(c,dt);}
 const drawList=[];
 function update(dt,t){
 if(playing)game.playtime+=dt;updateClock(dt);farmUpdate(dt);
-let ix=0,iy=0;if(playing&&!dialog&&!minigame&&panel.hidden&&shopEl.hidden&&!voyage.active){ix=(keys.right?1:0)-(keys.left?1:0)+stickVec[0];iy=(keys.up?1:0)-(keys.down?1:0)+stickVec[1];}
+let ix=0,iy=0;if(playing&&!dialog&&!minigame&&panel.hidden&&shopEl.hidden&&!voyage.active&&!actGesture){ix=(keys.right?1:0)-(keys.left?1:0)+stickVec[0];iy=(keys.up?1:0)-(keys.down?1:0)+stickVec[1];}
 let mag=Math.hypot(ix,iy);if(mag>1){ix/=mag;iy/=mag;mag=1;}
 if(mag>.08){if(cam.mode!=='follow')setView('play');const f=norm([current.target[0]-eye[0],0,current.target[2]-eye[2]]),r=[-f[2],0,f[0]];const px=player.x,pz=player.z;const moved=moveEntity(player,f[0]*iy+r[0]*ix,f[2]*iy+r[2]*ix,(keys.run||mag>.97&&stickId!==null?4.3:2.7)*Math.min(1,mag*1.3),dt);if(Math.hypot(player.x-px,player.z-pz)>0)dirty=true;
 if(!moved){player.stuckT=(player.stuckT||0)+dt;if(player.stuckT>.7){player.stuckT=0;let freed=false;for(let a=0;a<TAU&&!freed;a+=TAU/12)freed=tryMove(player,Math.sin(a)*.12,Math.cos(a)*.12,.1);if(!freed&&unstick(player))toast('Tu t\'étais coincé : te revoilà sur le chemin.');}}else player.stuckT=0;}

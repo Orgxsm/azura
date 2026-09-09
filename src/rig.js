@@ -32,7 +32,7 @@ if(o.longHair)E([0,1.18,-.22],[.21,.24,.12],o.hair,12,7);}],
 [1,()=>{Cy([-.1,.62,0],[-.1,.12,0],.085,.075,o.pants,12);E([-.1,.06,.03],[.1,.065,.145],C.shoe,10,5);}],
 [2,()=>{Cy([.1,.62,0],[.1,.12,0],.085,.075,o.pants,12);E([.1,.06,.03],[.1,.065,.145],C.shoe,10,5);}],
 [3,()=>{E([-.29,1.03,0],[.085,.085,.085],sleeve,10,6);Cy([-.3,1.03,0],[-.3,.66,0],.065,.058,sleeve,10);E([-.3,.62,0],[.072,.075,.072],o.skin,10,6);E([-.252,.635,.025],[.027,.040,.034],o.skin,8,4);if(o.prop==='basket'){E([-.33,.46,.06],[.13,.09,.09],C.straw,10,6);Cy([-.33,.53,.06],[-.33,.56,.06],.1,.1,color(0xd9a35a),10);}}],
-[4,()=>{E([.29,1.03,0],[.085,.085,.085],sleeve,10,6);Cy([.3,1.03,0],[.3,.66,0],.065,.058,sleeve,10);E([.3,.62,0],[.072,.075,.072],o.skin,10,6);E([.252,.635,.025],[.027,.040,.034],o.skin,8,4);if(o.prop==='rod')beam(sc([.32,.55,.05]),sc([.36,1.55,1.5]),.014*s,palette.wood);if(o.prop==='staff')beam(sc([.34,-.02,.08]),sc([.34,1.25,.08]),.025*s,palette.wood);}]]);
+[4,()=>{E([.29,1.03,0],[.085,.085,.085],sleeve,10,6);Cy([.3,1.03,0],[.3,.66,0],.065,.058,sleeve,10);E([.3,.62,0],[.072,.075,.072],o.skin,10,6);E([.252,.635,.025],[.027,.040,.034],o.skin,8,4);if(o.prop==='rod')beam(sc([.32,.55,.05]),sc([.36,1.55,1.5]),.014*s,palette.wood);if(o.prop==='staff')beam(sc([.34,-.02,.08]),sc([.34,1.25,.08]),.025*s,palette.wood);if(o.prop==='can'||o.prop==='hoe')farmToolGeometry(o.prop,s);}]]);
 }
 function catRig(){const fur=color(0xe28f3c),cream=color(0xfbe9cf);return rig([
 [0,()=>{ellipsoid([0,.28,0],[.115,.115,.245],fur,12,7,0);ellipsoid([0,.23,.04],[.09,.07,.18],cream,10,6,0);ellipsoid([0,.39,.25],[.13,.13,.13],fur,12,8,0);ellipsoid([0,.34,.35],[.075,.048,.055],cream,10,5,0);
@@ -258,6 +258,70 @@ function installCropDesign(){
  const saved=seed;seed=730032;
  try{for(const id of ['tomate','ble','fleur'])cropMeshes[id]=[0,1,2,3].map(stage=>meshDyn(cropDesignRig(id,stage)));}
  finally{seed=saved;verts=null;}
+}
+
+// Lot 4 — outils fixés à la main droite (os 4), même repère que humanoid.
+// Appelé DANS le groupe de l'os : aucune allocation de rig imbriquée.
+function farmToolGeometry(prop,s=1){
+ const P=p=>p.map(v=>v*s),wood=palette.trim,metal=color(0x718d92),rim=color(0xc0cebc);
+ const rod=(a,b,r,c)=>cylinder(P(a),P(b),r*s,r*s,c,8);
+ if(prop==='hoe'){
+  rod([.3,.075,.04],[.3,.98,.04],.022,wood);
+  rod([.22,.98,.04],[.38,.98,.04],.018,wood);
+  box(P([.3,.075,.105]),P([.19,.12,.025]),metal);
+  // Tranchant arrondi et clair ; la lame reste au-dessus du sol au repos.
+  cylinder(P([.215,.018,.11]),P([.385,.018,.11]),.012*s,.012*s,rim,8);
+  rod([.3,.08,.04],[.3,.08,.105],.027,metal);
+ }else if(prop==='can'){
+  const enamel=color(0x4b9b9a);
+  ellipsoid(P([.3,.39,.06]),P([.135,.135,.11]),enamel,12,7,0);
+  cylinder(P([.3,.49,.06]),P([.3,.51,.06]),.083*s,.083*s,rim,10);
+  cylinder(P([.3,.511,.06]),P([.3,.513,.06]),.064*s,.064*s,C.dark,10);
+  // Anse haute passant dans la main (y=.62), bec incliné vers le sol.
+  for(const [a,b] of [[[.22,.47,.06],[.22,.63,.06]],[[.22,.63,.06],[.38,.63,.06]],[[.38,.63,.06],[.38,.47,.06]]])rod(a,b,.013,rim);
+  cylinder(P([.3,.38,.13]),P([.3,.25,.41]),.033*s,.02*s,enamel,9);
+  cylinder(P([.3,.25,.41]),P([.3,.235,.44]),.052*s,.06*s,rim,10);
+  for(const dx of[-.025,0,.025])ellipsoid(P([.3+dx,.225,.452]),P([.005,.005,.005]),C.dark,5,3,0);
+ }
+}
+// Précharger une fois les deux variantes du héros ; aucun maillage par frame.
+let heroFarmMeshes,sheepMesh;
+{
+ const saved=seed;seed=740041;
+ try{
+  const look={shirt:color(0x2f8f9d),pants:color(0x3c4a5a),skin:C.skin[0],hair:color(0x4a2f1e),hat:'straw',bag:true};
+  heroFarmMeshes={hoe:meshDyn(humanoid({...look,prop:'hoe'})),can:meshDyn(humanoid({...look,prop:'can'}))};
+  sheepMesh=meshDyn(sheepRig());
+ }finally{seed=saved;}
+}
+// Mouton : sept os, mêmes pivots et convention d'échelle que goatRig.
+// 0 corps ; 1/2 avant (±.17,.46,.27) ; 3/4 arrière (±.17,.46,-.27) ;
+// 5 tête (0,.66,.32) ; 6 queue (0,.59,-.37). Sol Y=0, avant +Z.
+function sheepRig(){
+ const wool=color(0xf2e8ce),face=color(0x777367),hoof=color(0x4b4b44);
+ return rig([
+  [0,()=>{
+   ellipsoid([0,.51,-.02],[.31,.25,.44],wool,12,7,0);
+   // Quelques mèches larges : silhouette laineuse sans milliers de boucles.
+   for(let j=0;j<10;j++){const a=j/10*TAU;ellipsoid([Math.cos(a)*.23,.59+(j%2)*.035,Math.sin(a)*.32],[.14,.15,.16],tint(wool,.96+(j%3)*.02),8,5,0);}
+  }],
+  ...[[-.17,.27],[.17,.27],[-.17,-.27],[.17,-.27]].map(([x,z],i)=>[i+1,()=>{
+   cylinder([x,.46,z],[x,.08,z],.053,.035,face,8);
+   ellipsoid([x,.058,z+.02],[.061,.058,.078],hoof,8,5,0);
+  }]),
+  [5,()=>{
+   ellipsoid([0,.74,.40],[.12,.18,.13],face,10,6,0);
+   ellipsoid([0,.65,.51],[.095,.075,.10],face,10,6,0);
+   ellipsoid([0,.87,.35],[.14,.075,.13],wool,9,5,0);
+   for(const side of[-1,1]){
+    ellipsoid([side*.17,.79,.34],[.10,.035,.055],face,8,5,0);
+    ellipsoid([side*.093,.78,.472],[.022,.027,.016],C.dark,7,4,0);
+    ellipsoid([side*.099,.788,.483],[.006,.008,.006],C.white,5,3,0);
+   }
+   ellipsoid([0,.65,.602],[.037,.02,.012],hoof,7,4,0);
+  }],
+  [6,()=>ellipsoid([0,.56,-.435],[.065,.11,.075],wool,8,5,0)]
+ ]);
 }
 
 verts=null;

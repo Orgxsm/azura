@@ -47,15 +47,20 @@ if(!p.crop){const sel=CROP_IDS[game.seedSel||0],have=game.seeds[sel]||0;return{t
 const cdef=CROPS[p.crop];if(p.growth>=cdef.days)return{type:'farm',c,act:'harvest',label:`Récolter ${cdef.name}`,btn:'Récolter'};
 if(!p.wet)return{type:'farm',c,act:'water',label:`Arroser (${cdef.name}, ${Math.floor(p.growth/cdef.days*100)} %)`,btn:'Arroser'};
 return{type:'farm',c,act:'wait',label:`${cdef.name} pousse (${Math.floor(p.growth/cdef.days*100)} %)`,btn:'…'};}
-function farmInteract(th){if(th.coop)return coopInteract(th);if(th.home)return homeInteract(th);const c=th.c,p=plotOf(c);
-if(th.act==='till'){game.plots[c.key]={crop:null,growth:0,wet:false};sfx('dig');toast('Terre bêchée. Sème avec E.');}
+let actGesture=null;   // {th, t} — geste en cours (bêcher / arroser / récolter), 0,6 s, effet appliqué à 0,3 s
+function farmInteract(th){if(th.coop)return coopInteract(th);if(th.home)return homeInteract(th);if(actGesture)return;
+if(th.act==='till'||th.act==='water'||th.act==='harvest'){if(th.act==='water'&&!plotOf(th.c))return;const c=th.c;actGesture={th,t:0,mesh:player.mesh,pose:player.pose,applied:false};player.heading=Math.atan2(c.x-player.x,c.z-player.z);player.amp=0;player.speed=0;player.pose={till:'dig',water:'water',harvest:'harvest'}[th.act];player.farmPoseStart=performance.now()*.001;if(typeof heroFarmMeshes!=='undefined'&&heroFarmMeshes){if(th.act==='till')player.mesh=heroFarmMeshes.hoe;if(th.act==='water')player.mesh=heroFarmMeshes.can;}if(th.act==='till')sfx('dig');else if(th.act==='water')sfx('cast');return;}
+farmApply(th);}
+function gestureUpdate(dt){if(!actGesture)return;actGesture.t+=dt;if(!actGesture.applied&&actGesture.t>=.3){actGesture.applied=true;farmApply(actGesture.th,true);}if(actGesture.t>=.6||dialog||voyage.active||player.air){player.mesh=actGesture.mesh;player.pose=actGesture.pose;delete player.farmPoseStart;if(!actGesture.applied)farmApply(actGesture.th,true);actGesture=null;}}
+function farmApply(th,silentSfx){const c=th.c,p=plotOf(c);
+if(th.act==='till'){game.plots[c.key]={crop:null,growth:0,wet:false};if(!silentSfx)sfx('dig');toast('Terre bêchée. Sème avec E.');}
 else if(th.act==='sow'){const sel=CROP_IDS[game.seedSel||0];if(!(game.seeds[sel]>0)){toast('Plus de graines : Anaé en vend au village.');return;}game.seeds[sel]--;p.crop=sel;p.growth=0;p.wet=false;sfx('pick');toast(`${CROPS[sel].icon} ${CROPS[sel].name} semée. Arrose-la chaque jour !`);}
-else if(th.act==='water'){p.wet=true;sfx('cast');}
-else if(th.act==='harvest'){const cdef=CROPS[p.crop];game.produce[p.crop]=(game.produce[p.crop]||0)+1;game.harvested=(game.harvested||0)+1;p.crop=null;p.growth=0;p.wet=false;sfx('catch');toast(`${cdef.icon} ${cdef.name} récoltée ! Pia l'achète ${cdef.sell} pièces.`);if(game.harvested>=5&&game.quests.farm===1)finishQuest('farm','Première récolte');}
+else if(th.act==='water'){if(!p)return;p.wet=true;if(!silentSfx)sfx('cast');}
+else if(th.act==='harvest'){if(!p||!p.crop)return;const cdef=CROPS[p.crop];game.produce[p.crop]=(game.produce[p.crop]||0)+1;game.harvested=(game.harvested||0)+1;p.crop=null;p.growth=0;p.wet=false;sfx('catch');toast(`${cdef.icon} ${cdef.name} récoltée ! Pia l'achète ${cdef.sell} pièces.`);if(game.harvested>=5&&game.quests.farm===1)finishQuest('farm','Première récolte');}
 else return;dirty=true;refreshHUD();saveGame(true);}
 let lastDayIdx=-1;
 function farmUpdate(dt){const dayIdx=Math.floor(game.clock/DAY);if(dayIdx!==lastDayIdx){if(lastDayIdx>=0){for(const k in game.plots)game.plots[k].wet=false;if(game.hens>0&&game.henFedDay===lastDayIdx){game.eggs=Math.min(12,(game.eggs||0)+game.hens);if(playing)toast(`🥚 Les poules ont pondu ${game.hens} œuf${game.hens>1?'s':''} !`);}}lastDayIdx=dayIdx;}
-hensUpdate(dt);
+hensUpdate(dt);sheepUpdate(dt);gestureUpdate(dt);
 if(!playing)return;for(const k in game.plots){const p=game.plots[k];if(!p.crop)continue;const cdef=CROPS[p.crop];if(p.growth<cdef.days)p.growth=Math.min(cdef.days,p.growth+dt/DAY*(p.wet?1:.35));}}
 function farmDraw(t){coopDraw(t);for(const c of farmCells){const p=plotOf(c);if(!p)continue;setBone(c.bones,0,T(c.x,c.y,c.z));drawList.push({mesh:p.wet?soilWetMesh:soilMesh,bones:c.bones,n:1,mode:4,noShadow:true});
 if(p.crop){const cdef=CROPS[p.crop],f=p.growth/cdef.days,stage=f>=1?3:f>.55?2:f>.15?1:0;const sway=Math.sin(t*1.5+c.x*2)*.04;setBone(c.bones2,0,mm(T(c.x,c.y+.06,c.z),RZ(sway)));drawList.push({mesh:cropMeshes[p.crop][stage],bones:c.bones2,n:1,mode:4});}}}
@@ -114,7 +119,8 @@ if(th.act==='eggs'){const n=game.eggs;game.produce.oeuf=(game.produce.oeuf||0)+n
 else if(th.act==='feed'){if(!(game.produce.ble>0)){toast('Il faut du blé : sème-en, ou achète des graines chez Anaé.');return;}game.produce.ble--;game.henFedDay=dayIdx;sfx('cast');toast('Les poules picorent le blé. Elles pondront demain matin.');}
 else{toast('Les poules sont repues. Reviens demain.');return;}
 dirty=true;refreshHUD();saveGame(true);}
-function coopDraw(t){for(const c of COOPS){setBone(c.bones,0,mm(T(c.x,c.y,c.z),RY(c.heading)));drawList.push({mesh:coopMesh,bones:c.bones,n:1,mode:4});}
+function coopDraw(t){for(const s of sheep){if(typeof poseSheep==='function'){poseSheep(s,t);drawList.push({mesh:sheepMesh,bones:s.bones,n:7,mode:4});}}
+for(const c of COOPS){setBone(c.bones,0,mm(T(c.x,c.y,c.z),RY(c.heading)));drawList.push({mesh:coopMesh,bones:c.bones,n:1,mode:4});}
 for(const h of hens){henPose(h,t);drawList.push({mesh:henMeshOf(),bones:h.bones,n:5,mode:4});}}
 // ---------- maison du joueur ----------
 // Une maison par île (livrée par Astra dans islands/*.js) ; ici seulement la porte : dormir jusqu'au matin, point de réapparition.
@@ -128,3 +134,10 @@ const wake=()=>{game.clock=target;const was=playing;farmAdvance(elapsed);refresh
 if(document.hidden)wake();else setTimeout(wake,750);}
 function farmAdvance(elapsed){let left=elapsed;while(left>0){const step=Math.min(left,DAY*.05);left-=step;for(const k in game.plots){const p=game.plots[k];if(!p.crop)continue;const cdef=CROPS[p.crop];if(p.growth<cdef.days)p.growth=Math.min(cdef.days,p.growth+step/DAY*(p.wet?1:.35));}}
 const dayIdx=Math.floor(game.clock/DAY);if(dayIdx!==lastDayIdx){for(const k in game.plots)game.plots[k].wet=false;if(game.hens>0&&game.henFedDay===lastDayIdx)game.eggs=Math.min(12,(game.eggs||0)+game.hens);lastDayIdx=dayIdx;}}
+// ---------- moutons (décor vivant des Champs, lot 4 d'Astra : sheepMesh + poseSheep) ----------
+const SHEEP_SPOTS=[[-31,18,-.4],[-34.5,17.2,1.2],[-27.6,17.6,2.6]];
+const sheep=[];
+if(typeof sheepMesh!=='undefined'&&sheepMesh)for(const [sx,sz,h] of SHEEP_SPOTS){const [x,z]=snap(sx,sz,2);if(!reach[cellIndex(x,z)])continue;sheep.push({id:sheep.length,x,z,y:cellH(x,z),heading:h,phase:0,amp:0,speed:0,scale:.85,look:0,state:'idle',t:1+Math.random()*4,home:[x,z],pose:'graze',bones:new Float32Array(16*7)});}
+function sheepUpdate(dt){for(const s of sheep){if(s.state==='idle'){idleEntity(s,dt);s.t-=dt;s.look=Math.sin(henT*.4+s.id)*.4;if(s.t<=0){const a=Math.random()*TAU,r=Math.random()*2.2,tx=s.home[0]+Math.cos(a)*r,tz=s.home[1]+Math.sin(a)*r,ti=cellIndex(tx,tz);s.t=3+Math.random()*5;if(ti>=0&&reach[ti]&&!blocked[ti]&&Math.abs(cellH(tx,tz)-s.y)<.5){s.target=[tx,tz];s.state='walk';}}}
+else{const tx=s.target[0]-s.x,tz=s.target[1]-s.z,td=Math.hypot(tx,tz);s.look=0;if(td<.12||!moveEntity(s,tx,tz,.45,dt)){s.state='idle';s.t=2+Math.random()*4;}}
+groundEntity(s,dt);}}
