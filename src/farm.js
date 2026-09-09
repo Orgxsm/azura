@@ -6,7 +6,7 @@ ble:{name:'Blé',icon:'🌾',seed:4,sell:10,days:1.1,color:0xe8c451,leaf:0x9ccf4
 fleur:{name:'Fleur de sable',icon:'🌸',seed:9,sell:26,days:2.4,color:0xf27db0,leaf:0x5e9d26}};
 const CROP_IDS=Object.keys(CROPS);
 // Zones cultivables par île : rectangle candidat, validé cellule par cellule au chargement (sol plat, atteignable, libre).
-const FARM_AREAS=[{island:'azura',x0:-5.4,z0:7.6,cols:3,rows:2,cell:1.0}];
+const FARM_AREAS=[{island:'azura',x0:-5.4,z0:7.6,cols:3,rows:2,cell:1.0},{island:'champs',x0:-36,z0:6,cols:8,rows:8,cell:1}];
 function cellFlat(x,z,cell){const h=cellH(x,z);let ok=reach[cellIndex(x,z)]&&!blocked[cellIndex(x,z)];for(const [dx,dz] of[[-.4,-.4],[.4,-.4],[-.4,.4],[.4,.4]]){const i=cellIndex(x+dx*cell,z+dz*cell);if(i<0||blocked[i]||H[i]<=SEA||Math.abs(H[i]-h)>.38)ok=false;}return ok;}
 const farmCells=[];
 for(const a of FARM_AREAS)for(let r=0;r<a.rows;r++)for(let c=0;c<a.cols;c++){const x=a.x0+(c+.5)*a.cell,z=a.z0+(r+.5)*a.cell;if(!cellFlat(x,z,a.cell))continue;farmCells.push({key:a.island+':'+c+':'+r,island:a.island,x,z,y:cellH(x,z),bones:new Float32Array(16),bones2:new Float32Array(16)});}

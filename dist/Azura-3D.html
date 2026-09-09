@@ -205,9 +205,27 @@ const WORLD={x0:-48,z0:-40,size:96};   // carré couvert par la carte de hauteur
 const sceneMarks=[];   // plages de sommets par île (remplies par build.py autour de chaque src/islands/*.js)
 const islands=[
 {id:'azura',name:'Azura',center:[0,-1],r:14,spawn:[.2,9.8],dock:{x:-4.2,y:.59,z:12.6,heading:0,len:1.2,build:false},landing:[-4.2,12.4]},
-{id:'phare',name:"L'Île du Phare",center:[34,-18],r:12,spawn:[35.8,-7.4],dock:{x:34,y:.6,z:-5,heading:Math.atan2(-38.2,20),len:4,width:1.6,build:true},landing:[35.8,-6.2]}
+{id:'phare',name:"L'Île du Phare",center:[34,-18],r:12,spawn:[35.8,-7.4],dock:{x:34,y:.6,z:-5,heading:Math.atan2(-38.2,20),len:4,width:1.6,build:true},landing:[35.8,-6.2]},
+{id:'champs',name:"L'Île des Champs",center:[-32,10],r:14,spawn:[-23,10],dock:{x:-20,y:.6,z:10,heading:Math.atan2(15.8,2.6),len:4,width:1.6,build:true},landing:[-21.97,9.68]}
 ];
 
+// Dégagement des escaliers : enregistrer les objets décoratifs complets,
+// puis retirer ceux dont l'emprise rencontre le passage + 0.4 m de chaque côté.
+// Les massifs tiers, socles et marches restent intacts. L'aléa est consommé même
+// pour les objets retirés : le reste du village conserve sa disposition.
+const azuraDecorRecords=[];
+function azuraRecordDecor(fn,args){
+ const start=verts.length;fn(...args);const end=verts.length;
+ if(start===end)return;
+ const lo=[Infinity,Infinity,Infinity],hi=[-Infinity,-Infinity,-Infinity];
+ for(let i=start;i<end;i+=9)for(let k=0;k<3;k++){lo[k]=Math.min(lo[k],verts[i+k]);hi[k]=Math.max(hi[k],verts[i+k]);}
+ azuraDecorRecords.push({start,end,lo,hi});
+}
+function azuraDecor_rock(...a){azuraRecordDecor(rock,a);}
+function azuraDecor_tree(...a){azuraRecordDecor(tree,a);}
+function azuraDecor_palm(...a){azuraRecordDecor(palm,a);}
+function azuraDecor_shrub(...a){azuraRecordDecor(shrub,a);}
+function azuraDecor_grass(...a){azuraRecordDecor(grass,a);}
 // island.js — L'île d'Azura : relief, maisons, tours, escaliers, ponton, végétation, socles, terrasses pavées.
 // Propriétaire : DESIGN (GPT-6 Astra). Contrat : tout ce qui doit être praticable passe par stairs(...), platforms[] et terraces[] (voir COLLAB.md).
 // A terraced granite island with a sheltered beach opening toward the south.
@@ -216,11 +234,11 @@ ellipsoid([0,-.02,7.8],[6.8,.46,5.1],palette.sand,32,8,.04);
 const tiers=[{x:0,y:.9,z:-2.2,sx:10.5,sy:2.45,sz:6.4},{x:.5,y:3.7,z:-4.8,sx:8.2,sy:2.7,sz:5.2},{x:.7,y:6.9,z:-6.6,sx:5.9,sy:3.1,sz:4},{x:1.1,y:10.3,z:-7.5,sx:3.5,sy:3.3,sz:2.9}];
 for(let t of tiers){rock(t.x,t.y,t.z,t.sx,t.sy,t.sz);}
 // Irregular vertical rock stacks, readable individually rather than a smooth mound.
-for(let i=0;i<68;i++){let a=range(0,TAU),r=range(.68,1),x=Math.cos(a)*10*r,z=-2+Math.sin(a)*7.2*r;let h=.4+4.5*Math.max(0,1-Math.abs(x)/12)*Math.max(0,(-z+5)/13);if(z>3&&Math.abs(x)<5)continue;let s=range(.7,1.7);rock(x,h*.48,z,s,1+h*.6,s*.87);if(rnd()>.5)patch(x,h+1,z,s*.8,s*.7);}
+for(let i=0;i<68;i++){let a=range(0,TAU),r=range(.68,1),x=Math.cos(a)*10*r,z=-2+Math.sin(a)*7.2*r;let h=.4+4.5*Math.max(0,1-Math.abs(x)/12)*Math.max(0,(-z+5)/13);if(z>3&&Math.abs(x)<5)continue;let s=range(.7,1.7);azuraDecor_rock(x,h*.48,z,s,1+h*.6,s*.87);if(rnd()>.5)patch(x,h+1,z,s*.8,s*.7);}
 // Tall exposed cliff on the eastern flank.
-for(let i=0;i<9;i++){let x=6.6+range(-.7,1.7),z=-6+i*1.04;rock(x,3.5,z,range(1,1.8),range(3.5,5.1),1.5);}
+for(let i=0;i<9;i++){let x=6.6+range(-.7,1.7),z=-6+i*1.04;azuraDecor_rock(x,3.5,z,range(1,1.8),range(3.5,5.1),1.5);}
 // Shore granite stacks frame the cove.
-for(let side of[-1,1])for(let i=0;i<11;i++){let x=side*range(5.8,9.6),z=range(5.3,11.8),s=range(.65,1.5);rock(x,.3+s*.55,z,s,s*range(1,1.9),s*.85);}
+for(let side of[-1,1])for(let i=0;i<11;i++){let x=side*range(5.8,9.6),z=range(5.3,11.8),s=range(.65,1.5);azuraDecor_rock(x,.3+s*.55,z,s,s*range(1,1.9),s*.85);}
 function local(pos,rot,p){return transform(p,pos,rot);}
 // Half-cylinder terracotta tiles over pitched roofs, with individual warm variation.
 function roof(pos,w,d,h,rot=0){let P=p=>local(pos,rot,p);let over=.3;let wh=w/2+over,dh=d/2+over;
@@ -282,7 +300,7 @@ pier();
 // Harbour boat with a curved hull, mast, ropes and a loosely furled sail.
 function boat(x,y,z,rot,sail=false){let P=p=>transform(p,[x,y,z],rot);let n=16;let outline=[];for(let i=0;i<n;i++){let a=i/n*TAU;outline.push([Math.sin(a)*.68,0,Math.cos(a)*1.9]);}for(let i=0;i<n;i++){let a=outline[i],b=outline[(i+1)%n];quad(P(a),P(b),P([b[0]*.57,-.51,b[2]*.81]),P([a[0]*.57,-.51,a[2]*.81]),palette.wood);beam(P(a),P(b),.06,palette.trim);tri(P([0,-.2,0]),P([b[0]*.9,-.16,b[2]*.9]),P([a[0]*.9,-.16,a[2]*.9]),tint(palette.wood,.62));}for(let zz of[-1,-.1,.9])box(P([0,-.06,zz]),[1.05,.09,.24],palette.trim,rot);beam(P([0,0,0]),P([0,4.2,0]),.055);beam(P([0,2.9,-1]),P([0,2.9,1.4]),.04);for(let zz of[-1.7,1.7])beam(P([0,0,zz]),P([0,4,0]),.012,color(0xdacb9d));if(sail){let a=P([.05,3.75,.05]),b=P([.05,.5,.05]),c=P([.18,.6,1.48]);tri(a,b,c,color(0xffefd1));tri(c,b,a,color(0xffefd1));}}
 // Pots, barrels, shutters, low stone garden walls, and little coastal details.
-function pot(x,y,z,s=.3,green=true){cylinder([x,y,z],[x,y+s*.95,z],s*.6,s,palette.tile,10);cylinder([x,y+s*.9,z],[x,y+s*1.08,z],s*1.1,s*1.1,tint(palette.tile,1.18),12);cylinder([x,y+s*1.08,z],[x,y+s*1.1,z],s*.8,s*.8,palette.dark,10);if(green)shrub(x,y+s,z,s*1.5);}
+function pot(x,y,z,s=.3,green=true){cylinder([x,y,z],[x,y+s*.95,z],s*.6,s,palette.tile,10);cylinder([x,y+s*.9,z],[x,y+s*1.08,z],s*1.1,s*1.1,tint(palette.tile,1.18),12);cylinder([x,y+s*1.08,z],[x,y+s*1.1,z],s*.8,s*.8,palette.dark,10);if(green)azuraDecor_shrub(x,y+s,z,s*1.5);}
 function barrel(x,y,z,s=.3){ellipsoid([x,y+s*.8,z],[s,s*.8,s],palette.trim,12,6,.015);for(let h of[.3,1.15])cylinder([x,y+s*h,z],[x,y+s*(h+.12),z],s*.98,s*.98,color(0x575f57),12);cylinder([x,y+s*1.58,z],[x,y+s*1.65,z],s*.78,s*.78,palette.wood,12);}
 function shrub(x,y,z,s=1){for(let i=0;i<5;i++){let a=range(0,TAU),r=range(0,s*.55);ellipsoid([x+Math.cos(a)*r,y+range(.1,s*.4),z+Math.sin(a)*r],[s*range(.4,.7),s*range(.3,.5),s*range(.4,.65)],tint(palette.leaf,range(.72,1.2)),8,5,.19);}}
 for(let p of[[-5.1,1.1,5.7],[-7.6,1.1,5.5],[4.45,1.25,6.3],[.9,3.2,4.1],[-2.5,3.8,2.2],[5,5.5,1.1],[-1.8,7.3,-1.5],[1.7,13.5,-5.9]]){pot(...p,.22,true);barrel(p[0]+.6,p[1],p[2]-.2,.25);}
@@ -292,55 +310,169 @@ function palm(x,y,z,h,scale=1){const lean=range(-.5,.5),leanZ=range(-.35,.35);le
  for(let j=0;j<10;j++){let a=j/10*TAU+range(-.18,.18),length=range(1.7,2.6)*scale,lift=range(.35,.95),col=tint(palette.leafLight,range(.75,1.13));let center=t=>[top[0]+Math.cos(a)*length*t,top[1]+Math.sin(t*PI)*lift-t*t*.9*scale,top[2]+Math.sin(a)*length*t];let prev=center(0);for(let k=1;k<=12;k++){let t=k/12,p=center(t),width=Math.sin(t*PI)*.55*scale;let left=add(p,[-Math.sin(a)*width,-.07,Math.cos(a)*width]),right=add(p,[Math.sin(a)*width,-.07,-Math.cos(a)*width]);let pp=center((k-1)/12),pw=Math.sin((k-1)/12*PI)*.55*scale;let pl=add(pp,[-Math.sin(a)*pw,-.06,Math.cos(a)*pw]),pr=add(pp,[Math.sin(a)*pw,-.06,-Math.cos(a)*pw]);quad(pp,p,left,pl,col);quad(pp,pr,right,p,tint(col,.87));if(k%2===0){beam(p,left,.012,tint(col,.78));beam(p,right,.012,tint(col,.78));}prev=p;}beam(top,center(.75),.018,tint(col,.8));}
  for(let i=0;i<3;i++)ellipsoid(add(top,[range(-.17,.17),-.14,range(-.17,.17)]),[.13,.16,.13],color(0x78753a),7,5,.1);
 }
-for(let p of[[-8.1,2,4.4,5.7,1.1],[8.2,1.6,5.5,5.6,1.05],[-8.5,3.5,-3.5,5.8,1.2],[6.7,7,-5.6,5,1],[-2.8,12.1,-7.8,5,1.05],[3.8,12,-8.1,4.7,1],[-10,.5,.7,3.4,.8],[8.4,.8,-2,4.5,.85],[-6.1,.4,8.7,3.7,.8]])palm(...p);
+for(let p of[[-8.1,2,4.4,5.7,1.1],[8.2,1.6,5.5,5.6,1.05],[-8.5,3.5,-3.5,5.8,1.2],[6.7,7,-5.6,5,1],[-2.8,12.1,-7.8,5,1.05],[3.8,12,-8.1,4.7,1],[-10,.5,.7,3.4,.8],[8.4,.8,-2,4.5,.85],[-6.1,.4,8.7,3.7,.8]])azuraDecor_palm(...p);
 // Umbrella-shaped coastal trees: many clustered leaves create soft, lush silhouettes.
 function tree(x,y,z,h,r){beam([x,y,z],[x+.15,y+h,z],.13);for(let j=0;j<4;j++){let a=j/4*TAU;beam([x,y+h*.6,z],[x+Math.cos(a)*r*.6,y+h*.91,z+Math.sin(a)*r*.6],.06);}
  for(let j=0;j<14;j++){let a=range(0,TAU),rr=range(.1,r*.85),cx=x+Math.cos(a)*rr,cz=z+Math.sin(a)*rr,cy=y+h+range(-.2,.35);let s=range(.36,.67)*r;ellipsoid([cx,cy,cz],[s,s*.52,s*.85],tint(palette.leaf,range(.73,1.2)),9,5,.13);for(let k=0;k<3;k++)ellipsoid([cx+range(-s,s)*.55,cy+s*.35,cz+range(-s,s)*.55],[s*.38,s*.18,s*.33],tint(palette.leafLight,range(.82,1.11)),6,4,.15);}}
-for(let p of[[-7.9,3.7,1.1,2.9,1.7],[6.6,3.3,3.1,2.7,1.5],[-5.6,7.6,-5.5,2.2,1.8],[4.8,8.8,-3.5,2.3,1.5],[-.5,12.2,-8.5,1.8,1.8],[1.3,8.8,-7.5,2.2,1.7],[-8.4,1,-.9,2.8,1.3],[7.8,1,7.8,2,1.2],[-4,1,7.1,1.8,1.0]])tree(...p);
+for(let p of[[-7.9,3.7,1.1,2.9,1.7],[6.6,3.3,3.1,2.7,1.5],[-5.6,7.6,-5.5,2.2,1.8],[4.8,8.8,-3.5,2.3,1.5],[-.5,12.2,-8.5,1.8,1.8],[1.3,8.8,-7.5,2.2,1.7],[-8.4,1,-.9,2.8,1.3],[7.8,1,7.8,2,1.2],[-4,1,7.1,1.8,1.0]])azuraDecor_tree(...p);
 // Dense planting along ledges, with gaps reserved for architecture and paths.
 const plantPatches=[[-7,2.5,2,1.3],[-8.3,2.8,-1,1],[-6.5,5,-1.6,1],[-4.7,7.4,-4.6,1.2],[-3.4,8.4,-5.4,1],[1.8,10.8,-6.6,1.1],[4.6,10.7,-6.9,.9],[5.6,7.7,-3.9,1.1],[7.6,5.5,-1.7,1.3],[5,4.4,2.7,.8],[3.4,1.1,6.8,.7],[-3.8,.7,6.8,.65],[6.4,.7,8.1,.8],[-6.2,.6,8.2,.7],[0,4,1,.65],[1.7,6.7,-.8,.7],[-1.8,10.5,-5.4,.7]];
-for(let p of plantPatches){shrub(...p);for(let j=0;j<3;j++)shrub(p[0]+range(-.8,.8),p[1]+range(-.3,.1),p[2]+range(-.65,.65),p[3]*.55);}
+for(let p of plantPatches){azuraDecor_shrub(...p);for(let j=0;j<3;j++)azuraDecor_shrub(p[0]+range(-.8,.8),p[1]+range(-.3,.1),p[2]+range(-.65,.65),p[3]*.55);}
 function grass(x,y,z,s){for(let j=0;j<7;j++){let a=range(0,TAU),h=range(.3,.7)*s,w=.06*s,b=[x+Math.cos(a)*.35*s,y+h,z+Math.sin(a)*.35*s];let c=tint(palette.leafLight,range(.8,1.2));tri([x-w,y,z],[x+w,y,z],b,c);tri(b,[x+w,y,z],[x-w,y,z],c);}}
-for(let p of plantPatches)for(let i=0;i<4;i++)grass(p[0]+range(-1,1),p[1]-.13,p[2]+range(-.9,.9),.7);
+for(let p of plantPatches)for(let i=0;i<4;i++)azuraDecor_grass(p[0]+range(-1,1),p[1]-.13,p[2]+range(-.9,.9),.7);
 // Sand pebbles and a few tiny sunlit flowers.
 for(let i=0;i<50;i++){let x=range(-5.4,5.4),z=range(8.3,11.2);if(x>1&&x<2.9)continue;let s=range(.035,.16);ellipsoid([x,.3,z],[s,s*.64,s*.85],tint(palette.rock,range(.75,1.12)),6,4,.2);}
 for(let p of plantPatches)for(let j=0;j<5;j++){let x=p[0]+range(-.6,.6),z=p[2]+range(-.6,.6),y=p[1]+.26;beam([x,y-.3,z],[x,y,z],.012,palette.leaf);ellipsoid([x,y,z],[.055,.035,.055],j%2?color(0xffdf69):color(0xfffaf0),5,3,0);}
 // Smaller granite outcrops and hanging shrubs break up the large geological masses.
-for(let t of tiers){for(let i=0;i<21;i++){let a=range(0,TAU),r=range(.60,.96),xx=t.x+Math.cos(a)*t.sx*r,zz=t.z+Math.sin(a)*t.sz*r,yy=t.y+t.sy*Math.sqrt(1-r*r);if(houseLots.some(h=>Math.hypot(xx-h[0],zz-h[1])<h[2]+.2))continue;let ss=range(.55,1.15);rock(xx,yy-.35,zz,ss,ss*1.3,ss*.9);shrub(xx,yy+ss*.55,zz,ss*.9);}}
-for(let p of [[-1.8,11.6,-6.7,1.2],[2.5,13,-7.1,1.1],[-3.8,9.8,-5.5,1.2],[4.7,9,-5.9,1.2],[1.2,7.8,-3.5,1],[-6.7,5.8,-3.8,1.2],[6.8,6.4,-2.8,1.1],[-6.3,3.2,1.6,1],[-.7,3.8,2,.8],[3.8,3.9,.7,1]])shrub(...p);
+for(let t of tiers){for(let i=0;i<21;i++){let a=range(0,TAU),r=range(.60,.96),xx=t.x+Math.cos(a)*t.sx*r,zz=t.z+Math.sin(a)*t.sz*r,yy=t.y+t.sy*Math.sqrt(1-r*r);if(houseLots.some(h=>Math.hypot(xx-h[0],zz-h[1])<h[2]+.2))continue;let ss=range(.55,1.15);azuraDecor_rock(xx,yy-.35,zz,ss,ss*1.3,ss*.9);azuraDecor_shrub(xx,yy+ss*.55,zz,ss*.9);}}
+for(let p of [[-1.8,11.6,-6.7,1.2],[2.5,13,-7.1,1.1],[-3.8,9.8,-5.5,1.2],[4.7,9,-5.9,1.2],[1.2,7.8,-3.5,1],[-6.7,5.8,-3.8,1.2],[6.8,6.4,-2.8,1.1],[-6.3,3.2,1.6,1],[-.7,3.8,2,.8],[3.8,3.9,.7,1]])azuraDecor_shrub(...p);
 // Socles de pierre sous chaque maison et tour, et terrasses pavées reliant escaliers et maisons.
 for(const t of terraces)box([t.x,t.y-1.1,t.z],[t.w+.6,2.2,t.d+.6],tint(palette.rockLight,.96),t.rot);
 const platforms=[{x:3.5,y:3.2,z:3.5,r:1},{x:-3.3,y:3.8,z:2.9,r:1.9},{x:-.6,y:7.3,z:-1.5,r:2.2},{x:1.7,y:10.4,z:-5.3,r:1.5}];
 for(const p of platforms){cylinder([p.x,p.y-2.6,p.z],[p.x,p.y,p.z],p.r,p.r,tint(palette.rockLight,.92),24);cylinder([p.x,p.y-.02,p.z],[p.x,p.y+.01,p.z],p.r-.12,p.r-.12,tint(palette.rock,1.08),24);for(let i=0;i<10;i++){const a=i/10*TAU;ellipsoid([p.x+Math.cos(a)*p.r*range(.2,.8),p.y+.005,p.z+Math.sin(a)*p.r*range(.2,.8)],[range(.18,.3),.012,range(.15,.26)],tint(palette.rockLight,range(.85,1)),8,3,.1);}}
 // (les îles supplémentaires de src/islands/*.js sont assemblées ici, avant scene_end.js)
 
+// Filtrage en une passe avant la clôture statique. Aucun trou découpé au milieu
+// d'un rocher : l'objet entier disparaît, ses voisins et le relief restent fermés.
+{
+ const omit=new Uint8Array(verts.length/9);
+ for(const d of azuraDecorRecords){
+  let hit=false;
+  for(const stair of stairDefs){
+   for(let k=1;k<stair.points.length&&!hit;k++){
+    const a=stair.points[k-1],b=stair.points[k],len=Math.hypot(b[0]-a[0],b[2]-a[2]);
+    const n=Math.max(1,Math.ceil(len/.08)),margin=stair.width/2+.44;
+    for(let j=0;j<=n;j++){
+     const t=j/n,x=a[0]+(b[0]-a[0])*t,y=a[1]+(b[1]-a[1])*t,z=a[2]+(b[2]-a[2])*t;
+     if(x>=d.lo[0]-margin&&x<=d.hi[0]+margin&&z>=d.lo[2]-margin&&z<=d.hi[2]+margin&&d.hi[1]>y-.08&&d.lo[1]<y+2.3){hit=true;break;}
+    }
+   }
+   if(hit)break;
+  }
+  d.removed=hit;if(hit)omit.fill(1,d.start/9,d.end/9);
+ }
+ const clean=[];for(let i=0;i<verts.length;i+=9)if(!omit[i/9])for(let k=0;k<9;k++)clean.push(verts[i+k]);
+ triangles-=(verts.length-clean.length)/27;verts=clean;
+}
+
+sceneMarks.push({id:'champs',start:verts.length/9});
+// Île des Champs — Astra · base ab3c583 · décor de ferme, sans logique farm.js.
+// Centre [-32,10], rayon nominal 11, englobant 14. Y vertical, mer Y=0.
+// Enveloppe réservée x∈[-46,-18], z∈[-2,24].
+// Apparition : {x:-23,y:.56,z:10,heading:-Math.PI/2}.
+// Ponton NON construit : centre(-20,.60,10), heading=Math.atan2(15.8,2.6),
+// len:4, width:1.6, build:true ; landing:[-21.97,9.68].
+// Entrée à ajouter par Claude dans islands :
+// {id:'champs',name:"L'Île des Champs",center:[-32,10],r:14,spawn:[-23,10],
+//  dock:{x:-20,y:.6,z:10,heading:Math.atan2(15.8,2.6),len:4,width:1.6,build:true},
+//  landing:[-21.97,9.68]}
+// Zone cultivable garantie PLANE à Y=1.20 : x∈[-36,-28], z∈[6,14] (64 m²).
+// Proposition FARM_AREAS : {island:'champs',x0:-36,z0:6,cols:8,rows:8,cell:1}.
+// Aucune clôture, plante ni construction dans ce rectangle (clôtures à au moins .8 m).
+// Maison : (-35,2.8,1.65), porche orienté +Z ; puits : (-38.2,1.2,10).
+// Trois niveaux .56 / 1.20 / 2.80, raccordés par stairs + platforms.
+// Pas de cultures statiques : emplacements et boutique appartiennent à Claude.
+{
+ const champsSeed=seed;seed=321009;
+ try {
+  // Littoral continu avec dessus bas et horizontal, estran incliné sous la mer.
+  const cx=-32,cz=10,n=80;
+  for(let i=0;i<n;i++){
+   const a=i/n*TAU,b=(i+1)/n*TAU;
+   const p=t=>[cx+Math.cos(t)*10.6,.56,cz+Math.sin(t)*10.6];
+   const q=t=>[cx+Math.cos(t)*11.3,-.8,cz+Math.sin(t)*11.3];
+   tri([cx,.56,cz],p(b),p(a),palette.sand);
+   quad(p(a),p(b),q(b),q(a),palette.sand);
+   quad(q(a),q(b),[q(b)[0],-2,q(b)[2]],[q(a)[0],-2,q(a)[2]],palette.rock);
+  }
+  // Plateaux en terre et soubassements de pierre, aucun bruit sur la surface.
+  box([-32,.825,10],[12,.75,12],palette.rockLight);
+  box([-32,1.17,10],[12,.06,12],color(0xc5ac78));
+  // Réserver une encoche au débouché de l'escalier : aucune marche enterrée.
+  for(const [x,z,w,d] of [[-34,2.2,8,4.6],[-28.1,2.2,.2,4.6],[-29.1,1.35,1.8,2.9]]){
+   box([x,1.64,z],[w,2.28,d],palette.rock);
+   box([x,2.77,z],[w,.06,d],palette.sand);
+  }
+  const pads=[{x:-25,y:.56,z:10,r:1},{x:-27,y:1.2,z:10,r:1.1},
+   {x:-29.1,y:1.2,z:5.5,r:1},{x:-29.1,y:2.8,z:2.1,r:.65},
+   {x:-35,y:2.8,z:3.6,r:1},{x:-38.2,y:1.2,z:10,r:1.15}];
+  for(const p of pads){platforms.push(p);cylinder([p.x,p.y-1,p.z],[p.x,p.y,p.z],p.r,p.r,palette.rockLight,24);}
+  stairs([[-24,.56,10],[-26,1.2,10]],1.4,false,false);
+  stairs([[-29.1,1.2,5.5],[-29.1,2.8,2.8]],1.3,false,true);
+  stairs([[-29.1,2.8,2.8],[-29.1,2.8,2.1],[-31,2.8,2.1],[-31,2.8,3.7],[-35,2.8,3.7]],1.2,false,false);
+  stairs([[-36.9,1.2,10],[-38.2,1.2,10]],1.1,false,false);
+  house(-35,2.8,1.65,2.8,2.3,2.2,0,false,false);
+  box([-35,2.7,3.32],[3.5,.20,1.2],palette.trim);
+  for(const x of[-36.5,-33.5])beam([x,2.8,3.75],[x,4.8,3.75],.07,palette.wood);
+  roof([-35,4.8,3.35],3.6,1.3,.45,0);
+  // Puits à l'écart des 64 m² de culture ; couronne et eau visibles.
+  for(let i=0;i<16;i++){let a=i/16*TAU;box([-38.2+Math.cos(a)*.43,1.5,10+Math.sin(a)*.43],[.21,.6,.23],palette.rockLight,-a);}
+  cylinder([-38.2,1.35,10],[-38.2,1.38,10],.34,.34,color(0x348d99),20);
+  for(const x of[-38.72,-37.68])beam([x,1.2,10],[x,2.65,10],.07,palette.wood);
+  beam([-38.72,2.65,10],[-37.68,2.65,10],.07,palette.trim);
+  beam([-38.2,2.65,10],[-38.2,1.45,10],.014,palette.sand);
+  function fence(a,b){const len=Math.hypot(b[0]-a[0],b[2]-a[2]),steps=Math.ceil(len/1.4);for(let i=0;i<=steps;i++){const p=add(a,mul(sub(b,a),i/steps));beam(p,add(p,[0,.58,0]),.045,palette.trim);}for(const y of[.23,.47])beam(add(a,[0,y,0]),add(b,[0,y,0]),.034,palette.wood);}
+  // Portillons ouverts de 1.6 m aux axes de circulation.
+  for(const x of[-37,-27]){fence([x,1.2,5.2],[x,1.2,9.2]);fence([x,1.2,10.8],[x,1.2,14.8]);}
+  for(const z of[5.2,14.8]){fence([-37,1.2,z],[-32.8,1.2,z]);fence([-31.2,1.2,z],[-27,1.2,z]);}
+  for(const p of[[-40,.5,14,2.8,1.2],[-24,.5,15,2.4,1.1],[-36,.5,18.8,2.7,1.3]])tree(...p);
+  for(const p of[[-40,.1,7,1.1,.7,1.1],[-24,.1,6,1,.8,1],[-31,.1,20,1.2,.6,1]])rock(...p);
+ }finally{seed=champsSeed;}
+}
+
+sceneMarks[sceneMarks.length-1].end=verts.length/9;
+
 sceneMarks.push({id:'phare',start:verts.length/9});
-// islands/phare.js — Île du Phare · Astra · livraison 1 : relief seul
+// islands/phare.js — Île du Phare · Astra · livraison 2
+// Base publique : ab3c583. Coordonnées en mètres, Y vertical, mer Y=0.
+// Centre {x:34,z:-18} ; rayon nominal 12, englobant 14.
+// Enveloppe du relief : x∈[20,48], z∈[-32,-4].
+// Ponton EXISTANT géré par archipel.js : centre (34,.60,-5),
+// heading=Math.atan2(-38.2,20), 0 vers +Z. Aucun ponton construit ici.
+// Apparition inchangée : {x:35.8,y:.56,z:-7.4,heading:Math.PI}.
+// Raccord terre : (35.8,.56,-6.2). Crique sud-est conservée plane.
+// Phare : pied (34,12.5,-25.3), galerie Y=18.7, foyer (34,19.45,-25.3).
+// Gardien souhaité : {id:'gardien',x:33.2,y:12.5,z:-23.2,heading:.4,scale:1}.
+// Chèvres souhaitées (positions sur paliers, adapter le leash aux chemins) :
+//   {id:'chevre-1',x:37.9,y:3.6,z:-12.4,heading:2.2,scale:1}
+//   {id:'chevre-2',x:32.2,y:7,z:-14.8,heading:-.4,scale:.85}
+//   {id:'chevre-3',x:36.5,y:10.3,z:-19.3,heading:1.7,scale:.95}
 //
-// CONTRAT D'INTÉGRATION — mètres ; Y vertical ; mer Y=0.
-// Centre : { x:34, z:-18 }. Rayon nominal : 12 ; rayon englobant : 14.
-// Zone réservée : x ∈ [20,48], z ∈ [-32,-4].
-// Ponton RÉSERVÉ, non construit : centre { x:34, y:0.60, z:-5 }.
-// Orientation sortante vers Azura (-4.2,15) : Math.atan2(-38.2,20).
-// Convention : heading en radians ; 0 vers +Z ; direction (sin(h),cos(h)).
-// Longueur prévue : 4 m ; largeur : 1.6 m ; tablier à Y=0.60.
-// Extrémité terre : (35.772,0.60,-5.928) ; mer : (32.228,0.60,-4.072).
-// Apparition sur TERRE : { x:35.8, y:0.56, z:-7.4, heading:Math.PI }.
-// Raccord terre du ponton : (35.8,0.56,-6.2).
-// Plateau du futur phare : centre (34,12.50,-24.6), disque libre r=1.4 m.
-//
-// Bloc exécuté après island.js, avant scene_end.js : aucun appel supplémentaire.
-// Aucun bâtiment, végétation, ponton construit, PNJ ou registre de gameplay.
-// Aucun ajout à terraces/platforms/stairDefs : les escaliers viendront ensuite.
-// La crique sert au premier test de débarquement ; les falaises ne sont PAS
-// un chemin vers le sommet. Claude étend la carte de hauteur et les ombres.
-// L'aléa est isolé pour préserver les nuages/maillages créés après ce bloc.
+// Intégration Claude (sans modification de game.js/render.js ici) :
+// - npcMeshes.gardien : 6 os, poseHuman, scale 1.
+// - goatMesh : 7 os, poseGoat(e,t), pivots décrits dans rig.js/anim.js.
+// - après poseHuman(gardien,t), pousser gardienLanternDraw(gardien) dans drawList.
+// - pousser phareLanternDraw(t, phareAllume) si non-null dans drawList.
+// Ces deux descripteurs utilisent mode:7 et noShadow:true. L'émission attend
+// ces branchements ; la structure et le verre ambre restent visibles sans eux.
+// Aucun accès forcé à drawList, aucune quête inventée et aucun faisceau ajouté.
+// platforms est déjà rendu dans island.js : les nouveaux socles sont donc
+// matérialisés explicitement ici ET déclarés pour la carte de hauteur.
+// Vérification GPU/praticabilité archipel à faire sur la version locale de Claude.
 {
   const pharePreviousSeed = seed;
   seed = 341809;
   try {
     const CX = 34, CZ = -18;
-    const radialSteps = 56, angularSteps = 96;
+    const radialSteps = 80, angularSteps = 128;
+    const climb = [[35.8,.56,-8.8],[37.5,3.6,-12.5],[32.5,7,-15.5],
+      [36.5,10.3,-20],[34,12.5,-23]];
+    const landings = [
+      {x:37.5,y:3.6,z:-12.5,r:1.35}, {x:32.5,y:7,z:-15.5,r:1.35},
+      {x:36.5,y:10.3,z:-20,r:1.35}, {x:34,y:12.5,z:-23,r:1.65},
+      {x:34,y:12.5,z:-25.3,r:1.8},
+      {x:40,y:3.6,z:-12.8,r:2}, {x:29.7,y:7,z:-16,r:2},
+      {x:39.8,y:10.3,z:-20.5,r:2.05}
+    ];
+    const paths = [climb,
+      [[37.5,3.6,-12.5],[37.7,3.6,-10.9],[40,3.6,-11.15]],
+      [[32.5,7,-15.5],[32,7,-14.25],[29.7,7,-14.25]],
+      [[36.5,10.3,-20],[36.7,10.3,-18.6],[39.8,10.3,-18.75]]];
+    function nearestSegment(x,z,a,b) {
+      const dx=b[0]-a[0],dz=b[2]-a[2];
+      const t=Math.max(0,Math.min(1,((x-a[0])*dx+(z-a[2])*dz)/(dx*dx+dz*dz)));
+      return {d:Math.hypot(x-a[0]-t*dx,z-a[2]-t*dz),y:a[1]+t*(b[1]-a[1])};
+    }
     const smooth = t => { t = Math.max(0, Math.min(1, t)); return t*t*(3-2*t); };
 
     // Côte irrégulière et avancée sableuse au sud-est pour le futur ponton.
@@ -351,11 +483,22 @@ sceneMarks.push({id:'phare',start:verts.length/9});
     }
     function surfaceY(x,z,r) {
       const inland = smooth((1-r)/.23);
-      const ascent = smooth((-z-10)/13);
-      const shoulder = Math.sin((x-CX)*.63)*.24*Math.sin(ascent*Math.PI);
-      const height = .56 + (11.94*ascent+shoulder)*inland;
-      // Plage émergée puis estran immergé ; aucun bord flottant sur l'eau.
-      return height - 1.36*smooth((r-.94)/.06);
+      // Trois ruptures de pente : vires larges et fronts de roche resserrés.
+      const terracesY = 3.04*smooth((-z-10.7)/1.6)
+        + 3.4*smooth((-z-14.3)/1.4) + 3.3*smooth((-z-18.6)/1.5)
+        + 2.2*smooth((-z-22)/1.1);
+      let height = .56+terracesY*inland;
+      height += .18*Math.sin(x*.83+z*.3)*Math.sin(terracesY*.75)*inland;
+      height -= 1.36*smooth((r-.94)/.06);
+      // Tailler le massif SOUS les escaliers : le personnage ne disparaît pas
+      // dans le relief même si la carte tamponne correctement les marches.
+      for(const path of paths) for(let i=1;i<path.length;i++) {
+        const q=nearestSegment(x,z,path[i-1],path[i]);
+        if(q.d<1.05) height=Math.min(height,q.y-.12);
+      }
+      for(const p of landings) if(Math.hypot(x-p.x,z-p.z)<p.r+.15)
+        height=Math.min(height,p.y-.04);
+      return height;
     }
     function point(r,a) {
       const radius = coastRadius(a)*r;
@@ -395,14 +538,75 @@ sceneMarks.push({id:'phare',start:verts.length/9});
     }
     // Monolithes ancrés sur les flancs ; crique et plateau dégagés.
     for(const p of [
-      [26.0,2.0,-17.7,1.6,3.0,2.0],
-      [25.8,3.5,-21.8,1.3,4.5,1.6],
-      [28.8,5.0,-26.2,1.5,4.8,1.7],
-      [39.8,4.8,-24.4,1.5,4.6,1.8],
-      [42.0,2.4,-20.0,1.6,3.4,2.0],
+      [25.8,1.8,-17.7,2.1,3.0,3.4],
+      [26.4,4.0,-22.2,1.8,4.1,2.5],
+      [29.0,8.0,-26.2,2.1,4.0,2.1],
+      [40.6,5.8,-25.5,1.5,4.6,1.8],
+      [43.1,2.4,-20.5,1.3,3.4,2.0],
       [41.8,.9,-14.7,1.3,1.8,1.5],
       [28.2,.25,-11.6,1.0,.9,1.1]
     ]) rock(...p);
+    // Éboulis périphériques : aucune pierre dans les accès ni sous les maisons.
+    for(let i=0;i<45;i++) {
+      const a=range(0,TAU),r=range(.73,.96),q=point(r,a),size=range(.22,.62);
+      if(q[2]>-10 || landings.some(p=>Math.hypot(q[0]-p.x,q[2]-p.z)<p.r+size+.5))continue;
+      if(paths.some(path=>path.slice(1).some((b,k)=>nearestSegment(q[0],q[2],path[k],b).d<1.2+size)))continue;
+      rock(q[0],q[1]-.15,q[2],size,size*range(.8,1.8),size*.8);
+    }
+    for(const p of landings) {
+      platforms.push(p);
+      // Tailler aussi les socles, sans laisser un disque horizontal recouvrir
+      // les dernières marches. La carte de hauteur utilise toujours le palier.
+      const top=(r,a)=>{
+        const x=p.x+r*Math.cos(a),z=p.z+r*Math.sin(a);let y=p.y;
+        for(const path of paths)for(let k=1;k<path.length;k++){
+          const q=nearestSegment(x,z,path[k-1],path[k]);
+          if(q.d<.85)y=Math.min(y,q.y-.06);
+        }
+        return [x,y,z];
+      };
+      for(let ring=0;ring<12;ring++)for(let i=0;i<48;i++){
+        const a=i/48*TAU,b=(i+1)/48*TAU,r0=p.r*ring/12,r1=p.r*(ring+1)/12;
+        if(ring===0)tri(top(0,0),top(r1,b),top(r1,a),palette.rockLight);
+        else quad(top(r0,a),top(r0,b),top(r1,b),top(r1,a),palette.rockLight);
+        if(ring===11){const u=top(r1,a),v=top(r1,b);
+          quad(u,v,[v[0],p.y-3.6,v[2]],[u[0],p.y-3.6,u[2]],palette.rock);}
+      }
+    }
+    for(const path of paths)stairs(path,1.3,false,true);
+    // Une courte liaison de plain-pied laisse la porte et le gardien accessibles.
+    stairs([[34,12.5,-23],[33.2,12.5,-23.2]],1.1,false,false);
+    house(40,3.6,-12.8,2.5,2.1,2.25,-.05,false,false);
+    house(29.7,7,-16,2.4,2.1,2.15,.03,false,false);
+    house(39.8,10.3,-20.5,2.6,2.2,2.25,.03,false,false);
+
+    // Phare effilé : emprise déclarée, galerie ouverte, cage à huit montants.
+    const lx=34,lz=-25.3,base=12.5,top=18.7;
+    terraces.push({x:lx,y:base,z:lz,w:2.1,d:2.1,rot:0,round:true});
+    houseLots.push([lx,lz,1.65]);
+    cylinder([lx,base,lz],[lx,top,lz],1.05,.80,palette.cream,28);
+    for(const y of[base+.12,base+2.05,base+4.2,top-.2])
+      cylinder([lx,y,lz],[lx,y+.15,lz],y>18?.9:1.025,y>18?.9:1.025,palette.rockLight,28);
+    archDoor([lx,base,lz+1.065],.66,1.5,0);
+    for(const y of[base+2.6,base+4.8])windowAt([lx,y,lz+.94],.34,.68,0,false);
+    cylinder([lx,top-.15,lz],[lx,top,lz],1.6,1.6,palette.rockLight,32);
+    for(let i=0;i<24;i++) {
+      const a=i/24*TAU,b=(i+1)/24*TAU;
+      const p=[lx+Math.cos(a)*1.48,top,lz+Math.sin(a)*1.48];
+      beam(p,add(p,[0,.8,0]),.027,palette.dark);
+      beam(add(p,[0,.8,0]),[lx+Math.cos(b)*1.48,top+.8,lz+Math.sin(b)*1.48],.024,palette.dark);
+    }
+    for(let i=0;i<8;i++) {
+      const a=i/8*TAU;
+      beam([lx+Math.cos(a)*.76,top,lz+Math.sin(a)*.76],
+        [lx+Math.cos(a)*.76,top+1.55,lz+Math.sin(a)*.76],.045,palette.dark);
+    }
+    // Lentille ambre de secours ; le cœur dynamique mode 7 l'enveloppe une fois branché.
+    cylinder([lx,19.08,lz],[lx,19.82,lz],.25,.25,color(0xdeab55),16);
+    cylinder([lx,20.25,lz],[lx,20.38,lz],1.03,1.03,palette.trim,24);
+    cylinder([lx,20.38,lz],[lx,21.10,lz],1.03,.06,palette.tile,24);
+    beam([lx,21.1,lz],[lx,21.65,lz],.03,palette.dark);
+
   } finally {
     seed = pharePreviousSeed;
   }
@@ -462,12 +666,13 @@ const Cy=(a,b,r1,r2,col,n=12)=>cylinder(sc(a),sc(b),r1*s,r2*s,col,n);
 const cloth=o.shirt,sleeve=o.sleeve||o.shirt,dark=C.dark;
 return rig([
 [0,()=>{E([0,.86,0],[.245,.3,.185],cloth,14,9);E([0,.7,0],[.25,.16,.19],o.pants,14,7);Cy([0,.62,0],[0,.68,0],.215,.205,o.belt||dark,14);Cy([0,1.04,0],[0,1.16,0],.075,.07,o.skin,10);
-if(o.apron)E([0,.78,.14],[.2,.24,.035],o.apron,10,6);if(o.bag)E([.27,.7,-.02],[.06,.1,.09],palette.trim,8,5);
+for(const side of[-1,1])E([side*.07,1.06,.149],[.06,.055,.026],tint(cloth,1.09),8,4);if(o.apron)E([0,.78,.14],[.2,.24,.035],o.apron,10,6);if(o.bag)E([.27,.7,-.02],[.06,.1,.09],palette.trim,8,5);
 if(o.prop==='guitar'){E([.02,.8,.24],[.2,.25,.06],color(0x9b5a2c),12,7);E([.02,.8,.3],[.07,.08,.01],dark,8,4);B([-.36,1.0,.24],[.5,.05,.05],palette.wood);for(let i=0;i<4;i++)B([-.1,.7+i*.06,.3],[.5,.006,.006],color(0xe9e2c8));}}],
 [5,()=>{E([0,1.34,0],[.27,.26,.27],o.skin,16,10);E([-.27,1.33,0],[.045,.05,.03],o.skin,8,5);E([.27,1.33,0],[.045,.05,.03],o.skin,8,5);
 for(const sd of[-1,1]){E([sd*.095,1.34,.235],[.055,.065,.03],C.white,8,5);E([sd*.09,1.335,.262],[.032,.04,.02],o.eye||color(0x3b2a20),8,5);E([sd*.1,1.41,.245],[.05,.012,.02],o.hair,6,3);}
-E([0,1.29,.27],[.028,.022,.02],tint(o.skin,.92),6,4);B([0,1.235,.262],[.07,.014,.012],color(0xb35a4a));
-E([0,1.43,-.05],[.29,.23,.285],o.hair,16,10);E([0,1.56,.19],[.19,.06,.11],o.hair,10,5);
+E([0,1.29,.27],[.028,.022,.02],tint(o.skin,.92),6,4);E([0,1.235,.253],[.038,.009,.012],color(0xb35a4a),8,4);for(const side of[-1,1]){E([side*.158,1.28,.207],[.039,.017,.013],tint(o.skin,.91),8,4);E([side*.09-.009,1.35,.283],[.010,.013,.008],C.white,6,4);}
+E([0,1.44,-.105],[.282,.19,.19],o.hair,14,9);
+for(let j=0;j<5;j++)E([-.18+j*.085,1.535+Math.sin(j)*.025,.12],[.075,.065,.11],tint(o.hair,.93+j*.025),9,5);
 if(o.hat==='straw'){Cy([0,1.53,0],[0,1.555,0],.42,.42,C.straw,18);E([0,1.62,0],[.22,.13,.22],C.straw,14,7);Cy([0,1.55,0],[0,1.585,0],.225,.215,o.band||color(0xc34a3d),14);}
 if(o.hat==='cap'){E([0,1.56,0],[.26,.12,.26],o.hatColor,14,7);B([0,1.56,.28],[.3,.03,.16],o.hatColor);}
 if(o.hat==='scarf'){E([0,1.52,0],[.295,.09,.295],o.hatColor,14,6);B([0,1.44,-.24],[.14,.2,.04],o.hatColor);}
@@ -477,23 +682,23 @@ if(o.bun)E([0,1.62,-.14],[.11,.1,.11],o.hair,10,6);
 if(o.longHair)E([0,1.18,-.22],[.21,.24,.12],o.hair,12,7);}],
 [1,()=>{Cy([-.1,.62,0],[-.1,.12,0],.085,.075,o.pants,12);E([-.1,.06,.03],[.1,.065,.145],C.shoe,10,5);}],
 [2,()=>{Cy([.1,.62,0],[.1,.12,0],.085,.075,o.pants,12);E([.1,.06,.03],[.1,.065,.145],C.shoe,10,5);}],
-[3,()=>{E([-.29,1.03,0],[.085,.085,.085],sleeve,10,6);Cy([-.3,1.03,0],[-.3,.66,0],.065,.058,sleeve,10);E([-.3,.62,0],[.072,.075,.072],o.skin,10,6);if(o.prop==='basket'){E([-.33,.46,.06],[.13,.09,.09],C.straw,10,6);Cy([-.33,.53,.06],[-.33,.56,.06],.1,.1,color(0xd9a35a),10);}}],
-[4,()=>{E([.29,1.03,0],[.085,.085,.085],sleeve,10,6);Cy([.3,1.03,0],[.3,.66,0],.065,.058,sleeve,10);E([.3,.62,0],[.072,.075,.072],o.skin,10,6);if(o.prop==='rod')beam(sc([.32,.55,.05]),sc([.36,1.55,1.5]),.014*s,palette.wood);if(o.prop==='staff')beam(sc([.34,-.02,.08]),sc([.34,1.25,.08]),.025*s,palette.wood);}]]);
+[3,()=>{E([-.29,1.03,0],[.085,.085,.085],sleeve,10,6);Cy([-.3,1.03,0],[-.3,.66,0],.065,.058,sleeve,10);E([-.3,.62,0],[.072,.075,.072],o.skin,10,6);E([-.252,.635,.025],[.027,.040,.034],o.skin,8,4);if(o.prop==='basket'){E([-.33,.46,.06],[.13,.09,.09],C.straw,10,6);Cy([-.33,.53,.06],[-.33,.56,.06],.1,.1,color(0xd9a35a),10);}}],
+[4,()=>{E([.29,1.03,0],[.085,.085,.085],sleeve,10,6);Cy([.3,1.03,0],[.3,.66,0],.065,.058,sleeve,10);E([.3,.62,0],[.072,.075,.072],o.skin,10,6);E([.252,.635,.025],[.027,.040,.034],o.skin,8,4);if(o.prop==='rod')beam(sc([.32,.55,.05]),sc([.36,1.55,1.5]),.014*s,palette.wood);if(o.prop==='staff')beam(sc([.34,-.02,.08]),sc([.34,1.25,.08]),.025*s,palette.wood);}]]);
 }
 function catRig(){const fur=color(0xe28f3c),cream=color(0xfbe9cf);return rig([
-[0,()=>{box([0,.27,0],[.17,.15,.42],fur);box([0,.21,.02],[.13,.06,.3],cream);box([0,.37,.26],[.17,.15,.15],fur);box([0,.33,.33],[.08,.06,.04],cream);
+[0,()=>{ellipsoid([0,.28,0],[.115,.115,.245],fur,12,7,0);ellipsoid([0,.23,.04],[.09,.07,.18],cream,10,6,0);ellipsoid([0,.39,.25],[.13,.13,.13],fur,12,8,0);ellipsoid([0,.34,.35],[.075,.048,.055],cream,10,5,0);
 tri([-.075,.44,.24],[-.02,.44,.24],[-.05,.54,.22],fur);tri([.02,.44,.24],[.075,.44,.24],[.05,.54,.22],fur);
-box([-.04,.38,.335],[.03,.03,.01],C.dark);box([.04,.38,.335],[.03,.03,.01],C.dark);box([0,.34,.352],[.03,.02,.01],color(0xd87a7a));}],
-[1,()=>box([-.07,.1,.14],[.06,.2,.06],fur)],[2,()=>box([.07,.1,.14],[.06,.2,.06],fur)],
-[3,()=>box([-.07,.1,-.14],[.06,.2,.06],fur)],[4,()=>box([.07,.1,-.14],[.06,.2,.06],fur)],
+for(const side of[-1,1]){ellipsoid([side*.05,.4,.36],[.023,.031,.018],C.dark,8,5,0);ellipsoid([side*.05-.005,.41,.375],[.006,.008,.005],C.white,6,4,0);}ellipsoid([0,.35,.4],[.021,.014,.014],color(0xd87a7a),8,4,0);}],
+[1,()=>ellipsoid([-.07,.105,.14],[.043,.105,.052],fur,9,6,0)],[2,()=>ellipsoid([.07,.105,.14],[.043,.105,.052],fur,9,6,0)],
+[3,()=>ellipsoid([-.07,.105,-.14],[.043,.105,.052],fur,9,6,0)],[4,()=>ellipsoid([.07,.105,-.14],[.043,.105,.052],fur,9,6,0)],
 [5,()=>{cylinder([0,.3,-.2],[0,.5,-.42],.03,.02,fur,6);ellipsoid([0,.5,-.42],[.025,.025,.025],cream,5,3,0);}]]);}
 function gullRig(){const w=C.white,g=color(0xd8dde0);return rig([
-[0,()=>{ellipsoid([0,0,0],[.12,.09,.3],w,8,5,0);ellipsoid([0,.05,.3],[.08,.08,.1],w,7,4,0);box([0,.03,.42],[.03,.03,.1],color(0xf0a030),0);box([0,-.01,-.3],[.12,.02,.14],g);}],
-[1,()=>quad([0,0,-.14],[0,0,.12],[-.75,.02,.02],[-.6,.03,-.25],g)],
-[2,()=>quad([0,0,.12],[0,0,-.14],[.6,.03,-.25],[.75,.02,.02],g)]]);}
+[0,()=>{ellipsoid([0,0,0],[.12,.09,.3],w,8,5,0);ellipsoid([0,.05,.3],[.08,.08,.1],w,7,4,0);ellipsoid([0,.03,.42],[.026,.023,.075],color(0xf0a030),9,5,0);ellipsoid([0,-.01,-.3],[.07,.025,.12],g,9,5,0);for(const side of[-1,1])ellipsoid([side*.057,.075,.35],[.013,.019,.01],C.dark,7,4,0);}],
+[1,()=>ellipsoid([-.32,.015,-.065],[.38,.03,.15],g,12,5,0)],
+[2,()=>ellipsoid([.32,.015,-.065],[.38,.03,.15],g,12,5,0)]]);}
 function crabRig(){const red=color(0xd9552f),dark=color(0x8c2f16);return rig([
-[0,()=>{ellipsoid([0,.09,0],[.17,.07,.12],red,10,5,.04);box([-.05,.16,.08],[.03,.04,.03],C.dark);box([.05,.16,.08],[.03,.04,.03],C.dark);
-for(const sd of[-1,1]){box([sd*.2,.09,.12],[.09,.06,.1],red,sd*.4);box([sd*.24,.1,.18],[.05,.04,.07],dark,sd*.5);}}],
+[0,()=>{ellipsoid([0,.09,0],[.17,.07,.12],red,10,5,.04);for(const side of[-1,1]){ellipsoid([side*.05,.16,.08],[.023,.038,.022],C.dark,8,5,0);ellipsoid([side*.05-.006,.18,.098],[.007,.009,.005],C.white,6,4,0);}
+for(const sd of[-1,1]){ellipsoid([sd*.2,.09,.12],[.07,.045,.075],red,10,6,0);ellipsoid([sd*.24,.1,.18],[.032,.03,.045],dark,8,5,0);}}],
 [1,()=>{for(let i=0;i<3;i++)beam([-.12,.06,-.08+i*.08],[-.27,.0,-.12+i*.1],.014,dark);}],
 [2,()=>{for(let i=0;i<3;i++)beam([.12,.06,-.08+i*.08],[.27,.0,-.12+i*.1],.014,dark);}]]);}
 
@@ -524,6 +729,85 @@ const fireflyMesh=meshDyn(rig(Array.from({length:14},(_,k)=>[k,()=>ellipsoid([0,
 const burstMeshes=[0xff6b6b,0xffd166,0x7ae7ff,0xc9a0ff].map(c=>meshDyn(rig(Array.from({length:12},(_,k)=>[k,()=>ellipsoid([0,0,0],[.16,.16,.16],color(c),6,4,0)]))));
 const chestMesh=meshDyn(rig([[0,()=>{box([0,.16,0],[.6,.32,.4],palette.wood);for(const z of[-.19,.19])box([0,.16,z],[.62,.34,.03],color(0x3a3230));box([0,.16,0],[.63,.06,.42],color(0x3a3230));for(let i=0;i<9;i++)ellipsoid([-.2+i%3*.2,.33,-.1+Math.floor(i/3)*.1],[.06,.045,.06],color(0xf4c542),6,3,.1);}],[1,()=>{box([0,.04,.2],[.6,.08,.4],palette.wood);box([0,.04,.2],[.62,.1,.03],color(0x3a3230));}]]));
 const crossMesh=meshDyn(new Float32Array(withBone(0,()=>{box([0,.01,0],[.9,.02,.12],color(0xb0642c),.78);box([0,.01,0],[.9,.02,.12],color(0xb0642c),-.78);})));
+// ---------- Livraison 2 · Phare : extensions isolées des maillages existants ----------
+// Gardien : mêmes 6 os et même échelle que humanoid. Le ciré, la barbe grise,
+// les bottes et la cage de lanterne sont visibles en mode 4 ; son cœur est séparé.
+function gardienRig(){
+  const yellow=color(0xe4b52e),metal=color(0x393d3d);
+  const body=humanoid({shirt:yellow,sleeve:yellow,pants:color(0x34474f),
+    skin:C.skin[1],hair:color(0xd4d1c5),hat:'cap',hatColor:yellow,beard:true});
+  const details=rig([
+    [0,()=>{for(let j=0;j<4;j++)box([.045,.72+j*.08,.132],[.025,.025,.02],metal);
+      box([-.12,.79,.135],[.11,.12,.025],tint(yellow,.87));
+      box([.12,.79,.135],[.11,.12,.025],tint(yellow,.87));}],
+    [1,()=>{ellipsoid([-.1,.60,0],[.115,.12,.17],yellow,10,6,0);ellipsoid([-.1,.16,.02],[.10,.16,.14],metal,10,6,0);}],
+    [2,()=>{ellipsoid([.1,.60,0],[.115,.12,.17],yellow,10,6,0);ellipsoid([.1,.16,.02],[.10,.16,.14],metal,10,6,0);}],
+    [5,()=>{ellipsoid([0,1.235,.285],[.105,.025,.024],color(0xe4dfd2),10,5,0);
+      for(const x of[-.06,.06])ellipsoid([x,1.412,.254],[.04,.012,.022],color(0xbcb9b0),8,4,0);}],
+    [4,()=>{
+      for(const dx of[-.095,.095])for(const dz of[-.085,.085])
+        beam([.28+dx,.20,.09+dz],[.28+dx,.44,.09+dz],.014,metal);
+      box([.28,.20,.09],[.22,.035,.20],metal);box([.28,.46,.09],[.24,.04,.22],metal);
+      beam([.20,.47,.09],[.20,.60,.04],.014,metal);
+      beam([.36,.47,.09],[.36,.60,.04],.014,metal);
+      beam([.20,.60,.04],[.36,.60,.04],.014,metal);
+      box([.28,.33,.09],[.12,.19,.11],color(0xd59e45));
+    }]
+  ]);
+  const out=new Float32Array(body.length+details.length);out.set(body);out.set(details,body.length);return out;
+}
+// Chèvre : +Z devant, sol Y=0, géométrie unité (scale appliqué par poseGoat).
+// 0 corps ; 1 avant G (-.17,.46,.27) ; 2 avant D (+.17,.46,.27) ;
+// 3 arrière G (-.17,.46,-.27) ; 4 arrière D (+.17,.46,-.27) ;
+// 5 tête, pivot (0,.66,.32). 6 queue, pivot (0,.59,-.37). Float32Array(16*7), n:7, mode:4.
+function goatRig(){
+  const fur=color(0xeee4cd),patchColor=color(0x9c8469),hoof=color(0x46433d);
+  return rig([
+    [0,()=>{ellipsoid([0,.53,0],[.26,.24,.43],fur,12,7,.02);
+      ellipsoid([-.19,.59,-.11],[.09,.15,.2],patchColor,9,5,0);
+      }],
+    [6,()=>cylinder([0,.59,-.37],[0,.78,-.53],.065,.028,fur,8)],
+    ...[[-.17,.27],[.17,.27],[-.17,-.27],[.17,-.27]].map(([x,z],i)=>[i+1,()=>{
+      cylinder([x,.46,z],[x,.10,z],.062,.043,fur,8);
+      box([x,.055,z+.02],[.105,.11,.135],hoof);
+      box([x,.047,z+.086],[.012,.065,.008],C.dark);
+    }]),
+    [5,()=>{ellipsoid([0,.78,.37],[.155,.23,.16],fur,10,6,0);
+      ellipsoid([0,.76,.52],[.12,.095,.15],patchColor,10,5,0);
+      for(const side of[-1,1]){
+        ellipsoid([side*.19,.87,.34],[.14,.035,.07],fur,8,4,0);
+        box([side*.125,.84,.47],[.023,.035,.028],C.dark);
+        cylinder([side*.085,.94,.33],[side*.10,1.12,.24],.04,.03,palette.trim,8);
+        cylinder([side*.10,1.12,.24],[side*.115,1.18,.13],.03,.006,palette.trim,8);
+      }
+      cylinder([0,.69,.5],[0,.53,.48],.055,.008,fur,8);
+    }]
+  ]);
+}
+let goatMesh,phareLanternMesh,gardienLanternMesh;
+{
+  const phareRigSeed=seed;seed=341810;
+  try{
+    npcMeshes.gardien=meshDyn(gardienRig());goatMesh=meshDyn(goatRig());
+    phareLanternMesh=meshDyn(rig([[0,()=>{
+      cylinder([0,-.38,0],[0,.38,0],.31,.31,color(0xffbd52),20);
+      for(let j=0;j<5;j++)cylinder([0,-.32+j*.16,0],[0,-.28+j*.16,0],.36,.36,color(0xffe2a1),20);
+    }]]));
+    gardienLanternMesh=meshDyn(rig([[4,()=>box([.28,.33,.09],[.15,.205,.14],color(0xffc36b))]]));
+  }finally{seed=phareRigSeed;}
+}
+// À pousser par Claude dans drawList APRÈS son drawList.length=0.
+// Les tableaux sont réutilisés. Ne pas modifier ni accumuler ces descripteurs.
+const phareLanternBones=new Float32Array(16);
+const phareLanternItem={mesh:phareLanternMesh,bones:phareLanternBones,n:1,mode:7,noShadow:true};
+function phareLanternDraw(t,lit=true){
+  if(!lit)return null;
+  setBone(phareLanternBones,0,mm(T(34,19.45,-25.3),RY(t*.35)));
+  return phareLanternItem;
+}
+function gardienLanternDraw(e){return{mesh:gardienLanternMesh,bones:e.bones,n:6,mode:7,noShadow:true};}
+
+
 verts=null;
 
 
@@ -823,18 +1107,18 @@ const npcDefs=[
 {id:'marco',name:'Marco',x:3.8,z:7.9,leash:1.5,speed:1.4,scale:1.02},
 {id:'bastien',name:'Bastien le musicien',x:-.3,z:.3,leash:.4,speed:.9,scale:.98,pose:'guitar'},
 {id:'cat',name:'Pistache',x:.3,z:-1,leash:1.2,speed:1.6,cat:true},
-{id:'gardien',name:'Elio, le gardien du phare',x:34.5,z:-22.5,leash:1.2,speed:.8}];
+{id:'gardien',name:'Elio, le gardien du phare',x:33.2,z:-23.2,leash:1.0,speed:.8}];
 const npcs=npcDefs.map(d=>{const [x,z]=snap(d.x,d.z);return makeEntity(d.id,npcMeshes[d.id]||npcMeshes.oro,x,z,{name:d.name,leash:d.leash,walk:d.speed,scale:d.scale,cat:!!d.cat,pose:d.pose,home:[x,z],state:'idle',t:1+Math.random()*3,said:0,heading:Math.random()*TAU});});
 const cat=npcs.find(n=>n.cat),anae=npcs.find(n=>n.id==='anae');
 const shellSpots=[[-3,10.8],[-1.2,11.4],[1.4,11.6],[3.5,10.9],[4.9,9.5],[-4.7,9.3],[.5,8.2],[-4.5,15.9],[-9.6,2],[8.6,3.2],[.4,-.2],[1.2,-4.4]].map((p,i)=>{const [x,z]=snap(p[0],p[1]);return{id:i,x,z,y:cellH(x,z)};});
 const noteSpots=[[-3.6,12.6],[-4.4,4.1],[2.2,-4.1]].map((p,i)=>{const [x,z]=snap(p[0],p[1]);return{id:i,x,z,y:cellH(x,z)};});
 const digSpot=(()=>{const [x,z]=snap(-9.2,3.6);return{x,z,y:cellH(x,z)};})();
 const fishSpot=(()=>{const [x,z]=snap(-4.2,15.9);return{x,z,y:cellH(x,z)};})();
-const places=[{id:'village',name:'Le village',x:-2.5,z:3,r:3.5,minY:3},{id:'port',name:'La crique',x:-4.2,z:14.5,r:2.4,minY:0},{id:'summit',name:'Le belvédère',x:1.7,z:-5,r:2.5,minY:9.4},{id:'phare',name:"La crique du Phare",x:35.5,z:-8,r:4,minY:.3}];
+const places=[{id:'village',name:'Le village',x:-2.5,z:3,r:3.5,minY:3},{id:'port',name:'La crique',x:-4.2,z:14.5,r:2.4,minY:0},{id:'summit',name:'Le belvédère',x:1.7,z:-5,r:2.5,minY:9.4},{id:'phare',name:"La crique du Phare",x:35.5,z:-8,r:4,minY:.3},{id:'champs',name:"L'Île des Champs",x:-32,z:10,r:5,minY:1}];
 const gulls=Array.from({length:6},(_,i)=>({cx:range(-4,3),cz:range(6,14),R:range(4,9),h:range(9,17),w:range(.16,.3)*(i%2?1:-1),ph:range(0,TAU),bones:new Float32Array(48)}));
 const crabs=[[-3,10.6],[0,11.2],[2.6,10.9],[4.2,9.6],[-4.6,8.8],[1.2,8.7]].map((p,i)=>{const [x,z]=snap(p[0],p[1]);return{id:i,x,z,y:cellH(x,z),heading:Math.random()*TAU,phase:0,amp:0,speed:0,scale:1,state:'idle',t:Math.random()*3,home:[x,z],maxH:1.2,bones:new Float32Array(48),hidden:false,crab:true};});
 const goatMeshOf=()=>typeof goatMesh!=='undefined'?goatMesh:(npcMeshes.goat||npcMeshes.cat);const goatPose=(e,t)=>typeof poseGoat==='function'?poseGoat(e,t):poseCat(e,t);
-const goats=[[31.5,-15.5],[36.5,-13.5],[38.5,-19.5]].map((p,i)=>{const [x,z]=snap(p[0],p[1]);return{id:i,x,z,y:cellH(x,z),heading:Math.random()*TAU,phase:0,amp:0,speed:0,scale:typeof goatMesh!=='undefined'||npcMeshes.goat?1:1.7,state:'idle',t:Math.random()*3,home:[x,z],bones:new Float32Array(16*8),hidden:false,goat:true};});
+const goats=[[37.9,-12.4,1],[32.2,-14.8,.85],[36.5,-19.3,.95]].map((p,i)=>{const [x,z]=snap(p[0],p[1]);return{id:i,x,z,y:cellH(x,z),heading:Math.random()*TAU,phase:0,amp:0,speed:0,scale:typeof goatMesh!=='undefined'||npcMeshes.goat?p[2]:1.7,state:'idle',t:Math.random()*3,home:[x,z],bones:new Float32Array(16*8),hidden:false,goat:true,pose:'graze',leash:1.6};});
 const lanterns=[[-3.3,10.8],[-4.6,15.6],[-2.0,3.5],[4.3,4.1],[1.4,-.1],[2.4,-4.1],[5.0,10.3],[-5.6,8.9],[-8.6,3.0]].map(p=>{const [x,z]=snap(p[0],p[1],2);return{x,z,y:cellH(x,z),bones:new Float32Array(16)};});
 const fireflies=Array.from({length:14},(_,i)=>({cx:i<7?-.6:-3.3,cz:i<7?-1.5:2.9,cy:i<7?7.3:3.8,ph:range(0,TAU),r:range(.6,2.2),h:range(.6,1.8)}));
 const fireflyBones=new Float32Array(16*14);
@@ -856,7 +1140,7 @@ if(d.cam){goal.theta=d.cam.theta;goal.phi=clamp(d.cam.phi,.35,1.46);goal.r=clamp
 function fmtTime(s){const m=Math.round(s/60);return m<1?'moins d\'une minute':m<60?m+' min':Math.floor(m/60)+' h '+(m%60)+' min';}
 const doneCount=q=>Object.values(q).filter(v=>v===2).length;
 function stars(){return Object.keys(game.discovered).length+doneCount(game.quests);}
-const TOTAL=14;
+const TOTAL=15;
 
 // ---------- jour / nuit ----------
 let dayF=1,duskF=0;
@@ -946,7 +1230,7 @@ if(game.quests.crabs===1&&game.crabsCaught<3)for(const c of crabs){if(c.hidden)c
 if(game.quests.goats===1&&game.goatsCaught<3)for(const g of goats){if(g.hidden)continue;const d=Math.hypot(g.x-player.x,g.z-player.z);if(d<Math.min(bd,1.3)){bd=d;best={type:'goat',g,label:'Attraper la chèvre',btn:'Hop !'};}}
 if(game.quests.treasure===1&&!game.dug){const d=Math.hypot(digSpot.x-player.x,digSpot.z-player.z);if(d<Math.min(bd,1.3)){bd=d;best={type:'dig',label:'Creuser ici',btn:'Creuser'};}}
 const fn=farmNear();if(fn){bd=.95;best=fn;}
-const dockIsl=nearDock();if(dockIsl){const dest=islands.find(i=>i.id!==dockIsl.id);if(dest){bd=1.7;best={type:'boat',dest,label:'Embarquer pour '+dest.name,btn:'Embarquer'};}}
+const dockIsl=nearDock();if(dockIsl){const dests=islands.filter(i=>i.id!==dockIsl.id);if(dests.length){bd=1.7;best={type:'boat',dests,label:dests.length===1?'Embarquer pour '+dests[0].name:'Prendre le voilier',btn:'Embarquer'};}}
 if(game.quests.fish>=1){const d=Math.hypot(fishSpot.x-player.x,fishSpot.z-player.z);if(d<Math.min(bd,1.4)&&Math.abs(fishSpot.y-player.y)<.6){bd=d;best={type:'fish',label:'Pêcher',btn:'Pêcher'};}}
 return best;}
 function jump(){if(dialog||minigame){interact();return;}if(!playing||!panel.hidden||voyage.active||player.air)return;player.air=true;player.vy=4.6;sfx('jump');}
@@ -958,7 +1242,8 @@ else if(th.type==='dig'){game.dug=true;sfx('dig');setTimeout(()=>{toast('⚓ Une
 else if(th.type==='goat'){th.g.hidden=true;game.goatsCaught++;sfx('catch');toast(`🐐 Chèvre rattrapée ! ${game.goatsCaught}/3`);dirty=true;refreshHUD();if(game.goatsCaught>=3)setTimeout(()=>toast('Retourne voir Elio au sommet !'),1500);}
 else if(th.type==='farm')farmInteract(th);
 else if(th.type==='fish')startFishing();
-else if(th.type==='boat'){if(game.quests.shells<2){toast('Le voilier est à Tomas : rends-lui d\'abord service pour gagner sa confiance.');return;}startVoyage(th.dest.id);}}
+else if(th.type==='boat'){if(game.quests.shells<2){toast('Le voilier est à Tomas : rends-lui d\'abord service pour gagner sa confiance.');return;}if(th.dests.length===1)startVoyage(th.dests[0].id);else chooseVoyage(th.dests);}}
+function chooseVoyage(dests){shopEl.hidden=false;const box=shopEl.querySelector('div');box.innerHTML='';const h=document.createElement('h2');h.textContent='Où aller ?';box.appendChild(h);const p=document.createElement('p');p.textContent='Tomas hisse la voile. Choisis ta destination.';box.appendChild(p);for(const d of dests){const b=document.createElement('button');b.textContent='⛵ '+d.name;b.onclick=()=>{shopEl.hidden=true;startVoyage(d.id);};box.appendChild(b);}const c=document.createElement('button');c.className='secondary';c.textContent='Rester ici';c.onclick=()=>{shopEl.hidden=true;};box.appendChild(c);}
 
 // ---------- mini-jeu de pêche ----------
 const fishingEl=$('#fishing'),cursorEl=fishingEl.querySelector('.cursor'),zoneEl=fishingEl.querySelector('.zone');
@@ -1077,7 +1362,7 @@ else{n.look=0;const dx=n.target[0]-n.x,dz=n.target[1]-n.z,d=Math.hypot(dx,dz);n.
 groundEntity(n,dt);}
 function crabThink(c,dt,t){if(c.hidden)return;const dx=c.x-player.x,dz=c.z-player.z,d=Math.hypot(dx,dz);const hunted=c.goat?(game.quests.goats===1&&game.goatsCaught<3):(game.quests.crabs===1&&game.crabsCaught<3);
 if(hunted&&d<(c.goat?3.2:2.4)){const sp=c.goat?2.6:2.3;if(!moveEntity(c,dx+Math.sin(c.id*3+t*2)*.5,dz+Math.cos(c.id*2+t)*.5,sp,dt))moveEntity(c,-dz,dx,sp,dt);c.state='idle';c.t=.5;if(Math.random()<dt*1.5)sfx('crab');}
-else if(c.state==='idle'){idleEntity(c,dt);c.t-=dt;if(c.t<=0){const a=Math.random()*TAU,r=Math.random()*(c.goat?3.5:2.2);c.target=[c.home[0]+Math.cos(a)*r,c.home[1]+Math.sin(a)*r];c.state='walk';c.t=2+Math.random()*4;}}
+else if(c.state==='idle'){idleEntity(c,dt);c.t-=dt;if(c.t<=0){const a=Math.random()*TAU,r=Math.random()*(c.goat?c.leash:2.2),tx=c.home[0]+Math.cos(a)*r,tz=c.home[1]+Math.sin(a)*r,ti=cellIndex(tx,tz);if(ti<0||!reach[ti]||Math.abs(cellH(tx,tz)-c.y)>1.2){c.t=1;return;}c.target=[tx,tz];c.state='walk';c.t=2+Math.random()*4;}}
 else{const tx=c.target[0]-c.x,tz=c.target[1]-c.z,td=Math.hypot(tx,tz);if(td<.12||!moveEntity(c,tx,tz,.7,dt)){c.state='idle';c.t=1+Math.random()*3;}}
 groundEntity(c,dt);}
 const drawList=[];
@@ -1102,11 +1387,11 @@ if((frameCount&31)===0)stats.textContent=`🐚 ${game.shells.size}/12 · ⭐ ${s
 // poses
 drawList.length=0;
 poseHuman(player,t);drawList.push({mesh:player.mesh,bones:player.bones,n:6,mode:4});
-for(const n of npcs){if(n.cat)poseCat(n,t);else poseHuman(n,t);drawList.push({mesh:n.mesh,bones:n.bones,n:6,mode:4});}
+for(const n of npcs){if(n.cat)poseCat(n,t);else poseHuman(n,t);drawList.push({mesh:n.mesh,bones:n.bones,n:6,mode:4});if(n.id==='gardien'&&typeof gardienLanternDraw==='function')drawList.push(gardienLanternDraw(n));}
 for(const c of crabs){if(c.hidden)continue;poseCrab(c,t);drawList.push({mesh:crabMesh,bones:c.bones,n:3,mode:4});}
 for(const g of goats){if(g.hidden)continue;goatPose(g,t);drawList.push({mesh:goatMeshOf(),bones:g.bones,n:8,mode:4});}
 farmDraw(t);
-if(game.quests.oil===2){setBone(lighthouseBones,0,mm(T(34,12.5,-24.6),SC(3,3,3)));drawList.push({mesh:lanternGlow,bones:lighthouseBones,n:1,mode:7,noShadow:true});}
+if(game.quests.oil===2){if(typeof phareLanternDraw==='function'){const g=phareLanternDraw(t,true);if(g)drawList.push(g);}else{setBone(lighthouseBones,0,mm(T(34,12.5,-24.6),SC(3,3,3)));drawList.push({mesh:lanternGlow,bones:lighthouseBones,n:1,mode:7,noShadow:true});}}
 const spin=(list,mesh,taken,hover)=>{for(const s of list){if(taken.has(s.id))continue;const b=s.bones||(s.bones=new Float32Array(32));const root=mm(T(s.x,s.y+hover+Math.sin(t*2.2+s.id)*.05,s.z),RY(t*1.3+s.id));setBone(b,0,root);setBone(b,1,mm(root,T(Math.cos(t*3+s.id)*.24,.14+Math.sin(t*4.1+s.id)*.06,Math.sin(t*3+s.id)*.24)));drawList.push({mesh,bones:b,n:2,mode:4});
 const rb=s.ring||(s.ring=new Float32Array(16));setBone(rb,0,mm(T(s.x,s.y+.04,s.z),SC(1+Math.sin(t*2.2+s.id)*.12)));drawList.push({mesh:ringMesh,bones:rb,n:1,mode:5,noShadow:true});}};
 spin(shellSpots,shellMesh,game.shells,.08);
@@ -1134,7 +1419,7 @@ ble:{name:'Blé',icon:'🌾',seed:4,sell:10,days:1.1,color:0xe8c451,leaf:0x9ccf4
 fleur:{name:'Fleur de sable',icon:'🌸',seed:9,sell:26,days:2.4,color:0xf27db0,leaf:0x5e9d26}};
 const CROP_IDS=Object.keys(CROPS);
 // Zones cultivables par île : rectangle candidat, validé cellule par cellule au chargement (sol plat, atteignable, libre).
-const FARM_AREAS=[{island:'azura',x0:-5.4,z0:7.6,cols:3,rows:2,cell:1.0}];
+const FARM_AREAS=[{island:'azura',x0:-5.4,z0:7.6,cols:3,rows:2,cell:1.0},{island:'champs',x0:-36,z0:6,cols:8,rows:8,cell:1}];
 function cellFlat(x,z,cell){const h=cellH(x,z);let ok=reach[cellIndex(x,z)]&&!blocked[cellIndex(x,z)];for(const [dx,dz] of[[-.4,-.4],[.4,-.4],[-.4,.4],[.4,.4]]){const i=cellIndex(x+dx*cell,z+dz*cell);if(i<0||blocked[i]||H[i]<=SEA||Math.abs(H[i]-h)>.38)ok=false;}return ok;}
 const farmCells=[];
 for(const a of FARM_AREAS)for(let r=0;r<a.rows;r++)for(let c=0;c<a.cols;c++){const x=a.x0+(c+.5)*a.cell,z=a.z0+(r+.5)*a.cell;if(!cellFlat(x,z,a.cell))continue;farmCells.push({key:a.island+':'+c+':'+r,island:a.island,x,z,y:cellH(x,z),bones:new Float32Array(16),bones2:new Float32Array(16)});}
@@ -1187,6 +1472,7 @@ const root=mm(T(e.x,e.y+bob,e.z),RY(e.heading));let swing=Math.sin(ph)*.85*a,swa
 if(e.air){swing=-.55;armL=-1.3;armR=-1.3;rzL=-.5;rzR=.5;}
 if(e.pose==='guitar'&&a<.5&&!e.talking){const k=1-a*2;armL=mix(armL,-1.15,k);rzL=mix(rzL,.55,k);armR=mix(armR,-.75+Math.sin(t*7)*.12,k);rzR=mix(rzR,-.25,k);}
 if(e.id==='tomas'&&a<.5&&!e.talking){const k=1-a*2;armR=mix(armR,-.5+Math.sin(t*.8)*.05,k);}
+if(e.id==='gardien'&&!e.air){armR=-.22+Math.sin(ph)*.12*a;rzR=.12;}
 setBone(B,0,root);
 setBone(B,1,mm(root,piv([-.1*s,.62*s,0],RX(swing))));setBone(B,2,mm(root,piv([.1*s,.62*s,0],RX(-swing))));
 setBone(B,3,mm(root,piv([-.28*s,1.08*s,0],mm(RX(armL),RZ(rzL)))));setBone(B,4,mm(root,piv([.28*s,1.08*s,0],mm(RX(armR),RZ(rzR)))));
@@ -1195,6 +1481,24 @@ function poseCat(e,t){const B=e.bones,a=e.amp,ph=e.phase,root=mm(T(e.x,e.y+Math.
 setBone(B,0,root);setBone(B,1,mm(root,piv([-.07,.2,.14],RX(sw))));setBone(B,4,mm(root,piv([.07,.2,-.14],RX(sw))));setBone(B,2,mm(root,piv([.07,.2,.14],RX(-sw))));setBone(B,3,mm(root,piv([-.07,.2,-.14],RX(-sw))));
 setBone(B,5,mm(root,piv([0,.3,-.2],mm(RY(Math.sin(t*2.3+e.x)*.5),RX(Math.sin(t*1.1)*.2)))));}
 function poseCrab(e,t){const B=e.bones,root=mm(T(e.x,e.y+.01,e.z),RY(e.heading));const sw=Math.sin(e.phase)*.35*e.amp+Math.sin(t*3+e.id)*.04;setBone(B,0,root);setBone(B,1,mm(root,piv([-.12,.06,0],RZ(sw))));setBone(B,2,mm(root,piv([.12,.06,0],RZ(-sw))));}
+// Chèvre : géométrie unité, scale appliqué UNE SEULE FOIS par la matrice racine.
+// Réutilise les champs des entités existantes ; e.pose='graze' pour brouter.
+// Os 1+4 et 2+3 en opposition (diagonales), os 5 tête indépendante.
+function poseGoat(e,t){
+  const B=e.bones,s=e.scale??1,a=clamp(e.amp??0,0,1),ph=e.phase??0;
+  const walking=(e.speed??0)>.05,amount=walking?a:0;
+  const bob=Math.abs(Math.sin(ph))*.026*amount+Math.sin(t*2)*.004;
+  const root=mm(T(e.x,e.y+bob*s,e.z),RY(e.heading??0),SC(s));
+  setBone(B,0,root);
+  const sw=Math.sin(ph)*.62*amount;
+  for(const [i,x,z,sign] of [[1,-.17,.27,1],[2,.17,.27,-1],[3,-.17,-.27,-1],[4,.17,-.27,1]])
+    setBone(B,i,mm(root,piv([x,.46,z],RX(sw*sign))));
+  const graze=!walking&&!e.talking&&e.pose==='graze';
+  const nod=graze?.82+Math.sin(t*3)*.055:Math.sin(t*1.4+(e.x??0))*.045;
+  const look=clamp(e.look??0,-.7,.7);
+  setBone(B,5,mm(root,piv([0,.66,.32],mm(RY(look),RX(nod)))));
+  setBone(B,6,mm(root,piv([0,.59,-.37],RY(Math.sin(t*3+ph)*.28))));
+}
 
 // render.js — ombres, cibles de rendu (MSAA/HDR), reflets planaires, SSAO, eau, bloom, image finale, qualité adaptative, boucle render().
 // Propriétaire : GAMEPLAY (Claude Code) pour la structure ; DESIGN pour les réglages visuels (voir shaders.js).
