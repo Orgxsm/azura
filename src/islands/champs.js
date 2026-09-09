@@ -1,4 +1,4 @@
-// Île des Champs — Astra · base 7a0b420 · décor de ferme, sans logique farm.js.
+// Île des Champs — Astra · base c6ff9e9 · décor de ferme, sans logique farm.js.
 // Centre [-32,10], rayon nominal 11, englobant 14. Y vertical, mer Y=0.
 // Enveloppe réservée x∈[-46,-18], z∈[-2,24].
 // Apparition : {x:-23,y:.56,z:10,heading:-Math.PI/2}.
@@ -58,7 +58,7 @@
   for(const x of[-37,-27]){fence([x,1.2,5.2],[x,1.2,9.2]);fence([x,1.2,10.8],[x,1.2,14.8]);}
   for(const z of[5.2,14.8]){fence([-37,1.2,z],[-32.8,1.2,z]);fence([-31.2,1.2,z],[-27,1.2,z]);}
   for(const p of[[-40,.5,14,2.8,1.2],[-24,.5,15,2.4,1.1],[-36,.5,18.8,2.7,1.3]])tree(...p);
-  for(const p of[[-40,.1,7,1.1,.7,1.1],[-24,.1,6,1,.8,1],[-31,.1,20,1.2,.6,1]])rock(...p);
+  for(const p of[[-40,.1,7,1.1,.7,1.1],[-31,.1,20,1.2,.6,1]])rock(...p);
   // Lot 3 : placage mince des sols ; jamais dans une emprise de gameplay.
   // Les plaques restent à 6 mm du sol, sans modifier stairs/platforms.
   const paths=[
@@ -103,10 +103,10 @@
    const cx=(x0+x1)/2,cz=(z0+z1)/2,r=Math.hypot(x1-x0,z1-z0)/2;
    if(reserved(cx,cz,r)||onStairs(cx,cz,r+.4)||routeDist(cx,cz)<r+.4){verts.length=first;triangles=nt;}
   }
-  for(const [x,z] of [[-39,5],[-39,8],[-39,12],[-39,16],[-37,17],[-33,17],[-29,17],[-25,17],[-25,6],[-27,1],[-38,1]]){
+  for(const [x,z] of [[-39,5],[-39,8],[-39,12],[-39,16],[-37,17],[-33,17],[-29,17],[-25,17],[-25.5,5.5],[-27,1],[-38,1]]){
    decorate(()=>rock(x,.5,z,.65,.55,.7));
   }
-  for(const [x,z] of [[-37.5,5.6],[-37.5,13.5],[-26.4,7],[-26.5,14.4],[-37,3.6],[-31.8,.8],[-39,15.8],[-28.5,18],[-23.5,7]]){
+  for(const [x,z] of [[-37.5,5.6],[-37.5,13.5],[-26.4,7],[-26.5,14.4],[-37,3.6],[-31.8,.8],[-39,15.8],[-28.5,18]]){
    decorate(()=>shrub(x,ground(x,z),z,.35));
   }
   for(const [x,z] of [[-37.5,6.8],[-37.5,12.4],[-26.45,6.6],[-26.45,13.8],[-32,4.3],[-37.2,3.7],[-39.2,13],[-29,17.1]]){
@@ -118,6 +118,49 @@
    }});
   }
   for(const [x,z,h,r] of [[-40,9.3,2.5,.9],[-30,18.5,2.6,1],[-25.2,4,2.3,.8]])decorate(()=>tree(x,.56,z,h,r));
+
+  // Lot 5 — marché de Basile. Centre de l'enveloppe (-23.6,7.4), Y=.56.
+  // Enveloppe <=2.4×1.6 m, avant +Z. Accès : disque r=1 en (-23.6,8.6).
+  // Comptoir reculé et toile échancrée : pas de rectangle bloquant l'accès.
+  {
+   const x=-23.6,y=.56,z=7.4,wood=color(0x997044),trim=color(0x654e38);
+   // Les trois emprises incluent les marges de world.js (.3 / .15 m).
+   terraces.push({x,y,z:z-.41,w:2.18,d:.5,rot:0});
+   for(const side of[-1,1])terraces.push({x:x+side*1.13,y,z:z+.655,w:.08,d:.08,rot:0,round:true});
+   for(const side of[-1,1]){
+    beam([x+side*1.13,y,z-.665],[x+side*1.13,y+1.91,z-.665],.035,trim);
+    beam([x+side*1.13,y,z+.655],[x+side*1.13,y+1.68,z+.655],.035,trim);
+    beam([x+side*1.13,y+1.91,z-.665],[x+side*1.13,y+1.68,z+.655],.026,trim);
+   }
+   // Façade en lattes, plateau bas et étagère arrière.
+   box([x,y+.65,z-.41],[2.18,.09,.5],wood);
+   for(let j=0;j<10;j++)box([x-.98+j*.218,y+.34,z-.2],[.205,.58,.045],tint(wood,.92+(j%3)*.06));
+   for(const side of[-1,1])box([x+side*.96,y+.30,z-.41],[.07,.60,.34],trim);
+   box([x,y+.14,z-.46],[2,.055,.35],trim);
+   // Toile rayée crème/sauge. Le bord avant suit l'extérieur du disque libre.
+   const front=dx=>Math.min(z+.64,8.6-Math.sqrt(Math.max(0,1.1*1.1-dx*dx)));
+   for(let j=0;j<16;j++){
+    const a=-1.16+j*2.32/16,b=-1.16+(j+1)*2.32/16,col=color(j%2?0x728e72:0xf5e4ba);
+    const za=front(a),zb=front(b),ya=y+1.68,yb=y+1.68;
+    const A=[x+a,y+1.94,z-.68],B=[x+b,y+1.94,z-.68],C=[x+b,yb,zb],D=[x+a,ya,za];
+    quad(A,D,C,B,col);quad(A,B,C,D,tint(col,.86));
+    quad(D,C,[x+b,yb-.13,zb],[x+a,ya-.13,za],tint(col,.94));
+   }
+   // Cagettes ouvertes et récoltes ; toutes derrière la zone d'accueil.
+   for(const [dx,fruit]of[[-.7,0xe66a45],[-.16,0x87a63e]]){
+    const cx=x+dx,cz=z-.40;
+    box([cx,y+.73,cz],[.46,.05,.32],wood);
+    for(const side of[-1,1]){
+     box([cx+side*.235,y+.81,cz],[.025,.16,.34],trim);
+     box([cx,y+.81,cz+side*.16],[.47,.13,.025],wood);
+    }
+    for(let j=0;j<6;j++)ellipsoid([cx-.14+(j%3)*.14,y+.81,cz-.075+Math.floor(j/3)*.15],[.061,.059,.058],color(fruit),8,5,0);
+   }
+   const bx=x+.60,bz=z-.40;
+   ellipsoid([bx,y+.77,bz],[.25,.09,.17],color(0xc19a62),10,5,0);
+   cylinder([bx,y+.80,bz],[bx,y+.82,bz],.19,.19,color(0x785b38),12);
+   for(let j=0;j<5;j++){const a=j/5*TAU;ellipsoid([bx+Math.cos(a)*.115,y+.855,bz+Math.sin(a)*.08],[.045,.059,.043],color(0xffebc8),8,5,0);}
+  }
 
  }finally{seed=champsSeed;}
 }
