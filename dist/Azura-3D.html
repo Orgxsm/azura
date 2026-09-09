@@ -1324,7 +1324,7 @@ window.addEventListener('pointerdown',gesture,{passive:true});window.addEventLis
 const SAVE_KEY='azura-save-v1',DAY=540;
 const game={name:'',shells:new Set(),notes:new Set(),quests:{shells:0,cat:0,crabs:0,bread:0,treasure:0,fish:0,notes:0,goats:0,oil:0,farm:0,hens:0},goatsCaught:0,oil:false,coins:25,seeds:{tomate:3},produce:{},plots:{},harvested:0,seedSel:0,log:[],discovered:{},playtime:0,clock:DAY*.1,catFollow:false,crabsCaught:0,fish:0,delivered:{},dug:false,fireworksUntil:-1,finale:false,island:'azura'};
 let playing=false,dialog=null,dirty=false,lastSave=0,minigame=null;
-const NAMES={tomas:'Tomas',anae:'Anaé',lila:'Lila',oro:'Oro',pia:'Pia',marco:'Marco',bastien:'Bastien',cat:'Pistache',gardien:'Elio'};
+const NAMES={tomas:'Tomas',anae:'Anaé',lila:'Lila',oro:'Oro',pia:'Pia',marco:'Marco',bastien:'Bastien',cat:'Pistache',gardien:'Elio',marchand:'Basile'};
 function makeEntity(id,mesh,x,z,o={}){const e=Object.assign({id,mesh,x,z,y:0,heading:PI,phase:0,amp:0,speed:0,bones:new Float32Array(16*6),look:0},o);e.scale=o.scale||1;e.y=cellH(x,z);return e;}
 const player=makeEntity('hero',heroMesh,SPAWN[0],SPAWN[1]);
 const npcDefs=[
@@ -1336,7 +1336,8 @@ const npcDefs=[
 {id:'marco',name:'Marco',x:3.8,z:7.9,leash:1.5,speed:1.4,scale:1.02},
 {id:'bastien',name:'Bastien le musicien',x:-.3,z:.3,leash:.4,speed:.9,scale:.98,pose:'guitar'},
 {id:'cat',name:'Pistache',x:.3,z:-1,leash:1.2,speed:1.6,cat:true},
-{id:'gardien',name:'Elio, le gardien du phare',x:33.2,z:-23.2,leash:1.0,speed:.8}];
+{id:'gardien',name:'Elio, le gardien du phare',x:33.2,z:-23.2,leash:1.0,speed:.8},
+{id:'marchand',name:'Basile, le marchand',x:-23.6,z:8.9,leash:.35,speed:.7,scale:1}];
 const npcs=npcDefs.map(d=>{const [x,z]=snap(d.x,d.z);return makeEntity(d.id,npcMeshes[d.id]||npcMeshes.oro,x,z,{name:d.name,leash:d.leash,walk:d.speed,scale:d.scale,cat:!!d.cat,pose:d.pose,home:[x,z],state:'idle',t:1+Math.random()*3,said:0,heading:Math.random()*TAU});});
 const cat=npcs.find(n=>n.cat),anae=npcs.find(n=>n.id==='anae');
 const shellSpots=[[-3,10.8],[-1.2,11.4],[1.4,11.6],[3.5,10.9],[4.9,9.5],[-4.7,9.3],[.5,8.2],[-4.5,15.9],[-9.6,2],[8.6,3.2],[.4,-.2],[1.2,-4.4]].map((p,i)=>{const [x,z]=snap(p[0],p[1]);return{id:i,x,z,y:cellH(x,z)};});
@@ -1429,6 +1430,8 @@ case'lila':if(q.crabs===0)return wrap({lines:["Tu sais courir vite ? Les crabes 
 if(q.crabs===1&&game.crabsCaught<3)return wrap({lines:[`${game.crabsCaught} sur 3 ! Cours après eux, ils se cachent près des rochers et du ponton.`]});
 if(q.crabs===1)return wrap({lines:["Trois crabes ! Tu es plus rapide que Marco.","Je les relâche, hein. Ils ont une famille, les crabes."],end:()=>{for(const c of crabs)c.hidden=false;finishQuest('crabs','Champion des crabes');}});
 return wrap({lines:[pick(["Tu as vu les mouettes ? Elles tournent au-dessus de la crique toute la journée.","Papa dit que du belvédère on voit jusqu'au continent !","J'ai compté : il y a douze coquillages sur toute l'île. Enfin, je crois.","Le bateau blanc, c'est celui de Tomas. Il fait le tour de l'île tous les matins.","La nuit, il y a des lucioles sur la terrasse d'Anaé. Des centaines ! Bon, quatorze."])]});
+case'marchand':if(q.farm===0)return wrap({lines:[`Bienvenue sur l'Île des Champs, ${me} ! Je tiens l'étal du marché.`,"Va d'abord voir Anaé à Azura : elle te confiera ta première parcelle. Ensuite je t'achèterai tes récoltes et je te vendrai des graines ici même."]});
+return wrap({lines:[n.said?"Alors, qu'est-ce qu'on fait aujourd'hui ?":"Bienvenue à l'étal ! J'achète tes récoltes et tes œufs, et je vends les mêmes graines qu'Anaé, sans traverser la mer."],end:()=>openShop('market')});
 case'pia':if(q.farm>=1&&Object.values(game.produce).some(v=>v>0))return wrap({lines:["Tu as récolté ? Montre-moi ça, j'achète tout au prix juste."],end:()=>openShop('sell')});
 if(q.bread===0)return wrap({lines:["Tu sens ? Mon pain sort du four. Tu veux bien m'aider ?","Porte une miche à Marco sur la plage, une à Tomas sur le ponton et une à Oro, tout en haut. Reviens me voir après."],end:()=>{game.delivered={};startQuest('bread');}});
 if(q.bread===1&&Object.keys(game.delivered).length<3)return wrap({lines:[`Il reste ${['marco','tomas','oro'].filter(k=>!game.delivered[k]).map(k=>NAMES[k]).join(' et ')} à livrer. Le pain se garde, mais pas éternellement !`]});
@@ -1712,12 +1715,15 @@ function farmSaveData(){return{coins:game.coins,seeds:game.seeds,produce:game.pr
 function farmLoadData(d){game.coins=d.coins??25;game.seeds=d.seeds||{tomate:3};game.produce=d.produce||{};game.plots=d.plots||{};game.harvested=d.harvested||0;game.seedSel=d.seedSel||0;game.hens=d.hens||0;game.henFedDay=d.henFedDay??-1;game.eggs=d.eggs||0;game.eggsTotal=d.eggsTotal||0;hens.length=0;for(let i=0;i<game.hens;i++)addHen(i);}
 // ---------- boutique ----------
 const shopEl=$('#shop');
-function openShop(mode){shopEl.hidden=false;const box=shopEl.querySelector('div');box.innerHTML='';const h=document.createElement('h2');h.textContent=mode==='buy'?'Graines d\'Anaé':'Comptoir de Pia';box.appendChild(h);const p=document.createElement('p');p.textContent=`Tu as ${game.coins} pièces.`;box.appendChild(p);
+let shopBack=null;
+function openShop(mode){shopEl.hidden=false;const box=shopEl.querySelector('div');box.innerHTML='';const h=document.createElement('h2');h.textContent=mode==='buy'?(shopBack?'Graines':'Graines d\'Anaé'):mode==='sell'?(shopBack?'Ta récolte':'Comptoir de Pia'):'Étal de Basile';box.appendChild(h);const p=document.createElement('p');p.textContent=`Tu as ${game.coins} pièces.`;box.appendChild(p);
+if(mode==='market'){shopBack=null;for(const [m,label] of[['buy','🌱 Acheter des graines et des poules'],['sell','🧺 Vendre ma récolte et mes œufs']]){const b=document.createElement('button');b.textContent=label;b.onclick=()=>{shopBack='market';openShop(m);};box.appendChild(b);}}
 if(mode==='buy'){for(const id of CROP_IDS){const c=CROPS[id];const b=document.createElement('button');b.textContent=`${c.icon} ${c.name} · ${c.seed} pièces · pousse ${c.days} j · se vend ${c.sell}`;b.onclick=()=>{if(game.coins<c.seed){toast('Pas assez de pièces.');sfx('fail');return;}game.coins-=c.seed;game.seeds[id]=(game.seeds[id]||0)+1;sfx('pick');dirty=true;refreshHUD();openShop('buy');};box.appendChild(b);}
 if(game.quests.farm>=1){const b=document.createElement('button');const full=(game.hens||0)>=HEN_MAX;b.textContent=full?`🐔 Poulailler complet (${HEN_MAX} poules)`:`🐔 Poule · ${HEN_PRICE} pièces · pond un œuf par jour si elle mange du blé (${game.hens||0}/${HEN_MAX})`;b.onclick=()=>{if(full)return;if(game.coins<HEN_PRICE){toast('Pas assez de pièces.');sfx('fail');return;}game.coins-=HEN_PRICE;game.hens=(game.hens||0)+1;addHen(game.hens-1);startQuest('hens');sfx('pick');dirty=true;refreshHUD();toast('🐔 Ta poule t\'attend au poulailler, sur l\'Île des Champs.');openShop('buy');};box.appendChild(b);}}
-else{let any=false;for(const id in PRODUCE){const n=game.produce[id]||0;if(!n)continue;any=true;const c=PRODUCE[id];const b=document.createElement('button');b.textContent=`Vendre ${n} ${c.name}${n>1&&id!=='ble'?'s':''} → ${n*c.sell} pièces`;b.onclick=()=>{game.coins+=n*c.sell;game.produce[id]=0;sfx('star');dirty=true;refreshHUD();openShop('sell');};box.appendChild(b);}
+else if(mode==='sell'){let any=false;for(const id in PRODUCE){const n=game.produce[id]||0;if(!n)continue;any=true;const c=PRODUCE[id];const b=document.createElement('button');b.textContent=`Vendre ${n} ${c.name}${n>1&&id!=='ble'?'s':''} → ${n*c.sell} pièces`;b.onclick=()=>{game.coins+=n*c.sell;game.produce[id]=0;sfx('star');dirty=true;refreshHUD();openShop('sell');};box.appendChild(b);}
 if(!any){const e=document.createElement('p');e.textContent='Rien à vendre pour l\'instant. Récolte d\'abord ta parcelle.';box.appendChild(e);}}
-const close=document.createElement('button');close.className='secondary';close.textContent='Fermer';close.onclick=()=>{shopEl.hidden=true;saveGame(true);};box.appendChild(close);}
+if(shopBack&&mode!=='market'){const back=document.createElement('button');back.className='secondary';back.textContent='← Retour à l\'étal';back.onclick=()=>openShop('market');box.appendChild(back);}
+const close=document.createElement('button');close.className='secondary';close.textContent='Fermer';close.onclick=()=>{shopEl.hidden=true;shopBack=null;saveGame(true);};box.appendChild(close);}
 
 // ---------- poulailler ----------
 // Poulailler par île (case de sable plate hors des parcelles). Maillage et pose provisoires (Claude) : Astra livrera henMesh + poseHen (5 os : 0 corps, 1 tête, 2 patte G, 3 patte D, 4 queue), détectés automatiquement.
