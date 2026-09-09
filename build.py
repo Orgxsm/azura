@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Assemble les modules de src/ en un seul fichier HTML autonome.
 
-Usage :  python3 build.py            -> dist/Azura-3D.html (+ copie dans ~/Downloads si présent)
+Usage :  python3 build.py            -> dist/Azura-3D.html + docs/index.html (GitHub Pages) (+ copie dans ~/Downloads si présent)
          python3 build.py --check    -> assemble puis vérifie la syntaxe JS avec node
 L'ordre de concaténation compte (les const sont initialisées dans l'ordre) : ne pas le changer sans lire COLLAB.md.
 """
@@ -41,6 +41,9 @@ def build():
     dl = os.path.expanduser('~/Downloads')
     if os.path.isdir(dl):
         shutil.copy(out, os.path.join(dl, 'Azura-3D.html'))
+    docs = os.path.join(ROOT, 'docs')   # GitHub Pages : https://orgxsm.github.io/azura/
+    os.makedirs(docs, exist_ok=True)
+    shutil.copy(out, os.path.join(docs, 'index.html'))
     print('écrit', out, len(html), 'octets')
     return js
 
