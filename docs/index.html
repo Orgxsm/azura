@@ -88,7 +88,7 @@ footer{position:absolute;bottom:28px;left:38px;right:38px;display:flex;justify-c
 #quest-text{white-space:pre-line}
 #inv{font-size:11px;opacity:.85;margin-top:5px;letter-spacing:.5px}
 [hidden]{display:none!important}
-@media(pointer:coarse){#stick,#action,#jump{display:block}.hint .kb{display:none}#map{display:none}}
+@media(pointer:coarse){#stick,#action,#jump{display:block}.hint .kb{display:none}#map{display:none}#prompt kbd{display:none}}
 @media(max-width:650px){
 header{top:max(18px,env(safe-area-inset-top));left:18px;right:18px}
 .brand-mark{display:none}
@@ -98,8 +98,9 @@ header p{font-size:10px}
 #quest{font-size:11px;max-width:190px}
 .tools{right:12px;padding:4px;top:auto;bottom:150px;transform:none}
 .tools button{width:37px;height:37px}
-.views{top:max(90px,calc(env(safe-area-inset-top) + 70px));bottom:auto;left:18px;transform:none;padding:4px}
-.views button{padding:9px 11px;font-size:12px}
+.views{display:none}
+#quest{max-width:min(230px,58vw)}
+.hud{max-width:60vw}
 #menu{top:auto;bottom:max(140px,calc(env(safe-area-inset-bottom) + 132px));left:auto;right:auto;transform:none;left:50%;transform:translateX(-50%)}
 footer{left:18px;right:18px;bottom:max(12px,env(safe-area-inset-bottom));justify-content:center}
 .location,.edition{display:none}
