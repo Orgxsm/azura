@@ -32,3 +32,19 @@ function poseGoat(e,t){
   setBone(B,5,mm(root,piv([0,.66,.32],mm(RY(look),RX(nod)))));
   setBone(B,6,mm(root,piv([0,.59,-.37],RY(Math.sin(t*3+ph)*.28))));
 }
+
+// Lot 3 : farm.js précède anim.js dans build.py. Remplacer les maillages
+// provisoires une fois, sans dépendance temporelle dans la boucle de rendu.
+// installCropDesign(); — désactivé le 9 sept. 2026 (Claude) : les cultures en grille dense 3×3 de farm.js (style Hay Day) sont conservées ; cropDesignRig reste disponible dans rig.js pour une version en grille.
+function poseHen(e,t){
+ const B=e.bones,s=e.scale??1,a=clamp(e.amp??0,0,1),ph=e.phase??0;
+ const p=clamp(e.peck??0,0,1),peck=p*(.85+.15*Math.cos(p*Math.PI*6));
+ // Pieds au sol au repos ; le picorage utilise le pivot de tête du contrat.
+ const root=mm(T(e.x,e.y+s*(Math.abs(Math.sin(ph))*.01*a),e.z),RY(e.heading??0),SC(s));
+ setBone(B,0,root);
+ setBone(B,1,mm(root,piv([0,.27,.06],RX(peck*1.3+Math.sin(t*3+(e.id??0))*.025*(1-a)*(1-p)))));
+ const sw=Math.sin(ph)*.58*a;
+ setBone(B,2,mm(root,piv([-.04,.12,0],RX(sw))));
+ setBone(B,3,mm(root,piv([.04,.12,0],RX(-sw))));
+ setBone(B,4,mm(root,piv([0,.24,-.12],mm(RY(Math.sin(t*3+(e.id??0))*.1),RX(-peck*.12)))));
+}

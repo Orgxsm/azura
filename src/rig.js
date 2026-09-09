@@ -157,5 +157,108 @@ function phareLanternDraw(t,lit=true){
 function gardienLanternDraw(e){return{mesh:gardienLanternMesh,bones:e.bones,n:6,mode:7,noShadow:true};}
 
 
+// Lot 3 — poule : 5 os, géométrie unité, sol Y=0, avant +Z, crête Y=.356.
+// Pivots : tête (0,.27,.06), pattes (±.04,.12,0), queue (0,.24,-.12).
+function henRig(){
+ const cream=color(0xffefcf),wing=color(0xdab078),red=color(0xcd493b),gold=color(0xe2a544);
+ return rig([
+  [0,()=>{
+   ellipsoid([0,.185,-.012],[.105,.102,.145],cream,12,7,0);
+   ellipsoid([0,.205,.075],[.081,.09,.082],cream,10,6,0);
+   for(const side of[-1,1])for(let j=0;j<3;j++)ellipsoid([side*(.085+j*.004),.195-j*.009,-.03-j*.025],[.027,.054,.078-j*.008],tint(wing,1-j*.06),8,5,0);
+  }],
+  [1,()=>{
+   ellipsoid([0,.286,.09],[.064,.055,.068],cream,12,7,0);
+   ellipsoid([0,.259,.085],[.044,.065,.045],cream,10,6,0);
+   cylinder([0,.274,.14],[0,.263,.198],.021,.002,gold,8);
+   for(let j=0;j<3;j++)ellipsoid([0,.337+Math.sin(j)*.005,.055+j*.027],[.013,.014,.022],red,8,5,0);
+   ellipsoid([0,.236,.146],[.015,.023,.012],red,8,5,0);
+   for(const side of[-1,1]){
+    ellipsoid([side*.05,.295,.127],[.012,.016,.01],C.dark,8,5,0);
+    ellipsoid([side*.054,.301,.135],[.0035,.005,.003],C.white,6,3,0);
+   }
+  }],
+  ...[-1,1].map((side,i)=>[i+2,()=>{
+   cylinder([side*.04,.12,0],[side*.04,.018,.006],.011,.009,gold,7);
+   for(const dx of[-.022,0,.022])beam([side*.04,.013,.006],[side*.04+dx,.009,.055-Math.abs(dx)*.3],.007,gold);
+   beam([side*.04,.013,0],[side*.04,.009,-.026],.006,gold);
+  }]),
+  [4,()=>{for(let j=-1;j<=1;j++)ellipsoid([j*.029,.263-Math.abs(j)*.011,-.147],[.024,.063,.052],tint(wing,.92+j*.05),9,5,0);}]
+ ]);
+}
+let henMesh;
+{const saved=seed;seed=730031;try{henMesh=meshDyn(henRig());}finally{seed=saved;}}
+
+// Cultures : bone 0, origine au sol, quatre stades (graine, pousse, adulte,
+// récolte). Initialisation différée à anim.js, APRÈS le const cropMeshes de farm.js.
+function cropDesignRig(id,stage){
+ return rig([[0,()=>{
+  const leaf=color(id==='ble'?0x85ab43:0x519139),stem=tint(leaf,.78);
+  if(stage===0){
+   for(let i=0;i<3;i++)ellipsoid([-.105+i*.105,.022,(i%2)*.07-.035],[id==='ble'?.018:.027,.018,.038],color(id==='fleur'?0x69513b:0xd6b17c),7,4,0);
+   return;
+  }
+  const blade=(x,y,z,a,len,w,col=leaf)=>{
+   const dx=Math.cos(a),dz=Math.sin(a),px=-dz*w,pz=dx*w;
+   const p=[x,y,z],m=[x+dx*len*.5,y+len*.25,z+dz*len*.5],tip=[x+dx*len,y+len*.12,z+dz*len];
+   const l=[m[0]+px,m[1]-.018,m[2]+pz],r=[m[0]-px,m[1]-.018,m[2]-pz];
+   tri(p,l,m,col);tri(p,m,r,tint(col,.91));tri(l,tip,m,col);tri(m,tip,r,tint(col,.91));
+   tri(m,l,p,col);tri(r,m,p,col);tri(m,tip,l,col);tri(r,tip,m,col);
+  };
+  if(stage===1){
+   beam([0,0,0],[0,.13,0],.011,stem);
+   for(let i=0;i<(id==='ble'?5:3);i++)blade(0,.08,0,i*2.4,.12,.032);
+   return;
+  }
+  if(id==='ble'){
+   for(let i=0;i<5;i++){
+    const a=i*2.4,x=Math.cos(a)*.12,z=Math.sin(a)*.12,h=(stage===3?.63:.40)+(i%3)*.045;
+    const c=stage===3?color(0xd8b65c):leaf;
+    beam([x,0,z],[x+.025,h,z],.008,c);
+    blade(x,.14,z,a,.22,.018,stage===3?color(0xa5a44c):leaf);
+    blade(x,.29,z,a+2,.16,.014,c);
+    if(stage===3)for(let j=0;j<5;j++){
+     for(const side of[-1,1])ellipsoid([x+.025+side*.019,h-.07+j*.026,z],[.017,.027,.015],tint(color(0xeaca72),.92+j*.022),5,2,0);
+     beam([x+.025,h+j*.018,z],[x+.025+(j%2?1:-1)*.035,h+.12+j*.014,z],.003,color(0xeed58d));
+    }
+   }
+   return;
+  }
+  const h=stage===3?.65:.43;
+  beam([0,0,0],[0,h,0],.015,stem);
+  for(let j=0;j<6;j++){
+   const a=j*2.4,y=.1+j*h*.115,len=.18+(j%2)*.045;
+   beam([0,y,0],[Math.cos(a)*.1,y+.06,Math.sin(a)*.1],.008,stem);
+   blade(Math.cos(a)*.07,y+.035,Math.sin(a)*.07,a,len,.043);
+  }
+  if(id==='tomate'){
+   // Tuteur et attaches, fruits mûrs séparés du feuillage.
+   cylinder([-.035,0,-.035],[-.035,h+.12,-.035],.012,.012,palette.trim,7);
+   for(const y of[.2,.4])beam([-.04,y,-.04],[.025,y,.02],.006,palette.sand);
+   if(stage===3)for(let j=0;j<5;j++){
+    const a=j*2.4,x=Math.cos(a)*.17,z=Math.sin(a)*.17,y=.23+(j%3)*.105;
+    beam([0,y+.09,0],[x,y+.03,z],.007,stem);
+    ellipsoid([x,y,z],[.067,.061,.067],color(j===4?0xef9d38:0xe6553c),10,6,0);
+    for(let k=0;k<5;k++)blade(x,y+.057,z,k/5*TAU,.038,.01,stem);
+   }
+  }else{
+   for(let j=0;j<3;j++){
+    const a=j/3*TAU,x=Math.cos(a)*.15,z=Math.sin(a)*.15,y=h-j*.09;
+    beam([0,.16,0],[x,y,z],.01,stem);
+    if(stage===2)ellipsoid([x,y,z],[.035,.05,.035],color(0xc07e92),8,5,0);
+    else{
+     for(let k=0;k<7;k++){const b=k/7*TAU;ellipsoid([x+Math.cos(b)*.062,y,z+Math.sin(b)*.062],[.047,.022,.047],color(j===1?0xffdca6:0xf3a2b9),8,4,0);}
+     ellipsoid([x,y+.025,z],[.038,.025,.038],color(0xe2b749),8,5,0);
+    }
+   }
+  }
+ }]]);
+}
+function installCropDesign(){
+ const saved=seed;seed=730032;
+ try{for(const id of ['tomate','ble','fleur'])cropMeshes[id]=[0,1,2,3].map(stage=>meshDyn(cropDesignRig(id,stage)));}
+ finally{seed=saved;verts=null;}
+}
+
 verts=null;
 
