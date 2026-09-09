@@ -745,7 +745,7 @@ if(o.longHair)E([0,1.18,-.22],[.21,.24,.12],o.hair,12,7);}],
 [1,()=>{Cy([-.1,.62,0],[-.1,.12,0],.085,.075,o.pants,12);E([-.1,.06,.03],[.1,.065,.145],C.shoe,10,5);}],
 [2,()=>{Cy([.1,.62,0],[.1,.12,0],.085,.075,o.pants,12);E([.1,.06,.03],[.1,.065,.145],C.shoe,10,5);}],
 [3,()=>{E([-.29,1.03,0],[.085,.085,.085],sleeve,10,6);Cy([-.3,1.03,0],[-.3,.66,0],.065,.058,sleeve,10);E([-.3,.62,0],[.072,.075,.072],o.skin,10,6);E([-.252,.635,.025],[.027,.040,.034],o.skin,8,4);if(o.prop==='basket'){E([-.33,.46,.06],[.13,.09,.09],C.straw,10,6);Cy([-.33,.53,.06],[-.33,.56,.06],.1,.1,color(0xd9a35a),10);}}],
-[4,()=>{E([.29,1.03,0],[.085,.085,.085],sleeve,10,6);Cy([.3,1.03,0],[.3,.66,0],.065,.058,sleeve,10);E([.3,.62,0],[.072,.075,.072],o.skin,10,6);E([.252,.635,.025],[.027,.040,.034],o.skin,8,4);if(o.prop==='rod')beam(sc([.32,.55,.05]),sc([.36,1.55,1.5]),.014*s,palette.wood);if(o.prop==='staff')beam(sc([.34,-.02,.08]),sc([.34,1.25,.08]),.025*s,palette.wood);}]]);
+[4,()=>{E([.29,1.03,0],[.085,.085,.085],sleeve,10,6);Cy([.3,1.03,0],[.3,.66,0],.065,.058,sleeve,10);E([.3,.62,0],[.072,.075,.072],o.skin,10,6);E([.252,.635,.025],[.027,.040,.034],o.skin,8,4);if(o.prop==='rod')beam(sc([.32,.55,.05]),sc([.36,1.55,1.5]),.014*s,palette.wood);if(o.prop==='staff')beam(sc([.34,-.02,.08]),sc([.34,1.25,.08]),.025*s,palette.wood);if(o.prop==='can'||o.prop==='hoe')farmToolGeometry(o.prop,s);}]]);
 }
 function catRig(){const fur=color(0xe28f3c),cream=color(0xfbe9cf);return rig([
 [0,()=>{ellipsoid([0,.28,0],[.115,.115,.245],fur,12,7,0);ellipsoid([0,.23,.04],[.09,.07,.18],cream,10,6,0);ellipsoid([0,.39,.25],[.13,.13,.13],fur,12,8,0);ellipsoid([0,.34,.35],[.075,.048,.055],cream,10,5,0);
@@ -971,6 +971,70 @@ function installCropDesign(){
  const saved=seed;seed=730032;
  try{for(const id of ['tomate','ble','fleur'])cropMeshes[id]=[0,1,2,3].map(stage=>meshDyn(cropDesignRig(id,stage)));}
  finally{seed=saved;verts=null;}
+}
+
+// Lot 4 — outils fixés à la main droite (os 4), même repère que humanoid.
+// Appelé DANS le groupe de l'os : aucune allocation de rig imbriquée.
+function farmToolGeometry(prop,s=1){
+ const P=p=>p.map(v=>v*s),wood=palette.trim,metal=color(0x718d92),rim=color(0xc0cebc);
+ const rod=(a,b,r,c)=>cylinder(P(a),P(b),r*s,r*s,c,8);
+ if(prop==='hoe'){
+  rod([.3,.075,.04],[.3,.98,.04],.022,wood);
+  rod([.22,.98,.04],[.38,.98,.04],.018,wood);
+  box(P([.3,.075,.105]),P([.19,.12,.025]),metal);
+  // Tranchant arrondi et clair ; la lame reste au-dessus du sol au repos.
+  cylinder(P([.215,.018,.11]),P([.385,.018,.11]),.012*s,.012*s,rim,8);
+  rod([.3,.08,.04],[.3,.08,.105],.027,metal);
+ }else if(prop==='can'){
+  const enamel=color(0x4b9b9a);
+  ellipsoid(P([.3,.39,.06]),P([.135,.135,.11]),enamel,12,7,0);
+  cylinder(P([.3,.49,.06]),P([.3,.51,.06]),.083*s,.083*s,rim,10);
+  cylinder(P([.3,.511,.06]),P([.3,.513,.06]),.064*s,.064*s,C.dark,10);
+  // Anse haute passant dans la main (y=.62), bec incliné vers le sol.
+  for(const [a,b] of [[[.22,.47,.06],[.22,.63,.06]],[[.22,.63,.06],[.38,.63,.06]],[[.38,.63,.06],[.38,.47,.06]]])rod(a,b,.013,rim);
+  cylinder(P([.3,.38,.13]),P([.3,.25,.41]),.033*s,.02*s,enamel,9);
+  cylinder(P([.3,.25,.41]),P([.3,.235,.44]),.052*s,.06*s,rim,10);
+  for(const dx of[-.025,0,.025])ellipsoid(P([.3+dx,.225,.452]),P([.005,.005,.005]),C.dark,5,3,0);
+ }
+}
+// Précharger une fois les deux variantes du héros ; aucun maillage par frame.
+let heroFarmMeshes,sheepMesh;
+{
+ const saved=seed;seed=740041;
+ try{
+  const look={shirt:color(0x2f8f9d),pants:color(0x3c4a5a),skin:C.skin[0],hair:color(0x4a2f1e),hat:'straw',bag:true};
+  heroFarmMeshes={hoe:meshDyn(humanoid({...look,prop:'hoe'})),can:meshDyn(humanoid({...look,prop:'can'}))};
+  sheepMesh=meshDyn(sheepRig());
+ }finally{seed=saved;}
+}
+// Mouton : sept os, mêmes pivots et convention d'échelle que goatRig.
+// 0 corps ; 1/2 avant (±.17,.46,.27) ; 3/4 arrière (±.17,.46,-.27) ;
+// 5 tête (0,.66,.32) ; 6 queue (0,.59,-.37). Sol Y=0, avant +Z.
+function sheepRig(){
+ const wool=color(0xf2e8ce),face=color(0x777367),hoof=color(0x4b4b44);
+ return rig([
+  [0,()=>{
+   ellipsoid([0,.51,-.02],[.31,.25,.44],wool,12,7,0);
+   // Quelques mèches larges : silhouette laineuse sans milliers de boucles.
+   for(let j=0;j<10;j++){const a=j/10*TAU;ellipsoid([Math.cos(a)*.23,.59+(j%2)*.035,Math.sin(a)*.32],[.14,.15,.16],tint(wool,.96+(j%3)*.02),8,5,0);}
+  }],
+  ...[[-.17,.27],[.17,.27],[-.17,-.27],[.17,-.27]].map(([x,z],i)=>[i+1,()=>{
+   cylinder([x,.46,z],[x,.08,z],.053,.035,face,8);
+   ellipsoid([x,.058,z+.02],[.061,.058,.078],hoof,8,5,0);
+  }]),
+  [5,()=>{
+   ellipsoid([0,.74,.40],[.12,.18,.13],face,10,6,0);
+   ellipsoid([0,.65,.51],[.095,.075,.10],face,10,6,0);
+   ellipsoid([0,.87,.35],[.14,.075,.13],wool,9,5,0);
+   for(const side of[-1,1]){
+    ellipsoid([side*.17,.79,.34],[.10,.035,.055],face,8,5,0);
+    ellipsoid([side*.093,.78,.472],[.022,.027,.016],C.dark,7,4,0);
+    ellipsoid([side*.099,.788,.483],[.006,.008,.006],C.white,5,3,0);
+   }
+   ellipsoid([0,.65,.602],[.037,.02,.012],hoof,7,4,0);
+  }],
+  [6,()=>ellipsoid([0,.56,-.435],[.065,.11,.075],wool,8,5,0)]
+ ]);
 }
 
 verts=null;
@@ -1399,7 +1463,7 @@ const fn=farmNear();if(fn){bd=.95;best=fn;}
 const dockIsl=nearDock();if(dockIsl){const dests=islands.filter(i=>i.id!==dockIsl.id);if(dests.length){bd=1.7;best={type:'boat',dests,label:dests.length===1?'Embarquer pour '+dests[0].name:'Prendre le voilier',btn:'Embarquer'};}}
 if(game.quests.fish>=1){const d=Math.hypot(fishSpot.x-player.x,fishSpot.z-player.z);if(d<Math.min(bd,1.4)&&Math.abs(fishSpot.y-player.y)<.6){bd=d;best={type:'fish',label:'Pêcher',btn:'Pêcher'};}}
 return best;}
-function jump(){if(dialog||minigame){interact();return;}if(!playing||!panel.hidden||voyage.active||player.air)return;player.air=true;player.vy=4.6;sfx('jump');}
+function jump(){if(dialog||minigame){interact();return;}if(!playing||!panel.hidden||voyage.active||player.air||actGesture)return;player.air=true;player.vy=4.6;sfx('jump');}
 function respawn(){const isl=currentIsland(),home=homeFor(isl.id);const [x,z]=snap(home?home.x:isl.spawn[0],home?home.z+.6:isl.spawn[1],4);player.x=x;player.z=z;player.y=cellH(x,z);player.air=false;player.vy=0;panel.hidden=true;toast('Te revoilà sur '+isl.name+'.');dirty=true;}
 function interact(){if(minigame){fishingHit();return;}if(dialog){advance();return;}if(!playing||!panel.hidden)return;const th=nearThing();if(!th)return;
 if(th.type==='npc')talkTo(th.n);
@@ -1534,7 +1598,7 @@ groundEntity(c,dt);}
 const drawList=[];
 function update(dt,t){
 if(playing)game.playtime+=dt;updateClock(dt);farmUpdate(dt);
-let ix=0,iy=0;if(playing&&!dialog&&!minigame&&panel.hidden&&shopEl.hidden&&!voyage.active){ix=(keys.right?1:0)-(keys.left?1:0)+stickVec[0];iy=(keys.up?1:0)-(keys.down?1:0)+stickVec[1];}
+let ix=0,iy=0;if(playing&&!dialog&&!minigame&&panel.hidden&&shopEl.hidden&&!voyage.active&&!actGesture){ix=(keys.right?1:0)-(keys.left?1:0)+stickVec[0];iy=(keys.up?1:0)-(keys.down?1:0)+stickVec[1];}
 let mag=Math.hypot(ix,iy);if(mag>1){ix/=mag;iy/=mag;mag=1;}
 if(mag>.08){if(cam.mode!=='follow')setView('play');const f=norm([current.target[0]-eye[0],0,current.target[2]-eye[2]]),r=[-f[2],0,f[0]];const px=player.x,pz=player.z;const moved=moveEntity(player,f[0]*iy+r[0]*ix,f[2]*iy+r[2]*ix,(keys.run||mag>.97&&stickId!==null?4.3:2.7)*Math.min(1,mag*1.3),dt);if(Math.hypot(player.x-px,player.z-pz)>0)dirty=true;
 if(!moved){player.stuckT=(player.stuckT||0)+dt;if(player.stuckT>.7){player.stuckT=0;let freed=false;for(let a=0;a<TAU&&!freed;a+=TAU/12)freed=tryMove(player,Math.sin(a)*.12,Math.cos(a)*.12,.1);if(!freed&&unstick(player))toast('Tu t\'étais coincé : te revoilà sur le chemin.');}}else player.stuckT=0;}
@@ -1626,15 +1690,20 @@ if(!p.crop){const sel=CROP_IDS[game.seedSel||0],have=game.seeds[sel]||0;return{t
 const cdef=CROPS[p.crop];if(p.growth>=cdef.days)return{type:'farm',c,act:'harvest',label:`Récolter ${cdef.name}`,btn:'Récolter'};
 if(!p.wet)return{type:'farm',c,act:'water',label:`Arroser (${cdef.name}, ${Math.floor(p.growth/cdef.days*100)} %)`,btn:'Arroser'};
 return{type:'farm',c,act:'wait',label:`${cdef.name} pousse (${Math.floor(p.growth/cdef.days*100)} %)`,btn:'…'};}
-function farmInteract(th){if(th.coop)return coopInteract(th);if(th.home)return homeInteract(th);const c=th.c,p=plotOf(c);
-if(th.act==='till'){game.plots[c.key]={crop:null,growth:0,wet:false};sfx('dig');toast('Terre bêchée. Sème avec E.');}
+let actGesture=null;   // {th, t} — geste en cours (bêcher / arroser / récolter), 0,6 s, effet appliqué à 0,3 s
+function farmInteract(th){if(th.coop)return coopInteract(th);if(th.home)return homeInteract(th);if(actGesture)return;
+if(th.act==='till'||th.act==='water'||th.act==='harvest'){if(th.act==='water'&&!plotOf(th.c))return;const c=th.c;actGesture={th,t:0,mesh:player.mesh,pose:player.pose,applied:false};player.heading=Math.atan2(c.x-player.x,c.z-player.z);player.amp=0;player.speed=0;player.pose={till:'dig',water:'water',harvest:'harvest'}[th.act];player.farmPoseStart=performance.now()*.001;if(typeof heroFarmMeshes!=='undefined'&&heroFarmMeshes){if(th.act==='till')player.mesh=heroFarmMeshes.hoe;if(th.act==='water')player.mesh=heroFarmMeshes.can;}if(th.act==='till')sfx('dig');else if(th.act==='water')sfx('cast');return;}
+farmApply(th);}
+function gestureUpdate(dt){if(!actGesture)return;actGesture.t+=dt;if(!actGesture.applied&&actGesture.t>=.3){actGesture.applied=true;farmApply(actGesture.th,true);}if(actGesture.t>=.6||dialog||voyage.active||player.air){player.mesh=actGesture.mesh;player.pose=actGesture.pose;delete player.farmPoseStart;if(!actGesture.applied)farmApply(actGesture.th,true);actGesture=null;}}
+function farmApply(th,silentSfx){const c=th.c,p=plotOf(c);
+if(th.act==='till'){game.plots[c.key]={crop:null,growth:0,wet:false};if(!silentSfx)sfx('dig');toast('Terre bêchée. Sème avec E.');}
 else if(th.act==='sow'){const sel=CROP_IDS[game.seedSel||0];if(!(game.seeds[sel]>0)){toast('Plus de graines : Anaé en vend au village.');return;}game.seeds[sel]--;p.crop=sel;p.growth=0;p.wet=false;sfx('pick');toast(`${CROPS[sel].icon} ${CROPS[sel].name} semée. Arrose-la chaque jour !`);}
-else if(th.act==='water'){p.wet=true;sfx('cast');}
-else if(th.act==='harvest'){const cdef=CROPS[p.crop];game.produce[p.crop]=(game.produce[p.crop]||0)+1;game.harvested=(game.harvested||0)+1;p.crop=null;p.growth=0;p.wet=false;sfx('catch');toast(`${cdef.icon} ${cdef.name} récoltée ! Pia l'achète ${cdef.sell} pièces.`);if(game.harvested>=5&&game.quests.farm===1)finishQuest('farm','Première récolte');}
+else if(th.act==='water'){if(!p)return;p.wet=true;if(!silentSfx)sfx('cast');}
+else if(th.act==='harvest'){if(!p||!p.crop)return;const cdef=CROPS[p.crop];game.produce[p.crop]=(game.produce[p.crop]||0)+1;game.harvested=(game.harvested||0)+1;p.crop=null;p.growth=0;p.wet=false;sfx('catch');toast(`${cdef.icon} ${cdef.name} récoltée ! Pia l'achète ${cdef.sell} pièces.`);if(game.harvested>=5&&game.quests.farm===1)finishQuest('farm','Première récolte');}
 else return;dirty=true;refreshHUD();saveGame(true);}
 let lastDayIdx=-1;
 function farmUpdate(dt){const dayIdx=Math.floor(game.clock/DAY);if(dayIdx!==lastDayIdx){if(lastDayIdx>=0){for(const k in game.plots)game.plots[k].wet=false;if(game.hens>0&&game.henFedDay===lastDayIdx){game.eggs=Math.min(12,(game.eggs||0)+game.hens);if(playing)toast(`🥚 Les poules ont pondu ${game.hens} œuf${game.hens>1?'s':''} !`);}}lastDayIdx=dayIdx;}
-hensUpdate(dt);
+hensUpdate(dt);sheepUpdate(dt);gestureUpdate(dt);
 if(!playing)return;for(const k in game.plots){const p=game.plots[k];if(!p.crop)continue;const cdef=CROPS[p.crop];if(p.growth<cdef.days)p.growth=Math.min(cdef.days,p.growth+dt/DAY*(p.wet?1:.35));}}
 function farmDraw(t){coopDraw(t);for(const c of farmCells){const p=plotOf(c);if(!p)continue;setBone(c.bones,0,T(c.x,c.y,c.z));drawList.push({mesh:p.wet?soilWetMesh:soilMesh,bones:c.bones,n:1,mode:4,noShadow:true});
 if(p.crop){const cdef=CROPS[p.crop],f=p.growth/cdef.days,stage=f>=1?3:f>.55?2:f>.15?1:0;const sway=Math.sin(t*1.5+c.x*2)*.04;setBone(c.bones2,0,mm(T(c.x,c.y+.06,c.z),RZ(sway)));drawList.push({mesh:cropMeshes[p.crop][stage],bones:c.bones2,n:1,mode:4});}}}
@@ -1693,7 +1762,8 @@ if(th.act==='eggs'){const n=game.eggs;game.produce.oeuf=(game.produce.oeuf||0)+n
 else if(th.act==='feed'){if(!(game.produce.ble>0)){toast('Il faut du blé : sème-en, ou achète des graines chez Anaé.');return;}game.produce.ble--;game.henFedDay=dayIdx;sfx('cast');toast('Les poules picorent le blé. Elles pondront demain matin.');}
 else{toast('Les poules sont repues. Reviens demain.');return;}
 dirty=true;refreshHUD();saveGame(true);}
-function coopDraw(t){for(const c of COOPS){setBone(c.bones,0,mm(T(c.x,c.y,c.z),RY(c.heading)));drawList.push({mesh:coopMesh,bones:c.bones,n:1,mode:4});}
+function coopDraw(t){for(const s of sheep){if(typeof poseSheep==='function'){poseSheep(s,t);drawList.push({mesh:sheepMesh,bones:s.bones,n:7,mode:4});}}
+for(const c of COOPS){setBone(c.bones,0,mm(T(c.x,c.y,c.z),RY(c.heading)));drawList.push({mesh:coopMesh,bones:c.bones,n:1,mode:4});}
 for(const h of hens){henPose(h,t);drawList.push({mesh:henMeshOf(),bones:h.bones,n:5,mode:4});}}
 // ---------- maison du joueur ----------
 // Une maison par île (livrée par Astra dans islands/*.js) ; ici seulement la porte : dormir jusqu'au matin, point de réapparition.
@@ -1707,6 +1777,13 @@ const wake=()=>{game.clock=target;const was=playing;farmAdvance(elapsed);refresh
 if(document.hidden)wake();else setTimeout(wake,750);}
 function farmAdvance(elapsed){let left=elapsed;while(left>0){const step=Math.min(left,DAY*.05);left-=step;for(const k in game.plots){const p=game.plots[k];if(!p.crop)continue;const cdef=CROPS[p.crop];if(p.growth<cdef.days)p.growth=Math.min(cdef.days,p.growth+step/DAY*(p.wet?1:.35));}}
 const dayIdx=Math.floor(game.clock/DAY);if(dayIdx!==lastDayIdx){for(const k in game.plots)game.plots[k].wet=false;if(game.hens>0&&game.henFedDay===lastDayIdx)game.eggs=Math.min(12,(game.eggs||0)+game.hens);lastDayIdx=dayIdx;}}
+// ---------- moutons (décor vivant des Champs, lot 4 d'Astra : sheepMesh + poseSheep) ----------
+const SHEEP_SPOTS=[[-31,18,-.4],[-34.5,17.2,1.2],[-27.6,17.6,2.6]];
+const sheep=[];
+if(typeof sheepMesh!=='undefined'&&sheepMesh)for(const [sx,sz,h] of SHEEP_SPOTS){const [x,z]=snap(sx,sz,2);if(!reach[cellIndex(x,z)])continue;sheep.push({id:sheep.length,x,z,y:cellH(x,z),heading:h,phase:0,amp:0,speed:0,scale:.85,look:0,state:'idle',t:1+Math.random()*4,home:[x,z],pose:'graze',bones:new Float32Array(16*7)});}
+function sheepUpdate(dt){for(const s of sheep){if(s.state==='idle'){idleEntity(s,dt);s.t-=dt;s.look=Math.sin(henT*.4+s.id)*.4;if(s.t<=0){const a=Math.random()*TAU,r=Math.random()*2.2,tx=s.home[0]+Math.cos(a)*r,tz=s.home[1]+Math.sin(a)*r,ti=cellIndex(tx,tz);s.t=3+Math.random()*5;if(ti>=0&&reach[ti]&&!blocked[ti]&&Math.abs(cellH(tx,tz)-s.y)<.5){s.target=[tx,tz];s.state='walk';}}}
+else{const tx=s.target[0]-s.x,tz=s.target[1]-s.z,td=Math.hypot(tx,tz);s.look=0;if(td<.12||!moveEntity(s,tx,tz,.45,dt)){s.state='idle';s.t=2+Math.random()*4;}}
+groundEntity(s,dt);}}
 
 // anim.js — poses procédurales (marche, bras, tête, chat, crabe). Appelées par update() avec l'entité et le temps.
 // Propriétaire : ANIMATION (GPT-6 Astra). Contrat : poseHuman(e,t)/poseCat(e,t)/poseCrab(e,t) remplissent e.bones (Float32Array 16 matrices).
@@ -1716,10 +1793,20 @@ if(e.air){swing=-.55;armL=-1.3;armR=-1.3;rzL=-.5;rzR=.5;}
 if(e.pose==='guitar'&&a<.5&&!e.talking){const k=1-a*2;armL=mix(armL,-1.15,k);rzL=mix(rzL,.55,k);armR=mix(armR,-.75+Math.sin(t*7)*.12,k);rzR=mix(rzR,-.25,k);}
 if(e.id==='tomas'&&a<.5&&!e.talking){const k=1-a*2;armR=mix(armR,-.5+Math.sin(t*.8)*.05,k);}
 if(e.id==='gardien'&&!e.air){armR=-.22+Math.sin(ph)*.12*a;rzR=.12;}
-setBone(B,0,root);
+// Les gestes sont à durée fixe ; aucune boucle si la pose reste renseignée.
+const gesture=farmGesture(e,t);
+let upper=root,headNod=0;
+if(gesture){
+ const w=gesture.weight;
+ swing*=1-w;armL=mix(armL,gesture.left,w);armR=mix(armR,gesture.right,w);
+ rzL=mix(rzL,gesture.rollL,w);rzR=mix(rzR,gesture.rollR,w);
+ upper=mm(root,T(0,-gesture.dip*s,0),piv([0,.66*s,0],RX(gesture.lean)));
+ headNod=gesture.nod;
+}
+setBone(B,0,upper);
 setBone(B,1,mm(root,piv([-.1*s,.62*s,0],RX(swing))));setBone(B,2,mm(root,piv([.1*s,.62*s,0],RX(-swing))));
-setBone(B,3,mm(root,piv([-.28*s,1.08*s,0],mm(RX(armL),RZ(rzL)))));setBone(B,4,mm(root,piv([.28*s,1.08*s,0],mm(RX(armR),RZ(rzR)))));
-setBone(B,5,mm(root,piv([0,1.16*s,0],mm(RY(e.look),RX(Math.sin(t*.9+e.z)*.03*(1-a))))));}
+setBone(B,3,mm(upper,piv([-.28*s,1.08*s,0],mm(RX(armL),RZ(rzL)))));setBone(B,4,mm(upper,piv([.28*s,1.08*s,0],mm(RX(armR),RZ(rzR)))));
+setBone(B,5,mm(upper,piv([0,1.16*s,0],mm(RY(e.look),RX(headNod+Math.sin(t*.9+e.z)*.03*(1-a))))));}
 function poseCat(e,t){const B=e.bones,a=e.amp,ph=e.phase,root=mm(T(e.x,e.y+Math.abs(Math.sin(ph))*.02*a,e.z),RY(e.heading));const sw=Math.sin(ph)*.7*a;
 setBone(B,0,root);setBone(B,1,mm(root,piv([-.07,.2,.14],RX(sw))));setBone(B,4,mm(root,piv([.07,.2,-.14],RX(sw))));setBone(B,2,mm(root,piv([.07,.2,.14],RX(-sw))));setBone(B,3,mm(root,piv([-.07,.2,-.14],RX(-sw))));
 setBone(B,5,mm(root,piv([0,.3,-.2],mm(RY(Math.sin(t*2.3+e.x)*.5),RX(Math.sin(t*1.1)*.2)))));}
@@ -1757,6 +1844,39 @@ function poseHen(e,t){
  setBone(B,2,mm(root,piv([-.04,.12,0],RX(sw))));
  setBone(B,3,mm(root,piv([.04,.12,0],RX(-sw))));
  setBone(B,4,mm(root,piv([0,.24,-.12],mm(RY(Math.sin(t*3+(e.id??0))*.1),RX(-peck*.12)))));
+}
+
+// Lot 4 — contrat : e.pose='dig'|'water'|'harvest', e.farmPoseStart=t
+// (secondes, même horloge que poseHuman). Durée .6 s ; pas de redémarrage
+// implicite ni de modification des récoltes/du joueur dans la fonction de pose.
+function farmGesture(e,t){
+ if(e.air||e.talking||!['dig','water','harvest'].includes(e.pose)||!Number.isFinite(e.farmPoseStart))return null;
+ const u=(t-e.farmPoseStart)/.6;if(u<0||u>=1)return null;
+ const ease=x=>{x=clamp(x,0,1);return x*x*(3-2*x);};
+ const w=ease(u/.18)*(1-ease((u-.72)/.28));
+ if(e.pose==='dig'){
+  const lift=ease(u/.3),strike=ease((u-.3)/.22),angle=-1.15*lift+1.12*strike;
+  return{weight:w,left:-.48,right:angle,rollL:-.23,rollR:.04,lean:.075*w*strike,dip:0,nod:.12*w};
+ }
+ if(e.pose==='water'){
+  const pour=ease((u-.25)/.18)*(1-ease((u-.65)/.18));
+  return{weight:w,left:-.52,right:-.5+.38*pour,rollL:-.30,rollR:-.06,lean:.18*w,dip:0,nod:.15*w};
+ }
+ const pull=ease((u-.43)/.22);
+ return{weight:w,left:-.18-.75*pull,right:-.22-.78*pull,rollL:-.2,rollR:.2,lean:.52*w*(1-.5*pull),dip:.08*w,nod:.18*w};
+}
+// Animal prêt à brancher : pas d'apparition ni de quête ajoutée ici.
+function poseSheep(e,t){
+ const B=e.bones,s=e.scale??1,a=clamp(e.amp??0,0,1),ph=e.phase??0;
+ const moving=(e.speed??0)>.05,amount=moving?a:0;
+ const root=mm(T(e.x,e.y+s*Math.abs(Math.sin(ph))*.018*amount,e.z),RY(e.heading??0),SC(s));
+ setBone(B,0,root);
+ for(const [i,x,z,sign]of[[1,-.17,.27,1],[2,.17,.27,-1],[3,-.17,-.27,-1],[4,.17,-.27,1]])
+  setBone(B,i,mm(root,piv([x,.46,z],RX(sign*Math.sin(ph)*.52*amount))));
+ const grazing=!moving&&!e.talking&&e.pose==='graze';
+ const nod=grazing?.98+Math.sin(t*3)*.06:Math.sin(t*1.3+(e.x??0))*.035;
+ setBone(B,5,mm(root,piv([0,.66,.32],mm(RY(clamp(e.look??0,-.6,.6)),RX(nod)))));
+ setBone(B,6,mm(root,piv([0,.59,-.37],RY(Math.sin(t*2.8)*.16))));
 }
 
 // render.js — ombres, cibles de rendu (MSAA/HDR), reflets planaires, SSAO, eau, bloom, image finale, qualité adaptative, boucle render().
