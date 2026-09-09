@@ -1,4 +1,4 @@
-// Île des Champs — Astra · base ab3c583 · décor de ferme, sans logique farm.js.
+// Île des Champs — Astra · base 7a0b420 · décor de ferme, sans logique farm.js.
 // Centre [-32,10], rayon nominal 11, englobant 14. Y vertical, mer Y=0.
 // Enveloppe réservée x∈[-46,-18], z∈[-2,24].
 // Apparition : {x:-23,y:.56,z:10,heading:-Math.PI/2}.
@@ -59,5 +59,65 @@
   for(const z of[5.2,14.8]){fence([-37,1.2,z],[-32.8,1.2,z]);fence([-31.2,1.2,z],[-27,1.2,z]);}
   for(const p of[[-40,.5,14,2.8,1.2],[-24,.5,15,2.4,1.1],[-36,.5,18.8,2.7,1.3]])tree(...p);
   for(const p of[[-40,.1,7,1.1,.7,1.1],[-24,.1,6,1,.8,1],[-31,.1,20,1.2,.6,1]])rock(...p);
+  // Lot 3 : placage mince des sols ; jamais dans une emprise de gameplay.
+  // Les plaques restent à 6 mm du sol, sans modifier stairs/platforms.
+  const paths=[
+   [[-21.8,10],[-24,10]], [[-26,10],[-27,10]],
+   [[-27,10],[-27,5.5],[-29.1,5.5]],
+   [[-27,10],[-27,15.4],[-37.1,15.4],[-37.1,10],[-38.2,10]],
+   [[-31,3.7],[-35,3.7]]
+  ];
+  const segDist=(x,z,a,b)=>{const dx=b[0]-a[0],dz=b[1]-a[1],t=Math.max(0,Math.min(1,((x-a[0])*dx+(z-a[1])*dz)/(dx*dx+dz*dz)));return Math.hypot(x-a[0]-dx*t,z-a[1]-dz*t);};
+  const routeDist=(x,z)=>Math.min(...paths.flatMap(p=>p.slice(1).map((b,i)=>segDist(x,z,p[i],b))));
+  const reserved=(x,z,m=0)=>(x>=-36-m&&x<=-28+m&&z>=6-m&&z<=14+m)
+    ||Math.hypot(x+24,z-12.7)<=1.6+m||Math.hypot(x+35,z-3.55)<=.85+m;
+  const onStairs=(x,z,m)=>stairDefs.some(s=>s.points.slice(1).some((b,i)=>segDist(x,z,[s.points[i][0],s.points[i][2]],[b[0],b[2]])<s.width/2+m));
+  function ground(x,z){
+   if(x>=-38&&x<=-28&&z>=-.1&&z<=4.5){
+    if(x>-30&&x<-28.2&&z>2.8)return z>=4?1.2:.56;
+    return 2.8;
+   }
+   if(x>=-38&&x<=-26&&z>=4&&z<=16)return 1.2;
+   return .56;
+  }
+  // Petites facettes jointives : transitions herbe/sable/terre irrégulières,
+  // aucun gros disque vert ou bruit de relief sur les zones de circulation.
+  for(let x=-42;x<-21.5;x+=.24)for(let z=0;z<20.4;z+=.24){
+   const xx=x+.12,zz=z+.12,y=ground(xx,zz);
+   if(Math.hypot(xx+32,zz-10)>10.35||reserved(xx,zz,.18)||onStairs(xx,zz,.2))continue;
+   if(terraces.some(p=>Math.hypot(xx-p.x,zz-p.z)<Math.max(p.w,p.d)*.72))continue;
+   if(platforms.some(p=>Math.hypot(xx-p.x,zz-p.z)<p.r+.18))continue;
+   if([[x,z],[x+.24,z],[x,z+.24],[x+.24,z+.24]].some(p=>ground(...p)!==y))continue;
+   const noise=Math.sin(xx*1.8+Math.sin(zz*1.3))*Math.cos(zz*1.5)+.35*Math.sin(xx*4.1+zz*2);
+   const dirt=routeDist(xx,zz)<.45+.09*Math.sin(xx*3+zz*2);
+   const grass=!dirt&&noise>-.55&&Math.hypot(xx+32,zz-10)<9.8;
+   const col=dirt?color(0xb79059):grass?color(0x799742):color(0xd7bd83);
+   quad([x,y+.006,z],[x,y+.006,z+.24],[x+.24,y+.006,z+.24],[x+.24,y+.006,z],tint(col,.97+.025*noise));
+  }
+  // Contrôle de l'emprise entière : ni branches, ni feuilles, ni rochers dans
+  // la ferme, le poulailler, l'entrée de la maison ou les passages.
+  function decorate(fn){
+   const first=verts.length,nt=triangles;fn();
+   let x0=Infinity,x1=-Infinity,z0=Infinity,z1=-Infinity;
+   for(let i=first;i<verts.length;i+=9){x0=Math.min(x0,verts[i]);x1=Math.max(x1,verts[i]);z0=Math.min(z0,verts[i+2]);z1=Math.max(z1,verts[i+2]);}
+   const cx=(x0+x1)/2,cz=(z0+z1)/2,r=Math.hypot(x1-x0,z1-z0)/2;
+   if(reserved(cx,cz,r)||onStairs(cx,cz,r+.4)||routeDist(cx,cz)<r+.4){verts.length=first;triangles=nt;}
+  }
+  for(const [x,z] of [[-39,5],[-39,8],[-39,12],[-39,16],[-37,17],[-33,17],[-29,17],[-25,17],[-25,6],[-27,1],[-38,1]]){
+   decorate(()=>rock(x,.5,z,.65,.55,.7));
+  }
+  for(const [x,z] of [[-37.5,5.6],[-37.5,13.5],[-26.4,7],[-26.5,14.4],[-37,3.6],[-31.8,.8],[-39,15.8],[-28.5,18],[-23.5,7]]){
+   decorate(()=>shrub(x,ground(x,z),z,.35));
+  }
+  for(const [x,z] of [[-37.5,6.8],[-37.5,12.4],[-26.45,6.6],[-26.45,13.8],[-32,4.3],[-37.2,3.7],[-39.2,13],[-29,17.1]]){
+   decorate(()=>{const y=ground(x,z);for(let j=0;j<5;j++){
+    const a=j/5*TAU,px=x+Math.cos(a)*.16,pz=z+Math.sin(a)*.16,h=.15+(j%2)*.06;
+    beam([px,y,pz],[px,y+h,pz],.009,palette.leaf);
+    for(let k=0;k<5;k++){const b=k/5*TAU;ellipsoid([px+.038*Math.cos(b),y+h,pz+.038*Math.sin(b)],[.031,.015,.031],color(j%2?0xf6dc84:0xffe7d2),6,3,0);}
+    ellipsoid([px,y+h+.012,pz],[.024,.014,.024],color(0xe4a441),6,3,0);
+   }});
+  }
+  for(const [x,z,h,r] of [[-40,9.3,2.5,.9],[-30,18.5,2.6,1],[-25.2,4,2.3,.8]])decorate(()=>tree(x,.56,z,h,r));
+
  }finally{seed=champsSeed;}
 }
