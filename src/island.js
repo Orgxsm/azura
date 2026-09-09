@@ -1,3 +1,20 @@
+// Dégagement des escaliers : enregistrer les objets décoratifs complets,
+// puis retirer ceux dont l'emprise rencontre le passage + 0.4 m de chaque côté.
+// Les massifs tiers, socles et marches restent intacts. L'aléa est consommé même
+// pour les objets retirés : le reste du village conserve sa disposition.
+const azuraDecorRecords=[];
+function azuraRecordDecor(fn,args){
+ const start=verts.length;fn(...args);const end=verts.length;
+ if(start===end)return;
+ const lo=[Infinity,Infinity,Infinity],hi=[-Infinity,-Infinity,-Infinity];
+ for(let i=start;i<end;i+=9)for(let k=0;k<3;k++){lo[k]=Math.min(lo[k],verts[i+k]);hi[k]=Math.max(hi[k],verts[i+k]);}
+ azuraDecorRecords.push({start,end,lo,hi});
+}
+function azuraDecor_rock(...a){azuraRecordDecor(rock,a);}
+function azuraDecor_tree(...a){azuraRecordDecor(tree,a);}
+function azuraDecor_palm(...a){azuraRecordDecor(palm,a);}
+function azuraDecor_shrub(...a){azuraRecordDecor(shrub,a);}
+function azuraDecor_grass(...a){azuraRecordDecor(grass,a);}
 // island.js — L'île d'Azura : relief, maisons, tours, escaliers, ponton, végétation, socles, terrasses pavées.
 // Propriétaire : DESIGN (GPT-6 Astra). Contrat : tout ce qui doit être praticable passe par stairs(...), platforms[] et terraces[] (voir COLLAB.md).
 // A terraced granite island with a sheltered beach opening toward the south.
@@ -6,11 +23,11 @@ ellipsoid([0,-.02,7.8],[6.8,.46,5.1],palette.sand,32,8,.04);
 const tiers=[{x:0,y:.9,z:-2.2,sx:10.5,sy:2.45,sz:6.4},{x:.5,y:3.7,z:-4.8,sx:8.2,sy:2.7,sz:5.2},{x:.7,y:6.9,z:-6.6,sx:5.9,sy:3.1,sz:4},{x:1.1,y:10.3,z:-7.5,sx:3.5,sy:3.3,sz:2.9}];
 for(let t of tiers){rock(t.x,t.y,t.z,t.sx,t.sy,t.sz);}
 // Irregular vertical rock stacks, readable individually rather than a smooth mound.
-for(let i=0;i<68;i++){let a=range(0,TAU),r=range(.68,1),x=Math.cos(a)*10*r,z=-2+Math.sin(a)*7.2*r;let h=.4+4.5*Math.max(0,1-Math.abs(x)/12)*Math.max(0,(-z+5)/13);if(z>3&&Math.abs(x)<5)continue;let s=range(.7,1.7);rock(x,h*.48,z,s,1+h*.6,s*.87);if(rnd()>.5)patch(x,h+1,z,s*.8,s*.7);}
+for(let i=0;i<68;i++){let a=range(0,TAU),r=range(.68,1),x=Math.cos(a)*10*r,z=-2+Math.sin(a)*7.2*r;let h=.4+4.5*Math.max(0,1-Math.abs(x)/12)*Math.max(0,(-z+5)/13);if(z>3&&Math.abs(x)<5)continue;let s=range(.7,1.7);azuraDecor_rock(x,h*.48,z,s,1+h*.6,s*.87);if(rnd()>.5)patch(x,h+1,z,s*.8,s*.7);}
 // Tall exposed cliff on the eastern flank.
-for(let i=0;i<9;i++){let x=6.6+range(-.7,1.7),z=-6+i*1.04;rock(x,3.5,z,range(1,1.8),range(3.5,5.1),1.5);}
+for(let i=0;i<9;i++){let x=6.6+range(-.7,1.7),z=-6+i*1.04;azuraDecor_rock(x,3.5,z,range(1,1.8),range(3.5,5.1),1.5);}
 // Shore granite stacks frame the cove.
-for(let side of[-1,1])for(let i=0;i<11;i++){let x=side*range(5.8,9.6),z=range(5.3,11.8),s=range(.65,1.5);rock(x,.3+s*.55,z,s,s*range(1,1.9),s*.85);}
+for(let side of[-1,1])for(let i=0;i<11;i++){let x=side*range(5.8,9.6),z=range(5.3,11.8),s=range(.65,1.5);azuraDecor_rock(x,.3+s*.55,z,s,s*range(1,1.9),s*.85);}
 function local(pos,rot,p){return transform(p,pos,rot);}
 // Half-cylinder terracotta tiles over pitched roofs, with individual warm variation.
 function roof(pos,w,d,h,rot=0){let P=p=>local(pos,rot,p);let over=.3;let wh=w/2+over,dh=d/2+over;
@@ -72,7 +89,7 @@ pier();
 // Harbour boat with a curved hull, mast, ropes and a loosely furled sail.
 function boat(x,y,z,rot,sail=false){let P=p=>transform(p,[x,y,z],rot);let n=16;let outline=[];for(let i=0;i<n;i++){let a=i/n*TAU;outline.push([Math.sin(a)*.68,0,Math.cos(a)*1.9]);}for(let i=0;i<n;i++){let a=outline[i],b=outline[(i+1)%n];quad(P(a),P(b),P([b[0]*.57,-.51,b[2]*.81]),P([a[0]*.57,-.51,a[2]*.81]),palette.wood);beam(P(a),P(b),.06,palette.trim);tri(P([0,-.2,0]),P([b[0]*.9,-.16,b[2]*.9]),P([a[0]*.9,-.16,a[2]*.9]),tint(palette.wood,.62));}for(let zz of[-1,-.1,.9])box(P([0,-.06,zz]),[1.05,.09,.24],palette.trim,rot);beam(P([0,0,0]),P([0,4.2,0]),.055);beam(P([0,2.9,-1]),P([0,2.9,1.4]),.04);for(let zz of[-1.7,1.7])beam(P([0,0,zz]),P([0,4,0]),.012,color(0xdacb9d));if(sail){let a=P([.05,3.75,.05]),b=P([.05,.5,.05]),c=P([.18,.6,1.48]);tri(a,b,c,color(0xffefd1));tri(c,b,a,color(0xffefd1));}}
 // Pots, barrels, shutters, low stone garden walls, and little coastal details.
-function pot(x,y,z,s=.3,green=true){cylinder([x,y,z],[x,y+s*.95,z],s*.6,s,palette.tile,10);cylinder([x,y+s*.9,z],[x,y+s*1.08,z],s*1.1,s*1.1,tint(palette.tile,1.18),12);cylinder([x,y+s*1.08,z],[x,y+s*1.1,z],s*.8,s*.8,palette.dark,10);if(green)shrub(x,y+s,z,s*1.5);}
+function pot(x,y,z,s=.3,green=true){cylinder([x,y,z],[x,y+s*.95,z],s*.6,s,palette.tile,10);cylinder([x,y+s*.9,z],[x,y+s*1.08,z],s*1.1,s*1.1,tint(palette.tile,1.18),12);cylinder([x,y+s*1.08,z],[x,y+s*1.1,z],s*.8,s*.8,palette.dark,10);if(green)azuraDecor_shrub(x,y+s,z,s*1.5);}
 function barrel(x,y,z,s=.3){ellipsoid([x,y+s*.8,z],[s,s*.8,s],palette.trim,12,6,.015);for(let h of[.3,1.15])cylinder([x,y+s*h,z],[x,y+s*(h+.12),z],s*.98,s*.98,color(0x575f57),12);cylinder([x,y+s*1.58,z],[x,y+s*1.65,z],s*.78,s*.78,palette.wood,12);}
 function shrub(x,y,z,s=1){for(let i=0;i<5;i++){let a=range(0,TAU),r=range(0,s*.55);ellipsoid([x+Math.cos(a)*r,y+range(.1,s*.4),z+Math.sin(a)*r],[s*range(.4,.7),s*range(.3,.5),s*range(.4,.65)],tint(palette.leaf,range(.72,1.2)),8,5,.19);}}
 for(let p of[[-5.1,1.1,5.7],[-7.6,1.1,5.5],[4.45,1.25,6.3],[.9,3.2,4.1],[-2.5,3.8,2.2],[5,5.5,1.1],[-1.8,7.3,-1.5],[1.7,13.5,-5.9]]){pot(...p,.22,true);barrel(p[0]+.6,p[1],p[2]-.2,.25);}
@@ -82,24 +99,47 @@ function palm(x,y,z,h,scale=1){const lean=range(-.5,.5),leanZ=range(-.35,.35);le
  for(let j=0;j<10;j++){let a=j/10*TAU+range(-.18,.18),length=range(1.7,2.6)*scale,lift=range(.35,.95),col=tint(palette.leafLight,range(.75,1.13));let center=t=>[top[0]+Math.cos(a)*length*t,top[1]+Math.sin(t*PI)*lift-t*t*.9*scale,top[2]+Math.sin(a)*length*t];let prev=center(0);for(let k=1;k<=12;k++){let t=k/12,p=center(t),width=Math.sin(t*PI)*.55*scale;let left=add(p,[-Math.sin(a)*width,-.07,Math.cos(a)*width]),right=add(p,[Math.sin(a)*width,-.07,-Math.cos(a)*width]);let pp=center((k-1)/12),pw=Math.sin((k-1)/12*PI)*.55*scale;let pl=add(pp,[-Math.sin(a)*pw,-.06,Math.cos(a)*pw]),pr=add(pp,[Math.sin(a)*pw,-.06,-Math.cos(a)*pw]);quad(pp,p,left,pl,col);quad(pp,pr,right,p,tint(col,.87));if(k%2===0){beam(p,left,.012,tint(col,.78));beam(p,right,.012,tint(col,.78));}prev=p;}beam(top,center(.75),.018,tint(col,.8));}
  for(let i=0;i<3;i++)ellipsoid(add(top,[range(-.17,.17),-.14,range(-.17,.17)]),[.13,.16,.13],color(0x78753a),7,5,.1);
 }
-for(let p of[[-8.1,2,4.4,5.7,1.1],[8.2,1.6,5.5,5.6,1.05],[-8.5,3.5,-3.5,5.8,1.2],[6.7,7,-5.6,5,1],[-2.8,12.1,-7.8,5,1.05],[3.8,12,-8.1,4.7,1],[-10,.5,.7,3.4,.8],[8.4,.8,-2,4.5,.85],[-6.1,.4,8.7,3.7,.8]])palm(...p);
+for(let p of[[-8.1,2,4.4,5.7,1.1],[8.2,1.6,5.5,5.6,1.05],[-8.5,3.5,-3.5,5.8,1.2],[6.7,7,-5.6,5,1],[-2.8,12.1,-7.8,5,1.05],[3.8,12,-8.1,4.7,1],[-10,.5,.7,3.4,.8],[8.4,.8,-2,4.5,.85],[-6.1,.4,8.7,3.7,.8]])azuraDecor_palm(...p);
 // Umbrella-shaped coastal trees: many clustered leaves create soft, lush silhouettes.
 function tree(x,y,z,h,r){beam([x,y,z],[x+.15,y+h,z],.13);for(let j=0;j<4;j++){let a=j/4*TAU;beam([x,y+h*.6,z],[x+Math.cos(a)*r*.6,y+h*.91,z+Math.sin(a)*r*.6],.06);}
  for(let j=0;j<14;j++){let a=range(0,TAU),rr=range(.1,r*.85),cx=x+Math.cos(a)*rr,cz=z+Math.sin(a)*rr,cy=y+h+range(-.2,.35);let s=range(.36,.67)*r;ellipsoid([cx,cy,cz],[s,s*.52,s*.85],tint(palette.leaf,range(.73,1.2)),9,5,.13);for(let k=0;k<3;k++)ellipsoid([cx+range(-s,s)*.55,cy+s*.35,cz+range(-s,s)*.55],[s*.38,s*.18,s*.33],tint(palette.leafLight,range(.82,1.11)),6,4,.15);}}
-for(let p of[[-7.9,3.7,1.1,2.9,1.7],[6.6,3.3,3.1,2.7,1.5],[-5.6,7.6,-5.5,2.2,1.8],[4.8,8.8,-3.5,2.3,1.5],[-.5,12.2,-8.5,1.8,1.8],[1.3,8.8,-7.5,2.2,1.7],[-8.4,1,-.9,2.8,1.3],[7.8,1,7.8,2,1.2],[-4,1,7.1,1.8,1.0]])tree(...p);
+for(let p of[[-7.9,3.7,1.1,2.9,1.7],[6.6,3.3,3.1,2.7,1.5],[-5.6,7.6,-5.5,2.2,1.8],[4.8,8.8,-3.5,2.3,1.5],[-.5,12.2,-8.5,1.8,1.8],[1.3,8.8,-7.5,2.2,1.7],[-8.4,1,-.9,2.8,1.3],[7.8,1,7.8,2,1.2],[-4,1,7.1,1.8,1.0]])azuraDecor_tree(...p);
 // Dense planting along ledges, with gaps reserved for architecture and paths.
 const plantPatches=[[-7,2.5,2,1.3],[-8.3,2.8,-1,1],[-6.5,5,-1.6,1],[-4.7,7.4,-4.6,1.2],[-3.4,8.4,-5.4,1],[1.8,10.8,-6.6,1.1],[4.6,10.7,-6.9,.9],[5.6,7.7,-3.9,1.1],[7.6,5.5,-1.7,1.3],[5,4.4,2.7,.8],[3.4,1.1,6.8,.7],[-3.8,.7,6.8,.65],[6.4,.7,8.1,.8],[-6.2,.6,8.2,.7],[0,4,1,.65],[1.7,6.7,-.8,.7],[-1.8,10.5,-5.4,.7]];
-for(let p of plantPatches){shrub(...p);for(let j=0;j<3;j++)shrub(p[0]+range(-.8,.8),p[1]+range(-.3,.1),p[2]+range(-.65,.65),p[3]*.55);}
+for(let p of plantPatches){azuraDecor_shrub(...p);for(let j=0;j<3;j++)azuraDecor_shrub(p[0]+range(-.8,.8),p[1]+range(-.3,.1),p[2]+range(-.65,.65),p[3]*.55);}
 function grass(x,y,z,s){for(let j=0;j<7;j++){let a=range(0,TAU),h=range(.3,.7)*s,w=.06*s,b=[x+Math.cos(a)*.35*s,y+h,z+Math.sin(a)*.35*s];let c=tint(palette.leafLight,range(.8,1.2));tri([x-w,y,z],[x+w,y,z],b,c);tri(b,[x+w,y,z],[x-w,y,z],c);}}
-for(let p of plantPatches)for(let i=0;i<4;i++)grass(p[0]+range(-1,1),p[1]-.13,p[2]+range(-.9,.9),.7);
+for(let p of plantPatches)for(let i=0;i<4;i++)azuraDecor_grass(p[0]+range(-1,1),p[1]-.13,p[2]+range(-.9,.9),.7);
 // Sand pebbles and a few tiny sunlit flowers.
 for(let i=0;i<50;i++){let x=range(-5.4,5.4),z=range(8.3,11.2);if(x>1&&x<2.9)continue;let s=range(.035,.16);ellipsoid([x,.3,z],[s,s*.64,s*.85],tint(palette.rock,range(.75,1.12)),6,4,.2);}
 for(let p of plantPatches)for(let j=0;j<5;j++){let x=p[0]+range(-.6,.6),z=p[2]+range(-.6,.6),y=p[1]+.26;beam([x,y-.3,z],[x,y,z],.012,palette.leaf);ellipsoid([x,y,z],[.055,.035,.055],j%2?color(0xffdf69):color(0xfffaf0),5,3,0);}
 // Smaller granite outcrops and hanging shrubs break up the large geological masses.
-for(let t of tiers){for(let i=0;i<21;i++){let a=range(0,TAU),r=range(.60,.96),xx=t.x+Math.cos(a)*t.sx*r,zz=t.z+Math.sin(a)*t.sz*r,yy=t.y+t.sy*Math.sqrt(1-r*r);if(houseLots.some(h=>Math.hypot(xx-h[0],zz-h[1])<h[2]+.2))continue;let ss=range(.55,1.15);rock(xx,yy-.35,zz,ss,ss*1.3,ss*.9);shrub(xx,yy+ss*.55,zz,ss*.9);}}
-for(let p of [[-1.8,11.6,-6.7,1.2],[2.5,13,-7.1,1.1],[-3.8,9.8,-5.5,1.2],[4.7,9,-5.9,1.2],[1.2,7.8,-3.5,1],[-6.7,5.8,-3.8,1.2],[6.8,6.4,-2.8,1.1],[-6.3,3.2,1.6,1],[-.7,3.8,2,.8],[3.8,3.9,.7,1]])shrub(...p);
+for(let t of tiers){for(let i=0;i<21;i++){let a=range(0,TAU),r=range(.60,.96),xx=t.x+Math.cos(a)*t.sx*r,zz=t.z+Math.sin(a)*t.sz*r,yy=t.y+t.sy*Math.sqrt(1-r*r);if(houseLots.some(h=>Math.hypot(xx-h[0],zz-h[1])<h[2]+.2))continue;let ss=range(.55,1.15);azuraDecor_rock(xx,yy-.35,zz,ss,ss*1.3,ss*.9);azuraDecor_shrub(xx,yy+ss*.55,zz,ss*.9);}}
+for(let p of [[-1.8,11.6,-6.7,1.2],[2.5,13,-7.1,1.1],[-3.8,9.8,-5.5,1.2],[4.7,9,-5.9,1.2],[1.2,7.8,-3.5,1],[-6.7,5.8,-3.8,1.2],[6.8,6.4,-2.8,1.1],[-6.3,3.2,1.6,1],[-.7,3.8,2,.8],[3.8,3.9,.7,1]])azuraDecor_shrub(...p);
 // Socles de pierre sous chaque maison et tour, et terrasses pavées reliant escaliers et maisons.
 for(const t of terraces)box([t.x,t.y-1.1,t.z],[t.w+.6,2.2,t.d+.6],tint(palette.rockLight,.96),t.rot);
 const platforms=[{x:3.5,y:3.2,z:3.5,r:1},{x:-3.3,y:3.8,z:2.9,r:1.9},{x:-.6,y:7.3,z:-1.5,r:2.2},{x:1.7,y:10.4,z:-5.3,r:1.5}];
 for(const p of platforms){cylinder([p.x,p.y-2.6,p.z],[p.x,p.y,p.z],p.r,p.r,tint(palette.rockLight,.92),24);cylinder([p.x,p.y-.02,p.z],[p.x,p.y+.01,p.z],p.r-.12,p.r-.12,tint(palette.rock,1.08),24);for(let i=0;i<10;i++){const a=i/10*TAU;ellipsoid([p.x+Math.cos(a)*p.r*range(.2,.8),p.y+.005,p.z+Math.sin(a)*p.r*range(.2,.8)],[range(.18,.3),.012,range(.15,.26)],tint(palette.rockLight,range(.85,1)),8,3,.1);}}
 // (les îles supplémentaires de src/islands/*.js sont assemblées ici, avant scene_end.js)
+
+// Filtrage en une passe avant la clôture statique. Aucun trou découpé au milieu
+// d'un rocher : l'objet entier disparaît, ses voisins et le relief restent fermés.
+{
+ const omit=new Uint8Array(verts.length/9);
+ for(const d of azuraDecorRecords){
+  let hit=false;
+  for(const stair of stairDefs){
+   for(let k=1;k<stair.points.length&&!hit;k++){
+    const a=stair.points[k-1],b=stair.points[k],len=Math.hypot(b[0]-a[0],b[2]-a[2]);
+    const n=Math.max(1,Math.ceil(len/.08)),margin=stair.width/2+.44;
+    for(let j=0;j<=n;j++){
+     const t=j/n,x=a[0]+(b[0]-a[0])*t,y=a[1]+(b[1]-a[1])*t,z=a[2]+(b[2]-a[2])*t;
+     if(x>=d.lo[0]-margin&&x<=d.hi[0]+margin&&z>=d.lo[2]-margin&&z<=d.hi[2]+margin&&d.hi[1]>y-.08&&d.lo[1]<y+2.3){hit=true;break;}
+    }
+   }
+   if(hit)break;
+  }
+  d.removed=hit;if(hit)omit.fill(1,d.start/9,d.end/9);
+ }
+ const clean=[];for(let i=0;i<verts.length;i+=9)if(!omit[i/9])for(let k=0;k<9;k++)clean.push(verts[i+k]);
+ triangles-=(verts.length-clean.length)/27;verts=clean;
+}
