@@ -1479,9 +1479,9 @@ float tfbm(vec2 p){return texture(uNoise,p*.0625).g;}`;
 const skyChunk=`
 vec3 skyColor(vec3 d,float day,float dusk,float t){
 vec3 sunD=normalize(vec3(-25.,40.,30.));float y=clamp(d.y,-1.,1.);
-vec3 dayC=mix(vec3(.6,.8,.92),vec3(.15,.44,.85),smoothstep(-.05,.55,y));
-dayC=mix(dayC,vec3(.88,.94,.98),pow(1.-clamp(y,0.,1.),12.)*.28);
-float sd=max(dot(d,sunD),0.);dayC+=vec3(1.,.92,.72)*(pow(sd,1400.)*4.+pow(sd,28.)*.28+pow(sd,3.)*.09);
+vec3 dayC=mix(vec3(.8,.88,.95),vec3(.4,.64,.93),smoothstep(-.05,.6,y));
+dayC=mix(dayC,vec3(.98,.9,.86),pow(1.-clamp(y,0.,1.),9.)*.3);
+float sd=max(dot(d,sunD),0.);dayC+=vec3(1.,.94,.8)*(pow(sd,1400.)*2.2+pow(sd,24.)*.22+pow(sd,3.)*.1);
 vec3 nightC=mix(vec3(.07,.1,.2),vec3(.01,.015,.05),smoothstep(-.05,.5,y));
 vec3 g=floor(d*150.);float st=hash(g.xy+g.z*.37);float star=step(.993,st)*(.55+.45*sin(t*2.+st*90.))*smoothstep(.0,.25,y);nightC+=vec3(.9,.95,1.)*star;
 vec3 moonD=normalize(vec3(20.,25.,-30.));float md=max(dot(d,moonD),0.);nightC+=vec3(.9,.92,.85)*(pow(md,2000.)*2.5+pow(md,40.)*.14);
@@ -1507,7 +1507,8 @@ vec3 q2=vShadow2.xyz/vShadow2.w*.5+.5;if(q2.x>0.&&q2.x<1.&&q2.y>0.&&q2.y<1.&&q2.
 float hueOf(vec3 c){float mx=max(c.r,max(c.g,c.b)),mn=min(c.r,min(c.g,c.b)),d=mx-mn;if(d<1e-4)return 0.;float h;if(mx==c.r)h=mod((c.g-c.b)/d,6.);else if(mx==c.g)h=(c.b-c.r)/d+2.;else h=(c.r-c.g)/d+4.;return h*60.;}
 void main(){if(uClip>.5&&vPosition.y<-.03)discard;if(uDbg>.5){outColor=vec4(uDbg>1.5?normalize(vNormal)*.5+.5:vColor,0.);return;}
 vec3 n=normalize(vNormal);vec3 view=normalize(uEye-vPosition);if(dot(n,view)<0.)n=-n;vec3 sun=normalize(vec3(-25,40,30));vec3 c=vColor;float emis=0.;vec3 nightTint=vec3(.16,.2,.36);
-if(uMode==2||uMode==6){float l=.72+.22*max(n.y,0.)+.2*max(dot(n,sun),0.);c*=l;c*=mix(nightTint,vec3(1.),uDay);c=mix(c,c*vec3(1.3,.75,.6),uDusk*.6);}
+if(uMode==6){float l=clamp(.35+.35*max(n.y,0.)+.45*max(dot(n,sun),0.),0.,1.);c=mix(vec3(.74,.77,.9),vec3(1.,.97,.92),l)*c;c*=mix(nightTint,vec3(1.),uDay);c=mix(c,c*vec3(1.25,.82,.7),uDusk*.6);}
+else if(uMode==2){float l=.72+.22*max(n.y,0.)+.2*max(dot(n,sun),0.);c*=l;c*=mix(nightTint,vec3(1.),uDay);c=mix(c,c*vec3(1.3,.75,.6),uDusk*.6);}
 else if(uMode==5){c*=1.1;emis=.45;}
 else if(uMode==7){c*=1.+1.3*(1.-uDay);emis=1.-uDay*.75;}
 else if(uMode==8){c*=1.05;emis=1.;}
@@ -1516,25 +1517,26 @@ bool leaf=c.g>c.r*1.25&&c.g>c.b*1.6;bool stat=uMode==0;
 bool wall=stat&&sat<.32&&val>.9&&!leaf;bool sand=stat&&!wall&&hue>35.&&hue<50.&&sat>.25&&sat<.45&&val>.85;bool rock=stat&&!wall&&!sand&&sat<.25&&val>.5&&val<.92&&!leaf;
 bool tile=stat&&hue>10.&&hue<32.&&sat>.5&&val>.66;bool wood=stat&&hue>12.&&hue<35.&&val<.66&&sat>.3;bool glass=hue>150.&&hue<205.&&sat>.15&&!leaf;
 float rough=.75,spec=.06;
-if(uDetail<.5){}else if(sand){float r=tn(P.xz*9.+vec2(0.,P.x*2.))*.5+tn(P.xz*23.)*.3;c*=.93+r*.12;n=normalize(n+vec3(tn(P.xz*6.)-.5,0.,tn(P.xz*6.+3.)-.5)*.14);spec=.04;rough=.85;}
-else if(rock){float s=sin(P.y*9.+tn(P.xz*1.5)*4.)*.5+.5;float f=tfbm(P.xz*2.+P.y);c*=vec3(.8,.78,.74)*(.78+.2*f+.06*s);rough=.9;spec=.05;}
+if(uDetail<.5){}else if(sand){float r=tn(P.xz*9.+vec2(0.,P.x*2.))*.5+tn(P.xz*23.)*.3;c*=.96+r*.07;n=normalize(n+vec3(tn(P.xz*6.)-.5,0.,tn(P.xz*6.+3.)-.5)*.08);spec=.03;rough=.9;}
+else if(rock){float s=sin(P.y*9.+tn(P.xz*1.5)*4.)*.5+.5;float f=tfbm(P.xz*2.+P.y);c*=vec3(.96,.93,.9)*(.9+.08*f+.03*s);rough=.9;spec=.03;}
 else if(wall){float f=tfbm(P.xz*6.+P.y*6.);c*=.95+.08*f;spec=.09;rough=.7;}
 else if(tile){float g=tn(P.xz*20.+P.y*20.);c*=.92+.12*g;spec=.16;rough=.45;}
 else if(wood){float g=tn(vec2(P.x*3.+P.z*3.,P.y*40.));c*=.9+.16*g;spec=.14;rough=.6;}
 else if(glass){spec=.7;rough=.18;c*=.9;}
 else if(leaf){rough=.6;spec=.12;float f=tn(P.xz*8.+P.y*3.);c*=.9+.18*f;}
 else{spec=.12;rough=.62;}
-float shade=shadow(n);float ndl=dot(n,sun);float diffuse=leaf?max(0.,ndl*.6+.4):max(0.,ndl);
-vec3 skyA=mix(vec3(.11,.14,.27),vec3(.6,.76,.95),uDay),gndA=mix(vec3(.05,.05,.09),vec3(.44,.38,.3),uDay);vec3 ambient=mix(gndA,skyA,n.y*.5+.5);ambient=mix(ambient,ambient*vec3(1.25,.85,.6),uDusk*.5);
-vec3 sunCol=mix(vec3(.28,.33,.55)*.6,vec3(1.14,1.03,.86),uDay);sunCol=mix(sunCol,sunCol*vec3(1.45,.78,.45),uDusk*.75);
-float sh=mix(mix(.35,1.,shade),mix(.08,1.,shade),uDay);vec3 direct=sunCol*diffuse*sh*mix(.5,.74,uDay);
-vec3 h=normalize(sun+view);float sp=pow(max(dot(n,h),0.),mix(260.,10.,rough))*spec*mix(.3,1.,shade)*mix(.15,1.,uDay);
+float shade=shadow(n);float ndl=dot(n,sun);float diffuse=leaf?max(0.,ndl*.55+.45):max(0.,ndl*.72+.28);
+vec3 skyA=mix(vec3(.11,.14,.27),vec3(.52,.6,.86),uDay),gndA=mix(vec3(.05,.05,.09),vec3(.46,.4,.35),uDay);vec3 ambient=mix(gndA,skyA,n.y*.5+.5);ambient=mix(ambient,ambient*vec3(1.25,.85,.6),uDusk*.5);
+ambient*=mix(vec3(1.),vec3(.92,.9,1.08),(1.-shade)*uDay);
+vec3 sunCol=mix(vec3(.28,.33,.55)*.6,vec3(1.08,1.,.9),uDay);sunCol=mix(sunCol,sunCol*vec3(1.4,.8,.5),uDusk*.7);
+float sh=mix(mix(.4,1.,shade),mix(.28,1.,shade),uDay);vec3 direct=sunCol*diffuse*sh*mix(.5,.62,uDay);
+vec3 h=normalize(sun+view);float sp=pow(max(dot(n,h),0.),mix(200.,8.,rough))*spec*.7*mix(.3,1.,shade)*mix(.15,1.,uDay);
 float fres=pow(1.-max(dot(n,view),0.),4.);
-vec3 col=c*(ambient+direct)+sunCol*sp*(1.+diffuse)+skyA*fres*spec*.9;
+vec3 col=c*(ambient+direct)+sunCol*sp*(1.+diffuse)+skyA*fres*spec*.6;
 if(leaf)col+=c*vec3(.9,1.,.5)*max(0.,dot(-view,sun))*.18*uDay;
-if(uDetail>.5){float grain=tn(P.xz*17.+P.y*7.);col*=.975+grain*.05;}c=col;emis=sp*.5;}
-float dist=length(uEye-vPosition);float hf=exp(-max(vPosition.y,0.)*.05);float fog=1.-exp(-dist*dist*.000016*(.5+hf));
-vec3 fogColor=mix(vec3(.05,.07,.15),vec3(.62,.82,.9),uDay);fogColor=mix(fogColor,vec3(.95,.6,.4),uDusk*.6);if(uMode<7)c=mix(c,fogColor,min(.85,fog));
+if(uDetail>.5){float grain=tn(P.xz*17.+P.y*7.);col*=.985+grain*.03;}c=col;emis=sp*.5;}
+float dist=length(uEye-vPosition);float hf=exp(-max(vPosition.y,0.)*.05);float fog=1.-exp(-dist*dist*.000014*(.5+hf));
+vec3 fogColor=mix(vec3(.05,.07,.15),vec3(.78,.86,.95),uDay);fogColor=mix(fogColor,vec3(.96,.7,.55),uDusk*.6);if(uMode<7)c=mix(c,fogColor,min(.8,fog));
 outColor=vec4(c*uExpo,emis);}`;
 const vertexStatic=vertex.replace('mat4 m=uBones[int(aBone+.5)];\np=(m*vec4(p,1.)).xyz;n=normalize(mat3(m)*n);','');
 const depthVertex=`#version 300 es
@@ -1571,18 +1573,18 @@ float e=.15;vec2 dn=vec2(0.);if(uDetail>.5){float n0=tn(q*2.6+t*.25);dn=vec2(n0-
 vec3 n=normalize(vec3(-(g1.x+g2.x)-dn.x*.9,1.,-(g1.y+g2.y)-dn.y*.9));
 float edge1=(length((q-vec2(0,-1.3))/vec2(12.6,11.4))-1.)*10.;float edge2=(length((q-vec2(0,7.8))/vec2(6.8,5.1))-1.)*5.;float shore=min(edge1,edge2);float shallow=exp(-max(shore,0.)*.25);
 vec2 ruv=uv+n.xz*.035*clamp(depth,0.,1.);if(lin(texture(uDepth,ruv).r)<fragZ)ruv=uv;vec3 refr=texture(uScene,ruv).rgb;
-vec3 shallowC=vec3(.1,.72,.72),deepC=vec3(.02,.3,.5);vec3 waterC=mix(shallowC,deepC,1.-shallow);
-float absorb=1.-exp(-depth*.55);vec3 col=mix(refr,waterC,clamp(absorb*.9+.08,0.,1.));
+vec3 shallowC=vec3(.36,.82,.8),deepC=vec3(.12,.46,.74);vec3 waterC=mix(shallowC,deepC,1.-shallow);
+float absorb=1.-exp(-depth*.5);vec3 col=mix(refr,waterC,clamp(absorb*.85+.1,0.,1.));
 vec3 rd=reflect(-view,n);vec3 refl=skyColor(vec3(rd.x,max(rd.y,.03),rd.z),uDay,uDusk,t);
 if(uHasRefl>.5){vec4 rp=uReflVP*vec4(p,1.);vec2 rv=rp.xy/rp.w*.5+.5+n.xz*.06;if(rv.x>0.&&rv.x<1.&&rv.y>0.&&rv.y<1.&&rp.w>0.){vec4 rt=texture(uRefl,rv);refl=rt.rgb;}}
-float fres=.03+.97*pow(1.-max(dot(n,view),0.),5.);col=mix(col,refl,clamp(fres*.92,0.,.92));
-vec3 h=normalize(sun+view);float sp=pow(max(dot(n,h),0.),320.)*1.4+pow(max(dot(n,h),0.),40.)*.12;vec3 sunCol=mix(vec3(.5,.55,.8)*.4,vec3(1.1,1.,.85),uDay);sunCol=mix(sunCol,sunCol*vec3(1.4,.75,.45),uDusk*.7);col+=sunCol*sp;
+float fres=.03+.97*pow(1.-max(dot(n,view),0.),5.);col=mix(col,refl,clamp(fres*.7,0.,.7));
+vec3 h=normalize(sun+view);float sp=pow(max(dot(n,h),0.),320.)*.7+pow(max(dot(n,h),0.),40.)*.08;vec3 sunCol=mix(vec3(.5,.55,.8)*.4,vec3(1.1,1.,.85),uDay);sunCol=mix(sunCol,sunCol*vec3(1.4,.75,.45),uDusk*.7);col+=sunCol*sp;
 float ripple=tn(q*2.+t*.16);float foamA=1.-smoothstep(.06,.48,abs(shore-.1-.17*sin(t+q.x*.8)-ripple*.28));foamA*=smoothstep(.25,.8,ripple);
 float foamD=(1.-smoothstep(.0,.35,depth))*(.55+.45*tn(q*9.+t*.6));float foam=max(foamA*.85,foamD*.8)*mix(.35,1.,uDay);
-col=mix(col,vec3(.93,.97,.95),foam);
+col=mix(col,vec3(.96,.97,.93),foam);
 float band=1.-smoothstep(.03,.17,abs(shore-.7-.2*sin(t*.9+q.x*.6)));col=mix(col,vec3(.73,.96,.9),band*.15*uDay);
 col*=mix(vec3(.5,.55,.8),vec3(1.),uDay);
-float dist=length(uEye-p);float fog=1.-exp(-dist*dist*.000021*1.4);vec3 fogColor=mix(vec3(.05,.07,.15),vec3(.62,.82,.9),uDay);fogColor=mix(fogColor,vec3(.95,.6,.4),uDusk*.6);col=mix(col,fogColor,min(.85,fog));
+float dist=length(uEye-p);float fog=1.-exp(-dist*dist*.000018*1.4);vec3 fogColor=mix(vec3(.05,.07,.15),vec3(.78,.86,.95),uDay);fogColor=mix(fogColor,vec3(.96,.7,.55),uDusk*.6);col=mix(col,fogColor,min(.8,fog));
 outColor=vec4(col*uExpo,clamp(sp*.5,0.,1.)*(1.-fog));}`;
 const ssaoFragment=`#version 300 es
 precision highp float;precision highp int;in vec2 vUV;uniform sampler2D uDepth;uniform mat4 uProj;uniform mat4 uInvProj;uniform vec2 uRes;out vec4 outColor;
@@ -1601,7 +1603,7 @@ precision highp float;precision highp int;in vec2 vUV;uniform sampler2D uScene;u
 void main(){vec4 s=texture(uScene,vUV);float ao=texture(uAO,vUV).r;ao=pow(clamp(ao,0.,1.),1.6);outColor=vec4(s.rgb*mix(1.,ao,uAOStrength),s.a);}`;
 const brightFragment=`#version 300 es
 precision highp float;precision highp int;in vec2 vUV;uniform sampler2D uTex;out vec4 outColor;
-void main(){vec4 s=texture(uTex,vUV);float l=dot(s.rgb,vec3(.3,.59,.11));float k=max(0.,l-.85)*1.6+s.a*1.4;outColor=vec4(s.rgb*k,1.);}`;
+void main(){vec4 s=texture(uTex,vUV);float l=dot(s.rgb,vec3(.3,.59,.11));float k=max(0.,l-.72)*1.2+s.a*1.2;outColor=vec4(s.rgb*k,1.);}`;
 const gaussFragment=`#version 300 es
 precision highp float;precision highp int;in vec2 vUV;uniform sampler2D uTex;uniform vec2 uDir;out vec4 outColor;
 void main(){float w[5]=float[](.227,.195,.122,.054,.016);vec3 c=texture(uTex,vUV).rgb*w[0];for(int i=1;i<5;i++){c+=texture(uTex,vUV+uDir*float(i)).rgb*w[i];c+=texture(uTex,vUV-uDir*float(i)).rgb*w[i];}outColor=vec4(c,1.);}`;
@@ -1610,9 +1612,10 @@ precision highp float;precision highp int;in vec2 vUV;uniform sampler2D uScene;u
 ${noiseChunk}
 vec3 aces(vec3 x){return clamp((x*(2.51*x+.03))/(x*(2.43*x+.59)+.14),0.,1.);}
 void main(){if(uRaw>.5){vec4 s=texture(uScene,vUV);outColor=uRaw>1.5?vec4(vec3(s.a),1.):vec4(s.rgb,1.);return;}vec3 c=texture(uScene,vUV).rgb+texture(uBloom,vUV).rgb*uBloomK;
-c*=uGain;float l0=max(dot(c,vec3(.3,.59,.11)),1e-4);float lt=aces(vec3(l0)).r;c*=lt/l0;c=mix(c,aces(c),.35);c=clamp(c,0.,1.);float l=dot(c,vec3(.3,.59,.11));c=mix(vec3(l),c,1.18);c=(c-.5)*1.06+.5;
-c*=1.-.32*pow(length(vUV-.5)*1.25,2.6);c+=(hash(vUV*1731.+fract(uTime))-.5)*.012;
-c=pow(max(c,vec3(0.)),vec3(.96));outColor=vec4(c,1.);}`;
+c*=uGain;float l0=max(dot(c,vec3(.3,.59,.11)),1e-4);float lt=aces(vec3(l0)).r;c*=lt/l0;c=mix(c,aces(c),.25);c=clamp(c,0.,1.);float l=dot(c,vec3(.3,.59,.11));c=mix(vec3(l),c,1.22);c=(c-.5)*1.0+.5;
+c=c*.97+.025;c+=vec3(.015,.005,.04)*(1.-l)*uDay-vec3(0.,.005,.02)*l*uDay;
+c*=1.-.16*pow(length(vUV-.5)*1.25,2.6);c+=(hash(vUV*1731.+fract(uTime))-.5)*.008;
+c=pow(max(c,vec3(0.)),vec3(.97));outColor=vec4(c,1.);}`;
 const fxaaFragment=`#version 300 es
 precision highp float;precision highp int;in vec2 vUV;uniform sampler2D uTex;uniform vec2 uTexel;out vec4 outColor;
 float luma(vec3 c){return dot(c,vec3(.299,.587,.114));}
@@ -2474,7 +2477,7 @@ gl.disable(gl.DEPTH_TEST);gl.depthMask(false);
 if(Q.ssao){gl.bindFramebuffer(gl.FRAMEBUFFER,RT.ao.fbo);gl.viewport(0,0,RT.w2,RT.h2);gl.useProgram(ssaoProgram);bindTex(0,RT.depth.tex,ssaoLoc.uDepth);gl.uniformMatrix4fv(ssaoLoc.uProj,false,projM);gl.uniformMatrix4fv(ssaoLoc.uInvProj,false,invProjM);gl.uniform2f(ssaoLoc.uRes,RT.w2,RT.h2);fsQuad();
 gl.bindFramebuffer(gl.FRAMEBUFFER,RT.aoBlur.fbo);gl.useProgram(blurProgram);bindTex(0,RT.ao.tex,blurLoc.uTex);gl.uniform2f(blurLoc.uTexel,1/RT.w2,1/RT.h2);fsQuad();}
 // composition (AO) puis eau avec réfraction/profondeur/reflets
-gl.bindFramebuffer(gl.FRAMEBUFFER,RT.comp.fbo);gl.viewport(0,0,W,H2);gl.useProgram(compositeProgram);bindTex(0,RT.scene.tex,compLoc.uScene);bindTex(1,Q.ssao?RT.aoBlur.tex:RT.scene.tex,compLoc.uAO);gl.uniform1f(compLoc.uAOStrength,Q.ssao?.85:0);fsQuad();
+gl.bindFramebuffer(gl.FRAMEBUFFER,RT.comp.fbo);gl.viewport(0,0,W,H2);gl.useProgram(compositeProgram);bindTex(0,RT.scene.tex,compLoc.uScene);bindTex(1,Q.ssao?RT.aoBlur.tex:RT.scene.tex,compLoc.uAO);gl.uniform1f(compLoc.uAOStrength,Q.ssao?.6:0);fsQuad();
 if(Q.water!==false){gl.enable(gl.DEPTH_TEST);gl.depthMask(false);gl.useProgram(waterProgram);gl.uniformMatrix4fv(waterLoc.uVP,false,vp);gl.uniform1f(waterLoc.uTime,t);gl.uniform3fv(waterLoc.uEye,eye);gl.uniform1f(waterLoc.uDay,dayF);gl.uniform1f(waterLoc.uDusk,duskF);gl.uniform2f(waterLoc.uRes,W,H2);gl.uniform1f(waterLoc.uNear,NEAR);gl.uniform1f(waterLoc.uFar,FAR);gl.uniform1f(waterLoc.uHasRefl,reflVP?1:0);gl.uniform1f(waterLoc.uExpo,EXPO);gl.uniform1f(waterLoc.uDetail,Q.waterDetail??2);if(reflVP)gl.uniformMatrix4fv(waterLoc.uReflVP,false,reflVP);
 bindTex(0,RT.scene.tex,waterLoc.uScene);bindTex(1,RT.depth.tex,waterLoc.uDepth);bindTex(2,RT.refl.tex,waterLoc.uRefl);bindTex(3,noiseTex,waterLoc.uNoise);gl.bindVertexArray(ocean.vao);gl.drawArrays(gl.TRIANGLES,0,ocean.count);gl.bindVertexArray(null);}
 gl.disable(gl.DEPTH_TEST);gl.depthMask(true);

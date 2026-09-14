@@ -35,6 +35,11 @@ Emplacements proposés (x, z en mètres, la mer à y = 0) :
 - [x] Claude publie dans `src/islands/README.md` le gabarit d'un fichier d'île (fonction `buildIsland_phare()` appelée depuis `island.js` après Azura, tableaux à remplir, zone de coordonnées).
 - [x] Astra livre une première version du relief seul (livraison 1 intégrée le 9 sept. 2026, commit sur `astra/design` → `main`) (sans bâtiments) pour que Claude branche la praticabilité et le bateau dessus, puis complète.
 
+## Direction artistique (15 sept. 2026)
+Léo veut un rendu **cosy game** (Heartopia, Petit Planet, Loftia) : voir `DA-COSY.md`. Priorité à la modélisation des maisons, props et végétation (Astra), le rendu suit (Claude, branche `claude/cosy-render` : ciel pastel, ombres lavande, eau laiteuse, bloom doux).
+- [ ] Astra : passe 3 du Phare déjà en cours sur 510b5d2 ; à partir de la passe 4, appliquer `DA-COSY.md` (maisons trapues arrondies, toits débordants bombés, ouvertures surdimensionnées, arbres en boules, galets ronds).
+- [x] Claude : premier jet du rendu cosy (shaders.js, SSAO 0,6).
+
 ## Phase 2 — La ferme et l'Île des Champs (validée par Léo le 9 sept. 2026)
 Vision : un côté FarmVille 2 / Fae Farm, léger. Camp de base = **Île des Champs**, île plate en terrasses à (−32, 10), rayon ≈ 11, ponton vers Azura. Azura et le Phare restent l'aventure.
 
