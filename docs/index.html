@@ -529,8 +529,8 @@ sceneMarks.push({id:'champs',start:verts.length/9});
 sceneMarks[sceneMarks.length-1].end=verts.length/9;
 
 sceneMarks.push({id:'phare',start:verts.length/9});
-// islands/phare.js — Île du Phare · Astra · passe 2, calcaire et jardins
-// Base publique : 36e90af. Coordonnées en mètres, Y vertical, mer Y=0.
+// islands/phare.js — Île du Phare · Astra · passe 3, vires et port habité
+// Base publique : 510b5d2. Coordonnées en mètres, Y vertical, mer Y=0.
 // Centre {x:34,z:-18} ; rayon nominal 12, englobant 14.
 // Enveloppe du relief : x∈[20,48], z∈[-32,-4].
 // Ponton EXISTANT géré par archipel.js : centre (34,.60,-5),
@@ -574,6 +574,11 @@ sceneMarks.push({id:'phare',start:verts.length/9});
       [[37.5,3.6,-12.5],[37.7,3.6,-10.9],[40,3.6,-11.15]],
       [[32.5,7,-15.5],[32,7,-14.25],[29.7,7,-14.25]],
       [[36.5,10.3,-20],[36.7,10.3,-18.6],[39.8,10.3,-18.75]]];
+    const reservedDiscs=[
+      [35.8,-7.4,1.1], [35.8,-6.2,1.1], [34,-5,2.5],
+      [33.2,-23.2,1.4],
+      [37.9,-12.4,1.9], [32.2,-14.8,1.9], [36.5,-19.3,1.9]
+    ];
     // Bosquets composés : dense près du village, bas et espacés au sommet.
     // Chaque ellipse est une poche de plantation, jamais un semis sur toute l'île.
     const gardens = [
@@ -608,6 +613,19 @@ sceneMarks.push({id:'phare',start:verts.length/9});
       let height = .56+terracesY*inland;
       height += .18*Math.sin(x*.83+z*.3)*Math.sin(terracesY*.75)*inland;
       height -= 1.36*smooth((r-.94)/.06);
+      // Trois vires DANS le massif : bandes horizontales, raccords plus raides.
+      // La marge protège aussi les triangles voisins des chemins et des PNJ.
+      let sculpt=smooth((.94-r)/.07);
+      for(const path of paths)for(let i=1;i<path.length;i++)
+        sculpt=Math.min(sculpt,smooth((nearestSegment(x,z,path[i-1],path[i]).d-1.55)/.7));
+      for(const p of landings)
+        sculpt=Math.min(sculpt,smooth((Math.hypot(x-p.x,z-p.z)-p.r-.65)/.5));
+      for(const [px,pz,pr] of reservedDiscs)
+        sculpt=Math.min(sculpt,smooth((Math.hypot(x-px,z-pz)-pr-.55)/.5));
+      for(const level of[1.65,5.15,8.55]){
+        const d=height-level;
+        height-=d*(1-smooth((Math.abs(d)-.36)/.58))*sculpt;
+      }
       // Tailler le massif SOUS les escaliers : le personnage ne disparaît pas
       // dans le relief même si la carte tamponne correctement les marches.
       for(const path of paths) for(let i=1;i<path.length;i++) {
@@ -626,7 +644,7 @@ sceneMarks.push({id:'phare',start:verts.length/9});
     function gardenCover(x,z) {
       let cover=0;
       for(const [cx,cz,rx,rz] of gardens)
-        cover=Math.max(cover,Math.max(0,1-Math.hypot((x-cx)/rx,(z-cz)/rz)));
+        cover=Math.max(cover,Math.max(0,1-Math.hypot((x-cx)/(rx*1.35),(z-cz)/(rz*1.65))));
       return cover;
     }
     function paint(a,b,t) { return a.map((v,k)=>v+(b[k]-v)*t); }
@@ -635,18 +653,18 @@ sceneMarks.push({id:'phare',start:verts.length/9});
       // val < .85, saturation > .25, hue > 35°, hors du seuil feuillage.
       // On évite ainsi une seconde cassure de matière à l'intérieur du dégradé.
       const band=.97+.02*Math.sin(p[1]*1.8+p[0]*.19+p[2]*.31);
-      const stone=tint(color(0xcbb88a),band),sand=color(0xd6c699),turf=color(0x82935c);
+      const stone=tint(color(0xcbb88a),band),sand=color(0xd6c699),turf=color(0x687d43);
       const shore=(1-smooth((p[1]-.48)/1.15))*Math.max(smooth((p[2]+12)/2),smooth((r-.86)/.10));
-      const cover=smooth(gardenCover(p[0],p[2])*2.2)*smooth((up-.55)/.4);
-      return paint(paint(stone,turf,cover*.78),sand,shore);
-    }
-    function terrainNormal(p) {
-      const d=.06;
-      return norm([terrainAt(p[0]-d,p[2])-terrainAt(p[0]+d,p[2]),2*d,
-        terrainAt(p[0],p[2]-d)-terrainAt(p[0],p[2]+d)]);
+      const cover=smooth(gardenCover(p[0],p[2])*2.8)*smooth((up-.55)/.4);
+      // Les jardins côtiers restent lisibles sur le sable, pas seulement en amont.
+      return paint(paint(stone,sand,shore),turf,cover*.94);
     }
     function paintedTri(a,b,c,colors,normals) {
-      const start=verts.length;tri(a,b,c,colors[0],normals);
+      const face=norm(cross(sub(b,a),sub(c,a)));
+      // Lissage des sols ; transition 40–50°, normale de face au-delà de 50°.
+      const sharp=smooth((Math.cos(40*PI/180)-face[1])/(Math.cos(40*PI/180)-Math.cos(50*PI/180)));
+      const ns=normals.map(n=>dot(n,face)<.5?face:norm(paint(n,face,sharp)));
+      const start=verts.length;tri(a,b,c,colors[0],ns);
       for(let i=0;i<3;i++)for(let k=0;k<3;k++)verts[start+i*9+6+k]=colors[i][k];
     }
     const rings = [];
@@ -657,7 +675,19 @@ sceneMarks.push({id:'phare',start:verts.length/9});
     }
     // Winding vers +Y ; éventail central sans triangles dégénérés.
     const center = point(0,0);
-    const normals=rings.map(row=>row.map(terrainNormal));
+    // Normales pondérées par l'aire du maillage réel : les différences finies
+    // de l'ancien champ analytique traversaient les découpes des escaliers.
+    const normals=rings.map(row=>row.map(()=>[0,0,0]));
+    function addNormal(a,b,c) {
+      const n=cross(sub(rings[b[0]][b[1]],rings[a[0]][a[1]]),sub(rings[c[0]][c[1]],rings[a[0]][a[1]]));
+      for(const [j,i] of[a,b,c])normals[j][i]=add(normals[j][i],n);
+    }
+    for(let i=0;i<angularSteps;i++)addNormal([0,0],[1,(i+1)%angularSteps],[1,i]);
+    for(let j=1;j<radialSteps;j++)for(let i=0;i<angularSteps;i++){
+      const n=(i+1)%angularSteps;
+      addNormal([j,i],[j,n],[j+1,n]);addNormal([j,i],[j+1,n],[j+1,i]);
+    }
+    for(const row of normals)for(let i=0;i<row.length;i++)row[i]=norm(row[i]);
     const colors=rings.map((row,j)=>row.map((p,i)=>material(p,j/radialSteps,normals[j][i][1])));
     for(let i=0;i<angularSteps;i++) {
       const next=(i+1)%angularSteps;
@@ -757,11 +787,7 @@ sceneMarks.push({id:'phare',start:verts.length/9});
     seed = 341810;
     const leafBase=color(0x638244),leafSun=color(0x7a9e56),leafShade=color(0x4e6b36);
     const bark=color(0x7b634b),rope=color(0xbba780);
-    const protectedDiscs=[
-      [35.8,-7.4,1.1], [35.8,-6.2,1.1], [34,-5,2.5],
-      [33.2,-23.2,1.4],
-      [37.9,-12.4,1.9], [32.2,-14.8,1.9], [36.5,-19.3,1.9]
-    ];
+    const protectedDiscs=reservedDiscs;
     const access=[...paths,[[35.8,.56,-6.2],climb[0]],
       [[34,12.5,-23],[33.2,12.5,-23.2]]];
     const decorBounds=[];
@@ -881,7 +907,7 @@ sceneMarks.push({id:'phare',start:verts.length/9});
       }
     }
     // Avant-plan bas à l'entrée de la crique ; le chenal reste ouvert.
-    for(const [x,z,sx,sy,sz] of [[31.4,-8.6,.8,.6,.48],[38.7,-8.65,.65,.45,.55],
+    for(const [x,z,sx,sy,sz] of [[31.4,-8.6,.8,.6,.48],[41,-9.9,.45,.35,.4],
       [29.8,-9.6,.72,.8,.48],[42.1,-12.1,.5,.65,.55],
       [37.7,-28.4,.8,.48,.6],[31.1,-28.4,.7,.4,.42]]){
       const y=terrainAt(x,z);
@@ -1037,6 +1063,124 @@ sceneMarks.push({id:'phare',start:verts.length/9});
       });
     }
 
+    // ---------- Passe 3 : l'arrivée et la maison des pêcheurs ----------
+    seed=341812;
+    for(const [x,z,sx,h,sz] of [[29.2,-10.6,.6,1.25,.42],
+      [30.3,-11.25,.55,1.45,.45],[41.1,-9.55,.34,1.1,.32]]){
+      const y=terrainAt(x,z);
+      if(y<.3)continue;
+      dress('strate-sud',()=>{
+        limestoneStone(x,y-.14,z,sx,h,sz,.10,x);
+        limestoneStone(x-.06,y+h*.52,z+.06,sx*1.06,.22,sz*1.05,.10,z);
+      });
+    }
+    // Console sous le premier palier. Contrôle vertical en plus de l'emprise :
+    // le haut de chaque bloc reste au moins 28 cm sous les accès voisins.
+    const underBounds=[];
+    function belowLanding(fn) {
+      const start=verts.length,count=triangles;fn();
+      const lo=[Infinity,Infinity,Infinity],hi=[-Infinity,-Infinity,-Infinity];
+      for(let i=start;i<verts.length;i+=9)for(let k=0;k<3;k++){
+        lo[k]=Math.min(lo[k],verts[i+k]);hi[k]=Math.max(hi[k],verts[i+k]);
+      }
+      let valid=true;
+      for(const path of access)for(let k=1;k<path.length;k++){
+        const a=path[k-1],b=path[k],steps=Math.ceil(Math.hypot(b[0]-a[0],b[2]-a[2])/.08);
+        for(let j=0;j<=steps;j++){
+          const p=add(a,mul(sub(b,a),j/steps));
+          if(p[0]>=lo[0]-1.05&&p[0]<=hi[0]+1.05&&p[2]>=lo[2]-1.05&&p[2]<=hi[2]+1.05&&hi[1]>p[1]-.28)valid=false;
+        }
+      }
+      if(!valid){verts.length=start;triangles=count;return;}
+      underBounds.push({lo,hi,first:start,end:verts.length});
+    }
+    belowLanding(()=>{
+      limestoneStone(39,1.15,-11.65,.38,2.1,.34,.10,3);
+      limestoneStone(39.01,2.94,-11.65,.45,.20,.40,.10,4);
+    });
+
+    // Barque tirée au sec : coque ouverte, bancs, aviron et filet sur le plat-bord.
+    // Pas de deuxième bateau interactif et aucun changement du voilier de Tomas.
+    const boatX=39,boatZ=-8.45,boatY=terrainAt(boatX,boatZ),boatHeading=.72;
+    if(boatY>.35)dress('barque',()=>{
+      const P=p=>transform(p,[boatX,boatY,boatZ],boatHeading);
+      const hull=color(0x62748a),inside=color(0xa48158),N=16;
+      const edge=(i,t)=>{
+        const a=i/N*TAU;
+        return P([Math.sin(a)*(.13+.35*t),-.015+t*(.40+.08*Math.abs(Math.cos(a))),Math.cos(a)*(.68+.32*t)]);
+      };
+      for(let i=0;i<N;i++){
+        for(let row=0;row<3;row++)quad(edge(i,row/3),edge(i+1,row/3),edge(i+1,(row+1)/3),edge(i,(row+1)/3),row===2?chalk:hull);
+        tri(P([0,.045,0]),edge(i+1,0),edge(i,0),inside);
+        cylinder(edge(i,1),edge(i+1,1),.024,.024,bark,5);
+      }
+      for(const z of[-.36,.36])box(P([0,.28,z]),[.7,.06,.16],inside,boatHeading);
+      cylinder(P([-.26,.36,-.7]),P([.24,.39,.75]),.019,.024,bark,6);
+      box(P([.23,.39,.71]),[.10,.034,.27],inside,boatHeading-.28);
+      // Filet ajouré : mailles ouvertes, pas de panneau opaque.
+      const net=(u,v)=>P([-.28+u*.43,.43-v*.22-.06*Math.sin(u*PI),-.72+v*.55]);
+      for(let i=0;i<=5;i++)for(let j=0;j<5;j++){
+        cylinder(net(i/5,j/5),net(i/5,(j+1)/5),.004,.004,rope,4);
+        cylinder(net(j/5,i/5),net((j+1)/5,i/5),.004,.004,rope,4);
+      }
+    });
+    const trapX=38,trapZ=-8.25,trapY=rooted(trapX,trapZ,.28);
+    if(trapY!==null)dress('casier-bouee',()=>{
+      crate(trapX,trapY,trapZ,.12);
+      // Arceaux et mailles du casier au-dessus de sa caisse.
+      for(let j=0;j<4;j++){
+        const z=trapZ-.15+j*.1;
+        for(let i=0;i<6;i++){
+          const a=i/6*PI,b=(i+1)/6*PI;
+          cylinder([trapX+Math.cos(a)*.22,trapY+.34+Math.sin(a)*.18,z],
+            [trapX+Math.cos(b)*.22,trapY+.34+Math.sin(b)*.18,z],.009,.009,bark,4);
+        }
+      }
+      for(let i=0;i<7;i++){
+        const a=i/6*PI;
+        cylinder([trapX+Math.cos(a)*.22,trapY+.34+Math.sin(a)*.18,trapZ-.15],
+          [trapX+Math.cos(a)*.22,trapY+.34+Math.sin(a)*.18,trapZ+.15],.006,.006,rope,4);
+      }
+      // Bouée annulaire crème/terre cuite, posée contre le casier.
+      const center=[trapX-.35,trapY+.23,trapZ+.10];
+      const ring=(a,b)=>add(center,[Math.cos(a)*(.16+.035*Math.cos(b)),Math.sin(a)*(.16+.035*Math.cos(b)),.035*Math.sin(b)]);
+      for(let i=0;i<16;i++)for(let j=0;j<6;j++){
+        const a=i/16*TAU,b=(i+1)/16*TAU,u=j/6*TAU,v=(j+1)/6*TAU;
+        quad(ring(a,u),ring(b,u),ring(b,v),ring(a,v),Math.floor(i/4)%2?palette.tile:chalk);
+      }
+    });
+
+    // Accessoires fixés à la façade +X de la maison basse. Toute leur géométrie
+    // reste dans l'emprise DÉJÀ bloquée de cette maison (marge incluse).
+    const facadeBounds=[];
+    {
+      const pos=[40,3.6,-12.8],rot=-.05,P=p=>transform(p,pos,rot);
+      const start=verts.length,count=triangles,shutter=color(0x526b87);
+      for(const side of[-1,1]){
+        box(P([1.47,1.26,side*.46]),[.026,.73,.18],shutter,rot);
+        for(let j=0;j<5;j++)box(P([1.489,.96+j*.145,side*.46]),[.016,.035,.18],tint(shutter,1.15),rot);
+      }
+      // Treille décalée vers l'arrière, laissant la fenêtre visible.
+      for(let j=0;j<4;j++){
+        cylinder(P([1.29,.28,-.91+j*.14]),P([1.29,1.75,-.91+j*.14]),.012,.012,palette.trim,5);
+        cylinder(P([1.29,.45+j*.36,-.94]),P([1.29,.45+j*.36,-.43]),.012,.012,palette.trim,5);
+      }
+      cylinder(P([1.34,0,-.69]),P([1.34,.21,-.69]),.065,.10,palette.tile,10);
+      cylinder(P([1.34,.19,-.69]),P([1.34,.225,-.69]),.108,.108,tint(palette.tile,1.12),10);
+      for(let j=0;j<7;j++){
+        const z=-.7+.16*Math.sin(j*2.2),y=.37+j*.20;
+        leaves(P([1.32,y,z]),[.045,.13,.14],j%2?leafBase:leafSun);
+        if(j%2===0)for(let k=0;k<3;k++)ellipsoid(P([1.37,y+.02+(k%2)*.045,z-.045+k*.04]),[.025,.037,.035],color(0xb9768e),6,3,0);
+      }
+      let valid=true;
+      for(let i=start;i<verts.length;i+=9){
+        const dx=verts[i]-pos[0],dz=verts[i+2]-pos[2];
+        const x=dx*Math.cos(rot)-dz*Math.sin(rot),z=dx*Math.sin(rot)+dz*Math.cos(rot);
+        if(Math.abs(x)>1.54||Math.abs(z)>1.34)valid=false;
+      }
+      if(!valid){verts.length=start;triangles=count;}
+      else facadeBounds.push({first:start,end:verts.length});
+    }
   } finally {
     seed = pharePreviousSeed;
   }

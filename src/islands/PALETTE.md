@@ -1,6 +1,6 @@
-# Azura — palette de rendu proposée, passe 2 du Phare
+# Azura — palette de rendu proposée, passe 3 du Phare
 
-Base : `36e90af`. Le ZIP modifie uniquement `phare.js` et ce document.
+Base : `510b5d2`. Le ZIP modifie uniquement `phare.js` et ce document.
 Eau, ciel, éclairage, brume et shaders restent à intégrer côté Claude.
 
 ## Intention
@@ -43,14 +43,16 @@ exposition et tonemapping, pas des multiplicateurs de lumière à coller tels qu
 ## Contrat des matériaux de cette passe
 
 Le relief utilise désormais des **couleurs partagées par sommet**, interpolées
-dans les triangles. Les normales du relief sont également lissées ; les blocs
-de calcaire ajoutés gardent leurs normales de faces et leurs arêtes.
+dans les triangles. Les normales sont calculées depuis les triangles réels,
+pondérées par leur aire. Elles restent lissées sur les pentes douces, passent
+progressivement aux normales de face entre 40° et 50°, puis restent en normales
+de face au-delà de 50°. Les blocs de calcaire gardent aussi leurs arêtes.
 
 | Sol / végétation | Couleur d'auteur dans `phare.js` |
 | --- | --- |
 | Calcaire du relief | `#CBB88A` avec variation douce |
 | Sable du relief | `#D6C699` |
-| Pelouse du relief | `#82935C` |
+| Pelouse du relief | `#687D43` |
 | Blocs de calcaire | `#D8C7A6` avec faces nuancées |
 | Feuilles principales | `#638244` |
 | Feuilles éclairées | `#7A9E56` |
@@ -67,10 +69,24 @@ le sol peint doit rester du sol, les canopées doivent rester du feuillage.
 
 ## Contrôle Chrome attendu pour cette livraison
 
+La passe 3 ajoute trois vires dans `surfaceY`, centrées sur les altitudes
+1,65 / 5,15 / 8,55 m. Un masque préserve les couloirs de marche, les paliers,
+les zones de PNJ et le débarquement ; la modification reste hors de ces zones.
+Les poches de pelouse sont élargies et leur mélange conserve du vert même sur
+le sable. La classification sol/feuille reste inchangée.
+
+Trois formations supplémentaires cadrent le sud, près de (29.2, −10.6),
+(30.3, −11.25), (41.1, −9.55). Une console rocheuse soutient visuellement le
+premier niveau près de (39, −11.65), sous les marches et le palier.
+La barque décorative est en (39, −8.45), le casier et la bouée en (38, −8.25).
+Un ancien petit rocher de ce secteur est retiré pour dégager la barque.
+Volets bleus, pot et treille sont fixés à la face +X de la maison basse, dans
+son emprise déjà bloquée. Aucun PNJ, trigger ou bateau interactif ajouté.
+
 Reprendre les cinq cadrages fournis, avec la même heure, qualité et résolution :
 arrivée, village, montée, révélation, panorama. Examiner les transitions au pied
-des falaises, l'absence de damier, les silhouettes ouest/nord, le dallage et les
-canopées autour du chemin. Le dallage dépasse de 8 mm au maximum ; les marches,
+des falaises, les arêtes et les ombres sur la montée, les jardins et la façade
+droite de la première maison. Le dallage dépasse de 8 mm au maximum ; les marches,
 paliers, coordonnées de personnages et emprises des maisons n'ont pas changé.
 
 Tester également le banc, Elio, les chèvres, le débarquement et un aller-retour
