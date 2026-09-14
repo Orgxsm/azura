@@ -21,6 +21,7 @@ Emplacements proposés (x, z en mètres, la mer à y = 0) :
 - [ ] Animation du voilier en traversée : voile qui se gonfle, gîte, sillage (mousse) — proposer dans `rig.js` / `shaders.js`.
 - [ ] Faisceau tournant du phare la nuit (géométrie translucide mode 7 ou effet dans `shaders.js`).
 - [ ] Polish visuel libre : ce qui te semble améliorer le rendu (ciel, eau, matériaux), en petits commits.
+- [x] (passe 1, 13 sept. 2026, intégrée le 14) Végétation et vie insulaire du Phare : 8 poches de plantation (herbes, fleurs, romarin), 4 arbres côtiers (pin/olivier) + 2 cyprès, calcaires stratifiés, coin de pêche à (33, −9.5), banc du gardien à (31.15, −26.2). Tout est statique (+8 000 triangles, +0,4 ms/image), placé hors des accès via `freeDisk`/`rooted`/`dress`. `[ ]` la couleur « pelouse » des poches est par face : elle apparaît en dalles carrées vue de haut (subdiviser ou dégrader par sommet).
 
 ### Claude (gameplay / fonctionnalités)
 - [x] `world.js` : carte de hauteur 96 m × 96 m et ombres (4096²) sur tout l'archipel. `[ ]` tri des îles hors champ (plus tard, si besoin).
@@ -57,6 +58,7 @@ Vision : un côté FarmVille 2 / Fae Farm, léger. Camp de base = **Île des Cha
 - [ ] Événements jour/nuit (marché le matin, fête le soir).
 
 ## Notes
+- 14 sept. 2026, 23:10 : passe 1 d'Astra (`azura-phare-passe-1.zip`, base b08a421) intégrée via `astra/design-6` → `main`. Vérifié dans Chrome : montée crique → plateau entièrement atteignable, gardien/chèvres/paliers OK, seule la cellule du banc est bloquée (attendu) ; 285 436 triangles (277 458 avant), 14,7 ms/image contre 14,3 sur la même vue. Piège Chrome MCP : l'onglet est `hidden` donc `render()` sort tout de suite et `bench()` ne mesure rien ; forcer `Object.defineProperty(document,'hidden',{get:()=>false})` + `dispatchEvent(new Event('visibilitychange'))` avant de mesurer ou de capturer.
 - 9 sept. 2026, 01:50 : profilage sur la Radeon Pro 555X de Léo. Coûts par image avant/après : Fluide 60 → 15 ms, Élevée → 20 ms, Ultra 90 → 45 ms. Gains : bruit en texture (au lieu de fbm au pixel), FXAA au lieu du MSAA 4x HDR, mini-carte mise en cache et rafraîchie à 10 Hz, ombres à 4 prélèvements hors Ultra, programme de sommets sans os pour la géométrie statique. Sonde : `__AZURA__.bench(30)` (ms/image, GPU compris), touche F.
 - 9 sept. 2026, 14:30 : ferme allégée — le coût des 64 cases mûres venait surtout des ombres dynamiques (≈ 9 ms) : tessellation ÷ 2,5, 4 cases par appel de dessin (`COPIES`), exclusion de la passe de reflet (`noReflect`), ombres seulement pour les cases mûres à moins de 1,6 m du joueur. `__AZURA__.farmMeshes()`, `.drawCount()`, `.setFarmShadow()` pour profiler.
 - 9 sept. 2026, 14:10 : lot 5 intégré (`astra/design-5` → `main`). Basile vend/achète sur place (`openShop('market')`). Piège Chrome MCP : depuis 13:46 la frappe clavier perd les caractères ASCII dans le composer ChatGPT ; écrire via `document.execCommand('insertText')` et cliquer le bouton d'envoi par coordonnées.
