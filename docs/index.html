@@ -529,8 +529,8 @@ sceneMarks.push({id:'champs',start:verts.length/9});
 sceneMarks[sceneMarks.length-1].end=verts.length/9;
 
 sceneMarks.push({id:'phare',start:verts.length/9});
-// islands/phare.js — Île du Phare · Astra · passe végétation / vie insulaire
-// Base publique : b08a421. Coordonnées en mètres, Y vertical, mer Y=0.
+// islands/phare.js — Île du Phare · Astra · passe 2, calcaire et jardins
+// Base publique : 36e90af. Coordonnées en mètres, Y vertical, mer Y=0.
 // Centre {x:34,z:-18} ; rayon nominal 12, englobant 14.
 // Enveloppe du relief : x∈[20,48], z∈[-32,-4].
 // Ponton EXISTANT géré par archipel.js : centre (34,.60,-5),
@@ -559,6 +559,7 @@ sceneMarks.push({id:'phare',start:verts.length/9});
   seed = 341809;
   try {
     const CX = 34, CZ = -18;
+    const chalk=color(0xd8c7a6);
     const radialSteps = 80, angularSteps = 128;
     const climb = [[35.8,.56,-8.8],[37.5,3.6,-12.5],[32.5,7,-15.5],
       [36.5,10.3,-20],[34,12.5,-23]];
@@ -579,7 +580,10 @@ sceneMarks.push({id:'phare',start:verts.length/9});
       [28.9,-13.25,2.1,.72], [40.65,-9.8,1.1,.58],
       [42.1,-16.9,.7,.9], [27.8,-21.1,1.55,.7],
       [30.2,-23.7,.7,.48], [38.5,-24.2,.7,.95],
-      [32.3,-26.9,1.6,.40], [26.7,-13.45,.7,.45]
+      [32.3,-26.9,1.6,.40], [26.7,-13.45,.7,.45],
+      [27.2,-10.2,1.1,.35], [26.5,-17.5,.65,.9],
+      [29.7,-21.05,1.65,.55], [28.5,-23.8,1.1,.55],
+      [39.2,-16.25,1.65,.40], [32.1,-10.25,.9,.28]
     ];
     const stoneLots = [];
     function nearestSegment(x,z,a,b) {
@@ -627,16 +631,23 @@ sceneMarks.push({id:'phare',start:verts.length/9});
     }
     function paint(a,b,t) { return a.map((v,k)=>v+(b[k]-v)*t); }
     function material(p,r,up=1) {
-      const north = smooth((-p[2]-10)/13);
-      if(p[1]<.9 && (p[2]>-11 || r>.91)) return tint(palette.sand,.98);
-      const band = .95+.035*Math.sin(p[1]*2.6)+.018*Math.sin(p[0]*1.3+p[2]*.6);
-      const limestone=paint(palette.rock,palette.rockLight,.35+north*.65);
-      if(up<.88 || r>.93)return tint(limestone,band);
-      // Couleur seulement : aucune surépaisseur et aucune nouvelle marche.
-      const cover=gardenCover(p[0],p[2]);
-      const edge=.78+.22*Math.sin(p[0]*3.1+Math.sin(p[2]*2.2));
-      const turf=color(0x989f65); // g < r*1.25 : sol fixe, jamais traité en feuille.
-      return paint(tint(limestone,band),turf,smooth(cover*2.5)*edge*.85);
+      // Toutes ces teintes restent dans la même branche du shader existant :
+      // val < .85, saturation > .25, hue > 35°, hors du seuil feuillage.
+      // On évite ainsi une seconde cassure de matière à l'intérieur du dégradé.
+      const band=.97+.02*Math.sin(p[1]*1.8+p[0]*.19+p[2]*.31);
+      const stone=tint(color(0xcbb88a),band),sand=color(0xd6c699),turf=color(0x82935c);
+      const shore=(1-smooth((p[1]-.48)/1.15))*Math.max(smooth((p[2]+12)/2),smooth((r-.86)/.10));
+      const cover=smooth(gardenCover(p[0],p[2])*2.2)*smooth((up-.55)/.4);
+      return paint(paint(stone,turf,cover*.78),sand,shore);
+    }
+    function terrainNormal(p) {
+      const d=.06;
+      return norm([terrainAt(p[0]-d,p[2])-terrainAt(p[0]+d,p[2]),2*d,
+        terrainAt(p[0],p[2]-d)-terrainAt(p[0],p[2]+d)]);
+    }
+    function paintedTri(a,b,c,colors,normals) {
+      const start=verts.length;tri(a,b,c,colors[0],normals);
+      for(let i=0;i<3;i++)for(let k=0;k<3;k++)verts[start+i*9+6+k]=colors[i][k];
     }
     const rings = [];
     for(let j=0;j<=radialSteps;j++) {
@@ -646,15 +657,21 @@ sceneMarks.push({id:'phare',start:verts.length/9});
     }
     // Winding vers +Y ; éventail central sans triangles dégénérés.
     const center = point(0,0);
+    const normals=rings.map(row=>row.map(terrainNormal));
+    const colors=rings.map((row,j)=>row.map((p,i)=>material(p,j/radialSteps,normals[j][i][1])));
     for(let i=0;i<angularSteps;i++) {
       const next=(i+1)%angularSteps;
-      tri(center,rings[1][next],rings[1][i],material(center,0));
+      paintedTri(center,rings[1][next],rings[1][i],
+        [colors[0][0],colors[1][next],colors[1][i]],
+        [normals[0][0],normals[1][next],normals[1][i]]);
     }
     for(let j=1;j<radialSteps;j++) for(let i=0;i<angularSteps;i++) {
       const next=(i+1)%angularSteps, a=rings[j][i], b=rings[j][next];
       const c=rings[j+1][next], d=rings[j+1][i];
-      const middle=[(a[0]+c[0])*.5,(a[1]+c[1])*.5,(a[2]+c[2])*.5];
-      quad(a,b,c,d,material(middle,(j+.5)/radialSteps,norm(cross(sub(b,a),sub(c,a)))[1]));
+      paintedTri(a,b,c,[colors[j][i],colors[j][next],colors[j+1][next]],
+        [normals[j][i],normals[j][next],normals[j+1][next]]);
+      paintedTri(a,c,d,[colors[j][i],colors[j+1][next],colors[j+1][i]],
+        [normals[j][i],normals[j+1][next],normals[j+1][i]]);
     }
     // Socle immergé fermé, pour les vues rasantes depuis le bateau.
     for(let i=0;i<angularSteps;i++) {
@@ -671,13 +688,13 @@ sceneMarks.push({id:'phare',start:verts.length/9});
       [43.1,2.4,-20.5,1.3,3.4,2.0],
       [41.8,.9,-14.7,1.3,1.8,1.5],
       [28.2,.25,-11.6,1.0,.9,1.1]
-    ]) {rock(...p);stoneLots.push(p);}
+    ]) {compatibleLimestone(...p);stoneLots.push(p);}
     // Éboulis périphériques : aucune pierre dans les accès ni sous les maisons.
     for(let i=0;i<45;i++) {
       const a=range(0,TAU),r=range(.73,.96),q=point(r,a),size=range(.22,.62);
       if(q[2]>-10 || landings.some(p=>Math.hypot(q[0]-p.x,q[2]-p.z)<p.r+size+.5))continue;
       if(paths.some(path=>path.slice(1).some((b,k)=>nearestSegment(q[0],q[2],path[k],b).d<1.2+size)))continue;
-      rock(q[0],q[1]-.15,q[2],size,size*range(.8,1.8),size*.8);
+      compatibleLimestone(q[0],q[1]-.15,q[2],size,size*range(.8,1.8),size*.8);
       stoneLots.push([q[0],q[1],q[2],size,size*1.8,size*.8]);
     }
     for(const p of landings) {
@@ -738,8 +755,8 @@ sceneMarks.push({id:'phare',start:verts.length/9});
     // L'aléa des maisons, marches et rochers précédents est déjà consommé.
     // Ce sous-flux ne peut donc changer ni leurs variantes ni les autres îles.
     seed = 341810;
-    const leafBase=color(0x6b964b),leafSun=color(0x7cac52),leafShade=color(0x567639);
-    const bark=color(0x7b634b),rope=color(0xbba780),chalk=color(0xd8c7a6);
+    const leafBase=color(0x638244),leafSun=color(0x7a9e56),leafShade=color(0x4e6b36);
+    const bark=color(0x7b634b),rope=color(0xbba780);
     const protectedDiscs=[
       [35.8,-7.4,1.1], [35.8,-6.2,1.1], [34,-5,2.5],
       [33.2,-23.2,1.4],
@@ -787,7 +804,8 @@ sceneMarks.push({id:'phare',start:verts.length/9});
     // Petit calcaire à pans coupés : strates lisibles, pas de sphère ni de
     // rotation arbitraire. Les familles côtières suivent le même pendage.
     function limestoneStone(x,y,z,sx,sy,sz,heading=0,variant=0) {
-      const outline=[[1,.45],[.48,1],[-.5,1],[-1,.42],[-1,-.48],[-.42,-1],[.5,-1],[1,-.4]];
+      const outline=[[1,.45],[.48,1],[-.5,1],[-1,.42],[-1,-.48],[-.42,-1],[.5,-1],[1,-.4]]
+        .map(p=>mul(p,.96/Math.hypot(...p)));
       const levels=[[-.4,.82],[.10,1],[.75,.84],[.94,.55]];
       const rows=levels.map(([h,r],j)=>outline.map(([a,b],i)=>
         transform([a*sx*r,sy*(h+(j>1?.05*Math.sin(i*1.7+variant):0)),b*sz*r],
@@ -802,7 +820,16 @@ sceneMarks.push({id:'phare',start:verts.length/9});
         tri([x,y-sy*.4,z],rows[0][i],rows[0][(i+1)%8],tint(chalk,.8));
       }
     }
-    function leaves(p,s,c) { ellipsoid(p,s,c,7,4,.08); }
+    function compatibleLimestone(x,y,z,sx,sy,sz) {
+      // Consommer l'aléa exact de l'ancien rocher garde les maisons/cheminées
+      // et les variantes des marches identiques. Géométrie provisoire supprimée
+      // immédiatement, à la construction seulement ; rien de doublé sur le GPU.
+      const first=verts.length,count=triangles;
+      rock(x,y,z,sx,sy,sz);verts.length=first;triangles=count;
+      // Emprise inscrite dans l'ancienne ellipse, sans rotation du grand axe.
+      limestoneStone(x,y-.42*sy,z,sx,sy*1.4,sz,0,x*.7+z*.3);
+    }
+    function leaves(p,s,c) { ellipsoid(p,s,c,9,5,.10); }
     function coastalTree(x,y,z,h,r,olive=false) {
       const lean=olive?-.28:.38;
       const shoulder=[x+lean*.45,y+h*.52,z-.08];
@@ -930,6 +957,85 @@ sceneMarks.push({id:'phare',start:verts.length/9});
       for(let j=0;j<3;j++)box(P([0,.43,-.13+j*.13]),[1.17,.065,.115],palette.trim,-.65);
       for(let j=0;j<2;j++)box(P([0,.65+j*.15,-.21-j*.02]),[1.14,.11,.05],palette.trim,-.65);
     });
+
+    // ---------- Passe 2 : fronts stratifiés et lisières composées ----------
+    // La crête n'est pas découpée dans la carte de hauteur : ce sont des
+    // formations fermées, ancrées dans le relief, loin des accès existants.
+    seed=341811;
+    const cliffFamilies=[
+      [25.5,-16.1,1.05,2.6,1.2], [25.8,-20.2,1.15,3.0,1.2],
+      [27.1,-24.1,1.05,2.7,1.1], [29.2,-26.8,1.0,2.3,1.1],
+      [32.1,-28.1,1.25,2.0,.7], [35.8,-28.0,1.0,2.3,.8],
+      [39.8,-25.1,1.05,2.8,1.0], [43.0,-18.2,.8,2.8,1.05],
+      [42.1,-14.1,.7,1.8,.8], [29.9,-12.8,.65,1.45,.55]
+    ];
+    for(let i=0;i<cliffFamilies.length;i++){
+      const [x,z,sx,h,sz]=cliffFamilies[i],y=terrainAt(x,z);
+      if(y<.3)continue;
+      const cy=y-h*.58;
+      if(dress('strate',()=>{
+        limestoneStone(x,cy,z,sx,h,sz,.12,i);
+        // Corniche décalée et talon : même pendage, ruptures de largeur.
+        limestoneStone(x-.10,y-.27,z+.08,sx*1.14,.28,sz*1.12,.12,i+1);
+        limestoneStone(x+.12,cy-.20,z-.10,sx*.85,.8,sz*.9,.12,i+2);
+        rosemary(x,y+h*.36-.04,z,.48);
+      }))stoneLots.push([x,cy,z,sx*1.2,h,sz*1.2]);
+    }
+    // Groupes bas dans les creux, pins élancés à l'ouest ; aucune plantation
+    // centrale devant la lanterne ou sur la couronne de circulation du phare.
+    const groves=[
+      [27.4,-10.15,3.8,1.02,false], [26.5,-12.9,3.5,1.0,false],
+      [26.4,-17.6,3.8,1.08,false], [26.9,-20.9,3.4,.95,false],
+      [29.8,-21.1,3.2,.9,false], [31,-21.1,2.6,.75,true],
+      [28.3,-23.6,3.0,1.0,false], [30.1,-23.6,2.25,.7,true],
+      [38.6,-16.25,3.4,.85,false], [40.1,-16.25,3.0,.78,true],
+      [37.3,-25.85,2.2,.7,true]
+    ];
+    for(const [x,z,h,r,olive] of groves){
+      const y=rooted(x,z,.2);
+      if(y!==null)dress('arbre',()=>coastalTree(x,y,z,h,r,olive));
+    }
+    // Lisière décentrée : plusieurs tailles et hauteurs par poche, clairières
+    // préservées aux passages. Le sommet garde des arbustes plus bas.
+    for(let g=0;g<gardens.length;g++){
+      const [x,z,rx,rz]=gardens[g];
+      for(let j=0;j<7;j++){
+        const a=j*2.399+g*.8,r=.3+(j%3)*.22;
+        const px=x+Math.cos(a)*rx*r,pz=z+Math.sin(a)*rz*r;
+        const s=range(.28,z< -23?.48:.62),y=rooted(px,pz,s*.55);
+        if(y!==null)dress('maquis',()=>rosemary(px,y-.04,pz,s));
+      }
+    }
+
+    // Dallage du belvédère : petits polygones irréguliers à 8 mm du sol.
+    // Pas de disque vert/gris rapporté, ni de dalle sur les dernières marches.
+    const pavingRecords=[];
+    const summitPads=landings.slice(3,5);
+    for(let row=0;row<17;row++)for(let col=0;col<13;col++){
+      const z=-27.05+row*.32,x=31.95+col*.33+(row%2)*.165;
+      const jitter=.024*Math.sin(row*9+col*13),px=x+jitter,pz=z-jitter*.6;
+      if(!summitPads.some(p=>Math.hypot(px-p.x,pz-p.z)<p.r-.27))continue;
+      if(Math.hypot(px-lx,pz-lz)<1.31)continue;
+      if(access.some(path=>path.slice(1).some((b,k)=>nearestSegment(px,pz,path[k],b).d<.95)))continue;
+      const poly=[[-.135,-.115],[.065,-.14],[.15,-.065],[.14,.11],[-.055,.14],[-.145,.045]];
+      const points=poly.map(([dx,dz])=>[px+dx,12.508,pz+dz]);
+      const colr=tint(color(0xc9bca0),.92+.07*(.5+.5*Math.sin(row*2.7+col*4.3)));
+      const first=verts.length;
+      for(let k=0;k<6;k++)tri([px,12.508,pz],points[(k+1)%6],points[k],colr);
+      pavingRecords.push({first,end:verts.length});
+    }
+    // Vestiges de murets, ouverts côté mer. Aucune nouvelle emprise de maison.
+    for(const [x,z,heading] of [[31.1,-25.3,.2],[36.7,-26.1,-.25]]){
+      const y=rooted(x,z,.25);
+      if(y===null)continue;
+      dress('muret',()=>{
+        for(let j=0;j<3;j++){
+          const p=transform([(j-1)*.29,0,0],[x,y,z],heading);
+          limestoneStone(p[0],y+.02,p[2],.18,.30,.19,heading,j);
+          if(j!==1)limestoneStone(p[0]-.025,y+.26,p[2],.16,.25,.17,heading,j+1);
+        }
+      });
+    }
 
   } finally {
     seed = pharePreviousSeed;
