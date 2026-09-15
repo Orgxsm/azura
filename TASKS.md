@@ -61,9 +61,9 @@ Vision : un côté FarmVille 2 / Fae Farm, léger. Camp de base = **Île des Cha
 
 ## Phase 3 — Trois îles d'après références (Léo, 15 sept. 2026)
 Léo a fourni 3 concepts à reproduire **exactement** : `refs/arche.jpg`, `refs/gorge.jpg`, `refs/cabanes.jpg`, brief détaillé et emplacements dans `refs/REFS.md`. Ordre : Arche (32, 36) → Cabanes (−32, 38) → Gorge (0, 42).
-- [ ] Astra : `src/islands/arche.js` (arche de grès + manoir Tudor au sommet + maison de garde + tour + pont de corde), livré en 2 passes (relief/praticabilité, puis bâtiments/végétation).
+- [~] Astra : `src/islands/arche.js` — passe 8a livrée le 15 sept. 2026 (relief, deux piliers, voûte de 12 m à 9 m de dégagement, plateaux, montée ouest à 4 repos, pont provisoire en `stairs`, ponton NO ; 19 164 triangles, notes `src/islands/PASSE-8A.md`). Vérifié : débarquement, pont entier, repos 1–3, sommet (437/441 cellules), rive droite, réserves des bâtiments tous atteignables ; voyage Azura → Arche OK. `[ ]` 8b : manoir Tudor, dépendance, maison de garde, tour, `ropeBridge` à la place du pont provisoire, chênes, voiliers.
 - [x] (15 sept. 2026) Claude : helper `ropeBridge(points,width,opts)` dans util.js (planches, cordes porteuses, mains courantes, suspentes, poteaux ; tablier affaissé déclaré dans `stairDefs`), testé sur la plage d'Azura (traversée OK, flèche suivie par la carte).
-- [ ] Claude : registre des 3 îles dans `archipel.js` (pontons, voyages, mini-carte) à l'arrivée du relief de l'Arche, chenal navigable sous l'arche.
+- [x] (15 sept.) Claude : Arche inscrite au registre `archipel.js` (spawn (20.5, 26), ponton construit par l'île, `build:false`). `[ ]` Cabanes et Gorge à inscrire à leur arrivée ; `[ ]` chenal navigable sous l'arche (trajet de voyage dédié passant sous la voûte, la carte de hauteur monocouche voit le sommet).
 - [ ] Astra : `src/islands/cabanes.js` (piton, arbres géants, cabanes perchées, échelles, ponts, lagon, ponton à pirogues).
 - [ ] Claude : plateformes perchées et échelles praticables, troncs bloquants.
 - [ ] Astra : `src/islands/gorge.js` (gorge, terrasses, 8–10 maisons Tudor, pont suspendu, moulin `waterwheelMesh`).
@@ -74,6 +74,7 @@ Léo a fourni 3 concepts à reproduire **exactement** : `refs/arche.jpg`, `refs/
 - [ ] Événements jour/nuit (marché le matin, fête le soir).
 
 ## Notes
+- 15 sept. 2026, 15:45 : passe 8a (Arche, relief) intégrée (`astra/design-13` → `main`). 214 847 triangles, 203 593 cellules atteignables. Arrivée : 15,7 ms/image.
 - 15 sept. 2026, 15:25 : passe 7 (Champs cosy) intégrée (`astra/design-12` → `main`). Total 195 683 triangles, 148 335 cellules atteignables. Les trois îles sont maintenant en style cosy ; place à la phase 3 (refs/REFS.md).
 - 15 sept. 2026, 13:15 : passe 6 d'Astra (Azura cosy) intégrée (`astra/design-11` → `main`). 216 082 triangles au total (301 894 avant), 149 810 cellules atteignables (132 096 avant). ms/image Azura : plage 15,8 · village 19,4 · belvédère 15. Captures : `~/Downloads/azura-captures-passe-6/`. Comparaison d'atteignabilité entre deux builds : stocker la carte en bitstring dans `localStorage` (même origine localhost:8765) depuis l'onglet de l'ancien build, la relire dans le nouveau.
 - 15 sept. 2026, 12:50 : passe 5 d'Astra intégrée (`astra/design-10` → `main`). Tout atteignable, 132 096 cellules (+403 : vires retirées du front du trajet), 301 894 triangles. ms/image : arrivée 14,5 · village 17,2 · montée 18,2 · phare 11,9 · panorama 14,8. Captures : `~/Downloads/azura-captures-passe-5/`.
