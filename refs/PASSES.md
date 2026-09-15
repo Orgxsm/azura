@@ -1,0 +1,15 @@
+# Chaîne des passes automatiques (nuit du 15 au 16 sept. 2026)
+
+Claude tourne en autonome : toutes les 8 minutes il vérifie la conversation ChatGPT « Créer environnement 3D ». Quand Astra a livré le zip de la passe courante, Claude l'intègre, teste, fusionne, publie, envoie le retour et demande la passe suivante avec le texte ci-dessous (base = tête de `main` au moment de l'envoi).
+
+## Après 9a (Cabanes, relief) → demander 9b
+Passe 9b, base HASH : ÎLE AUX CABANES, habillage. D'après refs/cabanes.jpg : canopées des arbres géants (boules superposées, une couleur par boule, feuillage classé « feuille » donc ignoré par la carte de hauteur ; ≤ 1 500 triangles par arbre géant), cabanes perchées en bois sur les plateformes (toit de planches ou de chaume, garde-corps dodus, échelles décoratives si les vraies sont des escaliers), 2 ou 3 cabanes au sol sur les îlots de sable, abri du ponton, 3 pirogues statiques, palmiers, buissons ≥ 0,5 m, rochers de granit gris arrondis, lanternes, cordages, paniers. Emprises des cabanes déclarées dans `terraces`, sans déborder sur les plateformes de marche. Style cosy, bois miel, toits bombés. Escaliers, plateformes, ponts, ponton et points de contrôle 9a inchangés. Budgets : cabane ≤ 800, île ≤ 120 000. Zip avec tes notes.
+
+## Après 9b (Cabanes, habillage) → demander 10a
+Passe 10a, base HASH : VILLAGE DE LA GORGE, relief et accès seulement, src/islands/gorge.js, centre (0, 42), enveloppe x ∈ [−14, 14], z ∈ [28, 56]. D'après refs/gorge.jpg et refs/REFS.md : deux versants qui montent de la mer (nord, z ≈ 28) vers le sud (z ≈ 54), séparés par une gorge étroite (largeur ≈ 3 m au fond) où coule une rivière (lit creusé dans le relief, fond qui descend de y ≈ 6 au sud à y = 0 à la mer ; Claude y mettra l'eau courante et la chute). Terrasses en pierre sèche sur chaque versant (platforms ou terrasses rectangulaires, 3 niveaux : y ≈ 3, 6, 9), escaliers de pierre gauche et droite (stairs), un pont suspendu (ropeBridge, main) entre les deux versants au niveau haut, un ponton au nord côté Azura (dock build:false dans l'en-tête, landing, via si besoin). Emplacement réservé pour le moulin en bas de la rivière côté est (x ≈ 3, z ≈ 32) : socle plat pour la bâtisse, canal d'amenée. Les bâtiments viennent en 10b. Points de contrôle dans tes notes. Zip avec tes notes.
+
+## Après 10a (Gorge, relief) → demander 10b
+Passe 10b, base HASH : VILLAGE DE LA GORGE, habillage. 8 à 10 maisons Tudor (colombages, tuiles terre cuite à ≈ 42°, lucarnes, balcons peints, ≤ 1 200 triangles chacune) sur les terrasses, murs de soutènement en pierre sèche visibles, moulin à eau en bas (bâtisse Tudor + roue à aubes fournie en maillage dynamique `waterwheelMesh` avec os 0 à l'axe, ≈ 3 m de diamètre, que Claude fera tourner), canal en pierre, lavande, chênes ronds, palmiers, tonneaux, lanternes. Emprises dans `terraces`. Escaliers, terrasses, pont, ponton et lit de la rivière inchangés. Zip avec tes notes.
+
+## Après 10b → fin de la chaîne
+Remercier Astra, lui dire que Claude passe aux quêtes, à la rivière et à la roue, et qu'il peut reprendre le polish du grès de l'Arche et le pont relevé (appuis à y ≈ 6,4) s'il a du quota.
