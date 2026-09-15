@@ -62,7 +62,8 @@ Vision : un côté FarmVille 2 / Fae Farm, léger. Camp de base = **Île des Cha
 ## Phase 3 — Trois îles d'après références (Léo, 15 sept. 2026)
 Léo a fourni 3 concepts à reproduire **exactement** : `refs/arche.jpg`, `refs/gorge.jpg`, `refs/cabanes.jpg`, brief détaillé et emplacements dans `refs/REFS.md`. Ordre : Arche (32, 36) → Cabanes (−32, 38) → Gorge (0, 42).
 - [ ] Astra : `src/islands/arche.js` (arche de grès + manoir Tudor au sommet + maison de garde + tour + pont de corde), livré en 2 passes (relief/praticabilité, puis bâtiments/végétation).
-- [ ] Claude : helper `ropeBridge(points,width)` (planches, cordes, poteaux, déclaré en `stairs`), registre des 3 îles dans `archipel.js` (pontons, voyages, mini-carte), chenal navigable sous l'arche.
+- [x] (15 sept. 2026) Claude : helper `ropeBridge(points,width,opts)` dans util.js (planches, cordes porteuses, mains courantes, suspentes, poteaux ; tablier affaissé déclaré dans `stairDefs`), testé sur la plage d'Azura (traversée OK, flèche suivie par la carte).
+- [ ] Claude : registre des 3 îles dans `archipel.js` (pontons, voyages, mini-carte) à l'arrivée du relief de l'Arche, chenal navigable sous l'arche.
 - [ ] Astra : `src/islands/cabanes.js` (piton, arbres géants, cabanes perchées, échelles, ponts, lagon, ponton à pirogues).
 - [ ] Claude : plateformes perchées et échelles praticables, troncs bloquants.
 - [ ] Astra : `src/islands/gorge.js` (gorge, terrasses, 8–10 maisons Tudor, pont suspendu, moulin `waterwheelMesh`).
