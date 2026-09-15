@@ -133,16 +133,7 @@
       for(let i=0;i<outline.length;i++)tri(P([0,h,0]),P([outline[(i+1)%outline.length][0]*.94,h,outline[(i+1)%outline.length][1]*.94]),P([outline[i][0]*.94,h,outline[i][1]*.94]),col);
     }
   const cream=color(0xf3e6d0),timber=color(0x8f5f3a),slate=color(0x718398),mint=color(0x5e9c8f),pane=color(0x94bdc4);
-  // Correctif géométrique local du helper de 4602158 : sa boucle de côtés
-  // n'applique pas s aux cordes et suspentes. Retirer ce complément dès que
-  // util.js applique s aux deux décalages latéraux des cordes. Aucune marche ajoutée.
-  const bridgeRope=color(0xd8c9a0);
-  for(let i=0;i<bridgeDeck.length-1;i++){
-   const a=bridgeDeck[i],b=bridgeDeck[i+1];
-   cosyRod(add(a,[0,-.04,-1.4*.46]),add(b,[0,-.04,-1.4*.46]),.03,bridgeRope,6);
-   cosyRod(add(a,[0,.95,-.7]),add(b,[0,.95,-.7]),.022,bridgeRope,6);
-  }
-  for(const a of bridgeDeck)cosyRod(add(a,[0,0,-.7]),add(a,[0,.95,-.7]),.012,bridgeRope,5);
+  // (Complément local des cordes retiré : util.js applique désormais le signe s aux deux côtés du pont.)
   const modelCounts=[];
   function measured(name,budget,draw){const n=triangles;draw();const count=triangles-n;if(count>budget)throw Error(name+' : '+count+' triangles > '+budget);modelCounts.push({name,triangles:count});}
   function rod(P,a,b,r=.045,col=timber,n=4){cosyRod(P(a),P(b),r,col,n);}
@@ -258,8 +249,9 @@
   }
   // Blocs à pans coupés enchâssés, hors des escaliers et du chenal.
   for(const [x,y,z,w,d,h] of[[24.5,1.1,31.6,1.8,1.8,2.2],[25,4.3,31.2,1.5,1.1,1.6],[39.4,1,31.8,1.5,1.8,2.4],[40,6,31.25,1.5,1,2],[43.9,6.3,36,1.6,2.5,3],[43.8,1.2,39,2,2,2.4],[22.2,10.5,32,1.6,1,1.8]])cushion(q=>add([x,y,z],q),w,d,h,tint(stone,1.02));
-  function bush(x,y,z,r=.4){cosyBall([x,y+.32,z],[r,.32,r*.85],color(0x6fa35a),8);cosyBall([x+.17,y+.36,z],[r*.65,.29,r*.65],color(0x8fbf6b),6);}
-  for(const a of[[24.7,3.3,31.5],[25,5.9,31.2],[40,8,31.2],[39.5,3.4,31.8],[43.9,9.3,36],[38,13,33],[23.5,top(23.5),34.5]])bush(...a);
+  // renommé bush -> archeBush par Claude : farm.js déclare aussi bush() et le hoisting Annex B écraserait sa version
+  function archeBush(x,y,z,r=.4){cosyBall([x,y+.32,z],[r,.32,r*.85],color(0x6fa35a),8);cosyBall([x+.17,y+.36,z],[r*.65,.29,r*.65],color(0x8fbf6b),6);}
+  for(const a of[[24.7,3.3,31.5],[25,5.9,31.2],[40,8,31.2],[39.5,3.4,31.8],[43.9,9.3,36],[38,13,33],[23.5,top(23.5),34.5]])archeBush(...a);
   for(const [x,y,z] of[[24.7,3.3,31.5],[40,8,31.2],[39.5,3.4,31.8]])for(let j=0;j<5;j++){
    const xx=x+(j-2)*.14;tri([xx-.035,y,z],[xx+.035,y,z],[xx+.08,y+.32+(j%2)*.10,z+.04],color(0x6fa35a));
   }
