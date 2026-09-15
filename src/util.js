@@ -32,14 +32,14 @@ function ropeBridge(points,width=1.2,opts={}){
   const side=(p,q,s)=>{const d=sub(q,p),h=Math.hypot(d[0],d[2])||1;return [-d[2]/h*s,0,d[0]/h*s];};
   for(let i=0;i<deck.length-1;i++){const p=deck[i],q=deck[i+1],dir=sub(q,p),len=Math.hypot(dir[0],dir[1],dir[2]),rot=Math.atan2(dir[0],dir[2]);
     // cordes porteuses sous les planches (deux côtés)
-    for(const s of[-1,1]){const o=side(p,q,width*.46);beam(add(add(p,o),[0,-.04,0]),add(add(q,o),[0,-.04,0]),.03,ropeCol);}
+    for(const s of[-1,1]){const o=side(p,q,width*.46*s);beam(add(add(p,o),[0,-.04,0]),add(add(q,o),[0,-.04,0]),.03,ropeCol);}
     // planches
     const n=Math.max(1,Math.round(len/plankStep));
     for(let j=0;j<n;j++){const t=(j+.5)/n,c=add(p,mul(dir,t)),tilt=Math.atan2(dir[1],Math.hypot(dir[0],dir[2]));
       box([c[0],c[1]-.025,c[2]],[width,.05,len/n*.78],tint(plankCol,.92+.16*rnd()),rot+(rnd()-.5)*.03);
       // lissage : un chevron discret sous chaque planche pour éviter les trous vus de dessous
       if(Math.abs(tilt)>.25)box([c[0],c[1]-.06,c[2]],[width*.9,.03,len/n*.4],tint(plankCol,.85),rot);}
-    if(rail){for(const s of[-1,1]){const o=side(p,q,width*.5);const P=add(add(p,o),[0,.95,0]),Q=add(add(q,o),[0,.95,0]);beam(P,Q,.022,ropeCol);
+    if(rail){for(const s of[-1,1]){const o=side(p,q,width*.5*s);const P=add(add(p,o),[0,.95,0]),Q=add(add(q,o),[0,.95,0]);beam(P,Q,.022,ropeCol);
       // suspentes
       const m=Math.max(1,Math.round(len/.6));for(let j=0;j<=m;j++){if(i&&j===0)continue;const t=j/m,lo=add(add(p,o),mul(sub(add(q,o),add(p,o)),t)),hi=add(lo,[0,.95,0]);beam(lo,hi,.012,ropeCol);}}}
   }
