@@ -7,7 +7,7 @@ Branche d'intégration : `main`. Branches de travail : `astra/*` (design, animat
 Le jeu est **un seul fichier HTML** assemblé par `python3 build.py` à partir de `src/`. On ne modifie jamais `dist/Azura-3D.html` ni `~/Downloads/Azura-3D.html` à la main : on édite `src/`, on assemble, on teste.
 
 Tout le code vit dans **une seule portée JavaScript** (une IIFE). Donc :
-- pas deux fonctions ou `const` du même nom dans deux fichiers (voir la liste des noms réservés plus bas) ;
+- pas deux fonctions ou `const` du même nom dans deux fichiers (voir la liste des noms réservés plus bas) ; **une `function` déclarée dans le bloc `{ … }` d'une île écrase aussi une fonction globale homonyme** (hoisting Annex B, mode non strict) : préfixer les helpers d'île (`archeBush`, pas `bush`) ;
 - l'ordre d'assemblage (`ORDER` dans `build.py`) est fixe : `core → island → util → rig → shaders → world → audio → game → anim → render` ;
 - un fichier peut appeler une fonction déclarée plus loin (hoisting), mais pas lire une `const` déclarée plus loin au moment du chargement.
 
