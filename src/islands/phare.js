@@ -1,5 +1,5 @@
-// islands/phare.js — Île du Phare · Astra · passe 4, village miniature cosy
-// Base publique : 1c0d3e6. Coordonnées en mètres, Y vertical, mer Y=0.
+// islands/phare.js — Île du Phare · Astra · passe 5, façades et accueil cosy
+// Base publique : 9021617. Coordonnées en mètres, Y vertical, mer Y=0.
 // Centre {x:34,z:-18} ; rayon nominal 12, englobant 14.
 // Enveloppe du relief : x∈[20,48], z∈[-32,-4].
 // Ponton EXISTANT géré par archipel.js : centre (34,.60,-5),
@@ -84,7 +84,10 @@
       height -= 1.36*smooth((r-.94)/.06);
       // Trois vires DANS le massif : bandes horizontales, raccords plus raides.
       // La marge protège aussi les triangles voisins des chemins et des PNJ.
-      let sculpt=smooth((.94-r)/.07);
+      // Réserver la sculpture à l'ouest et au nord. Le raccord traverse
+      // plusieurs mètres en coordonnées monde, jamais un anneau radial.
+      const aspect=Math.max(smooth((29-x)/3),smooth((-z-25)/3));
+      let sculpt=smooth((.94-r)/.07)*aspect;
       for(const path of paths)for(let i=1;i<path.length;i++)
         sculpt=Math.min(sculpt,smooth((nearestSegment(x,z,path[i-1],path[i]).d-1.55)/.7));
       for(const p of landings)
@@ -238,9 +241,18 @@
     function cosyBall(pos,size,col,n=8) {
       softLathe(pos,n<=6?[[-1,0],[0,1],[.65,.75],[.82,0]]:[[-1,0],[-.65,.76],[0,1],[.64,.78],[.82,.42],[.82,0]],col,n,size);
     }
+    // Tube lissé sans bouchons : raccords masqués dans les montants/rives.
+    function cosyRod(a,b,r,col,n=6) {
+      const axis=norm(sub(b,a)),u=norm(cross(axis,Math.abs(axis[1])>.9?[1,0,0]:[0,1,0])),v=cross(axis,u);
+      const N=i=>add(mul(u,Math.cos(i/n*TAU)),mul(v,Math.sin(i/n*TAU)));
+      for(let i=0;i<n;i++){
+        const na=N(i),nb=N(i+1),aa=add(a,mul(na,r)),ab=add(a,mul(nb,r)),ba=add(b,mul(na,r)),bb=add(b,mul(nb,r));
+        tri(aa,ba,bb,col,[na,na,nb]);tri(aa,bb,ab,col,[na,nb,nb]);
+      }
+    }
     // Rectangle arrondi extrudé : trois points par coin, bourrelet haut et bas.
     function cushion(P,w,d,h,col,small=false) {
-      const outline=[]; const steps=small?2:3; const r=Math.min(.18,w*.25,d*.25);
+      const outline=[]; const steps=2; const r=Math.min(.18,w*.25,d*.25);
       for(let k=0;k<4;k++)for(let j=0;j<steps;j++){
         const a=k*Math.PI/2+j*Math.PI/(2*(steps-1));
         outline.push([(w/2-r)*Math.sign(Math.cos(k*Math.PI/2+Math.PI/4))+r*Math.cos(a),
@@ -265,44 +277,57 @@
         tri(P([0,h/2,.008]),back[i],back[j],col);
         quad(back[i],rim[i],rim[j],back[j],ivory);
       }
-      if(door)cosyBall(P([w*.3,h*.43,.09]),[.07,.07,.07],honey,6);
+      if(door)cosyBall(P([w*.3,h*.43,.09]),[.07,.07,.07],honey,4);
       else{
-        cylinder(P([-w*.4,h*.45,.03]),P([w*.4,h*.45,.03]),.035,.035,ivory,5);
-        cylinder(P([0,.08,.03]),P([0,h-.07,.03]),.035,.035,ivory,5);
+        cosyRod(P([-w*.4,h*.45,.03]),P([w*.4,h*.45,.03]),.035,ivory,5);
+        cosyRod(P([0,.08,.03]),P([0,h-.07,.03]),.035,ivory,5);
       }
     }
     function cosyHouse(x,y,z,w,d,h,rot,variant) {
       const first=verts.length,count=triangles,chimneyStart=chimneys.length;
       // Garder l'aléa et les enregistrements exacts du constructeur existant.
       house(x,y,z,w,d,h,rot,false,false);verts.length=first;triangles=count;
-      h=Math.min(h,w-.30);
+      h=Math.min(h,w-.33);
       const P=q=>transform(q,[x,y,z],rot),shutter=[sage,color(0x7c8fc7),coral][variant];
-      cushion(P,w-.30,d-.30,h,[ivory,color(0xf6dcc4),color(0xe9eedc)][variant]);
-      // Toiture bombée : écailles arrondies partagées, débord 41 cm depuis le crépi (emprise historique conservée).
-      const half=w/2+.26,depth=d/2+.26,rise=half*.64;
-      const roofP=(side,t,z)=>P([side*t*half,h+rise*(1-t)+.10*Math.sin(Math.PI*t)+.06*Math.cos(z/depth*Math.PI/2),z]);
+      cushion(P,w-.33,d-.33,h,[ivory,color(0xf6dcc4),color(0xe9eedc)][variant]);
+      // Trois rangs décalés : une seule teinte, le relief dessine les écailles.
+      const half=w/2+.235,depth=d/2+.235,rise=half*.64;
+      const roofP=(side,t,z)=>P([side*t*half,h+rise*(1-t)+.12*Math.sin(Math.PI*t)+.10*(1-(z/depth)**2),z]);
       for(const side of[-1,1]){
-        for(let row=0;row<2;row++)for(let col=0;col<4;col++){
-          const t=row/2,u=(row+1)/2,za=-depth+col*depth/2,zb=za+depth/2;
-          const a=roofP(side,t,za),b=roofP(side,t,zb),c=roofP(side,u,zb),e=roofP(side,u,za);
-          const m=add(roofP(side,(t+u)/2,(za+zb)/2),[0,.055,0]);
-          const colour=(row+col)%3===0?color(0xd97b57):tileCosy;
-          const edge=[a,b,roofP(side,u-.06,zb),roofP(side,u,zb-.075),roofP(side,u,za+.075),roofP(side,u-.06,za)];
-          for(let k=0;k<edge.length;k++)tri(edge[k],m,edge[(k+1)%edge.length],colour);
+        for(let row=0;row<3;row++)for(let col=0;col<3+(row%2);col++){
+          const t=row/3,u=(row+1)/3,step=depth*2/3;
+          const za=Math.max(-depth,-depth+(col-(row%2)*.5)*step),zb=Math.min(depth,-depth+(col+1-(row%2)*.5)*step);
+          const edge=[roofP(side,t,za),roofP(side,t,zb),roofP(side,u-.065,zb),roofP(side,u,zb-(zb-za)*.2),roofP(side,u,za+(zb-za)*.2),roofP(side,u-.065,za)];
+          const mid=add(roofP(side,(t+u)/2,(za+zb)/2),[0,.065,0]);
+          // Normales adoucies : écailles bombées, sans pyramides ni damier.
+          const normal=norm(sub(transform([side*.64,1,0],[0,0,0],rot),[0,0,0]));
+          const en=p=>norm(add(normal,mul(sub(p,mid),.35)));
+          for(let k=0;k<6;k++)tri(edge[k],mid,edge[(k+1)%6],tileCosy,[en(edge[k]),normal,en(edge[(k+1)%6])]);
         }
         quad(roofP(side,0,-depth),roofP(side,0,depth),roofP(side,1,depth),roofP(side,1,-depth),tileCosy);
         for(const zz of[-depth,depth]){
           const a=roofP(side,0,zz),b=roofP(side,1,zz);
-          cylinder(a,b,.095,.095,tileCosy,6);
+          cosyRod(a,b,.12,tileCosy);
           tri(P([0,h,zz]),b,a,ivory);
         }
-        cylinder(roofP(side,1,-depth),roofP(side,1,depth),.10,.10,tileCosy,6);
+        cosyRod(roofP(side,1,-depth),roofP(side,1,depth),.12,tileCosy);
       }
-      cylinder(P([0,h+rise,-depth]),P([0,h+rise,depth]),.13,.13,tileCosy,7);
-      cosyOpening(q=>P([q[0]-.30,q[1],d/2-.145+q[2]]),1.2,2.1,shutter,true);
+      // Faîtage courbe réel : flèche de 10 cm, quatre tronçons arrondis.
+      for(let j=0;j<4;j++)cosyRod(roofP(1,0,-depth+j*depth/2),roofP(1,0,-depth+(j+1)*depth/2),.13,tileCosy,5);
+      cosyOpening(q=>P([q[0]-.30,q[1],d/2-.160+q[2]]),1.0,1.9,shutter,true);
+      // Façade d'accueil : fenêtre, jardinière, seuil dans l'emprise bloquée.
+      const F=q=>P([q[0]+.62,q[1]+.90,d/2-.160+q[2]]);
+      cosyOpening(F,.42,.64,color(0x91bec5));
+      cushion(q=>F([q[0],q[1]-.14,q[2]+.055]),.49,.15,.13,honey,true);
+      cosyBall(F([0,.025,.07]),[.15,.10,.08],coral,4);
+      cushion(q=>P([q[0]-.30,q[1],d/2-.08+q[2]]),1.10,.22,.08,ivory,true);
+      // Auvent incliné de 20 cm : ne dépasse pas le cadre ni les marches.
+      const A=q=>P([q[0]-.30,1.99+q[1],d/2-.14+q[2]]);
+      quad(A([-.58,.10,0]),A([.58,.10,0]),A([.58,0,.20]),A([-.58,0,.20]),honey);
+      cosyRod(A([-.58,0,.20]),A([.58,0,.20]),.045,honey,5);
       // Grande fenêtre de côté ; cadres et volets épais, jardinière intégrée.
       for(const side of[-1,1]){
-        const W=q=>P([side*(w/2-.142+q[2]),.8+q[1],q[0]]);
+        const W=q=>P([side*(w/2-.157+q[2]),.8+q[1],q[0]]);
         cosyOpening(W,.65,.87,color(0x91bec5));
         for(const k of[-1,1])cushion(q=>W([q[0]+k*.48,q[1]+.08,q[2]+.03]),.20,.10,.68,shutter,true);
         cushion(q=>W([q[0],q[1]-.14,q[2]+.07]),.75,.18,.16,honey,true);
@@ -326,8 +351,8 @@
     houseLots.push([lx,lz,1.65]);
     const towerProfile=[[0,1.05],[.18,1.05],[1.2,1.02],[2.2,.98],[3.3,.94],[4.4,.86],[5.4,.80],[6.2,.80]];
     for(let j=0;j<towerProfile.length-1;j++)softLathe([lx,base,lz],towerProfile.slice(j,j+2),j===2||j===4?coral:ivory,28);
-    cosyOpening(p=>[lx+p[0],base+p[1],lz+1.03+p[2]],1.2,2.1,sage,true);
-    for(const y of[base+2.6,base+4.8])cosyOpening(p=>[lx+p[0],y+p[1],lz+.90+p[2]],.46,.78,color(0x91bec5));
+    cosyOpening(p=>[lx+p[0],base+p[1],lz+1.065+p[2]],1.02,1.785,sage,true);
+    for(const y of[base+2.6,base+4.8])cosyOpening(p=>[lx+p[0],y+p[1],lz+1.015+p[2]],.46,.78,color(0x91bec5));
     softLathe([lx,top,lz],[[-.24,1.35],[-.14,1.6],[0,1.6],[.07,1.44]],ivory,28);
     for(let i=0;i<16;i++){
       const a=i/16*TAU;
@@ -392,6 +417,14 @@
     // Petit calcaire à pans coupés : strates lisibles, pas de sphère ni de
     // rotation arbitraire. Les familles côtières suivent le même pendage.
     function limestoneStone(x,y,z,sx,sy,sz,heading=0,variant=0) {
+      // 7 variantes sur 10 : galet doux dans l'enveloppe du bloc ancien.
+      // Les dalles très plates restent des strates de calcaire en accent.
+      const family=((Math.floor(x*13+z*17+variant*3)%10)+10)%10;
+      if(family<7 && sy>Math.min(sx,sz)*.32){
+        const radius=.64;
+        softLathe([x,y+sy*.25,z],[[-.65,0],[-.47,.78],[0,1],[.52,.83],[.72,0]],tint(chalk,.98),10,[sx*radius,sy,sz*radius]);
+        return;
+      }
       const outline=[[1,.45],[.48,1],[-.5,1],[-1,.42],[-1,-.48],[-.42,-1],[.5,-1],[1,-.4]]
         .map(p=>mul(p,.96/Math.hypot(...p)));
       const levels=[[-.4,.82],[.10,1],[.75,.84],[.94,.55]];
@@ -704,7 +737,54 @@
       }
     });
 
-    // Les jardinières et volets sont désormais intégrés à cosyHouse.
+    // Accueil : panneau et fanions sur leur propre portique, à côté du passage.
+    // Aucun câble projeté au-dessus d'un chemin dans la carte de hauteur.
+    const signY=rooted(32.7,-8.4,.16);
+    if(signY!==null)dress('panneau-fanions',()=>{
+      const P=q=>add([32.7,signY,-8.4],q);
+      for(const x of[-.64,.64]){
+        cylinder(P([x,-.03,0]),P([x,1.94,0]),.055,.045,honey,8);
+        cosyBall(P([x,1.95,0]),[.08,.09,.08],coral,6);
+      }
+      cushion(q=>P([q[0],q[1]+.94,q[2]]),1.39,.10,.35,honey);
+      // Lettres peintes géométriques : pas de texture, police ou chargement.
+      const glyph={L:['100','100','100','100','111'],E:['111','100','110','100','111'],
+        P:['110','101','110','100','100'],H:['101','101','111','101','101'],
+        A:['010','101','111','101','101'],R:['110','101','110','101','101']};
+      const label='LE PHARE',s=.037;
+      for(let c=0;c<label.length;c++)if(glyph[label[c]])for(let j=0;j<5;j++)for(let k=0;k<3;k++)if(glyph[label[c]][j][k]==='1'){
+        const x=-.575+c*s*4+k*s,y=1.215-j*s;
+        quad(P([x,y,.057]),P([x+s,y,.057]),P([x+s,y-s,.057]),P([x,y-s,.057]),color(0x8f5f3a));
+      }
+      const ropeP=t=>P([-.64+t*1.28,1.93-.16*Math.sin(t*Math.PI),0]);
+      for(let i=0;i<8;i++)cosyRod(ropeP(i/8),ropeP((i+1)/8),.014,honey,5);
+      for(let i=0;i<5;i++){
+        const q=ropeP((i+1)/6),col=[sage,coral,ivory][i%3];
+        tri(add(q,[-.09,-.025,.01]),add(q,[.09,-.025,.01]),add(q,[0,-.26,.035]),col);
+      }
+    });
+    // Table de café au pied de la maison basse, séparée de la barque.
+    const cafeY=rooted(40.25,-9.25,.28);
+    if(cafeY!==null)dress('table-cafe',()=>{
+      const P=q=>add([40.25,cafeY,-9.25],q);
+      cylinder(P([0,0,0]),P([0,.58,0]),.11,.065,honey,8);
+      softLathe(P([0,.60,0]),[[-.07,.26],[-.025,.31],[.015,.31],[.04,.27],[.04,0]],honey,12);
+      for(const x of[-.10,.10]){
+        softLathe(P([x,.645,0]),[[0,.038],[.07,.049],[.085,.045]],ivory,8);
+        cosyBall(P([x+.055,.69,0]),[.025,.034,.018],ivory,4);
+      }
+      cosyBall(P([0,.675,-.13]),[.10,.035,.055],color(0xe8b86e),6);
+    });
+    // Ruche en paille près du belvédère ; aucune nouvelle IA ni récolte.
+    const hiveY=rooted(36,-26.8,.18);
+    if(hiveY!==null)dress('ruche',()=>{
+      const P=q=>add([36,hiveY,-26.8],q);
+      softLathe(P([0,0,0]),[[0,.21],[.07,.27],[.16,.27],[.24,.24],[.32,.23],[.40,.19],[.48,.16],[.54,.09],[.56,0]],color(0xd4a761),12);
+      for(let j=0;j<3;j++)softLathe(P([0,.14+j*.11,0]),[[0,.268-j*.025],[.026,.264-j*.025]],honey,12);
+      cosyBall(P([0,.12,.25]),[.062,.07,.018],color(0x8f5f3a),6);
+    });
+
+    // Les jardinières et volets sont intégrés à cosyHouse.
   } finally {
     seed = pharePreviousSeed;
   }
