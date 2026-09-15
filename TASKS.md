@@ -37,7 +37,7 @@ Emplacements proposés (x, z en mètres, la mer à y = 0) :
 
 ## Direction artistique (15 sept. 2026)
 Léo veut un rendu **cosy game** (Heartopia, Petit Planet, Loftia) : voir `DA-COSY.md`. Priorité à la modélisation des maisons, props et végétation (Astra), le rendu suit (Claude, branche `claude/cosy-render` : ciel pastel, ombres lavande, eau laiteuse, bloom doux).
-- [ ] Astra : passe 3 du Phare déjà en cours sur 510b5d2 ; à partir de la passe 4, appliquer `DA-COSY.md` (maisons trapues arrondies, toits débordants bombés, ouvertures surdimensionnées, arbres en boules, galets ronds).
+- [x] (passe 4, 15 sept. 2026) Astra : 3 maisons cosy (crème/rosée/vert d'eau, coins chanfreinés, toits bombés en écailles, portes 1,2 × 2,1, volets sauge/pervenche/corail, jardinières, nichoirs, cheminées rondes), phare tronconique crème/corail à balustres dodus, 12 arbres en boules + 2 cyprès, raccord des vires élargi ; −14 761 triangles (île à 82 776). Notes : `src/islands/PASSE-4.md`. `[ ]` porte trop dominante sur la façade avant de la maison basse ; stries de vires encore visibles derrière elle ; galets ronds et props cosy restent à faire.
 - [x] Claude : premier jet du rendu cosy (shaders.js, SSAO 0,6).
 
 ## Phase 2 — La ferme et l'Île des Champs (validée par Léo le 9 sept. 2026)
@@ -63,6 +63,7 @@ Vision : un côté FarmVille 2 / Fae Farm, léger. Camp de base = **Île des Cha
 - [ ] Événements jour/nuit (marché le matin, fête le soir).
 
 ## Notes
+- 15 sept. 2026, 09:55 : passe 4 d'Astra intégrée (`astra/design-9` → `main`). Tout atteignable (montée, paliers, 3 portes, chèvres), 131 693 cellules, 301 544 triangles (316 305 avant). ms/image après-midi, machine au repos : arrivée 14,5 · village 17,3 · montée 18,3 · phare 12 · panorama 14,9. Captures : `~/Downloads/azura-captures-passe-4/`.
 - 15 sept. 2026, 01:00 : passe 3 d'Astra intégrée (`astra/design-8` → `main`). Parcours, paliers latéraux, gardien, chèvres, barque, casier : tout atteignable, 131 984 cellules (−587), 316 305 triangles (+4 238). Mesures de temps invalides ce soir : un ffmpeg Remotion du projet PULSE tournait à 700 % CPU pendant les captures. Captures (rendu cosy, après-midi) : `~/Downloads/azura-captures-passe-3/`.
 - 15 sept. 2026, 00:45 : passe 2 d'Astra (`azura-phare-passe-2.zip`, base 36e90af) intégrée via `astra/design-7` → `main`. Vérifié dans Chrome : montée entière atteignable, gardien, chèvres, coin de pêche OK, banc bloqué (attendu) ; 312 067 triangles (285 436 avant), 132 571 cellules atteignables (−597, emprises des strates) ; ms/image sur les 5 cadrages : arrivée 17,2 · village 21,8 · montée 19,6 · phare 12,4 · panorama 14,9 (passe 1 : 17,5 · 23 · 20 · 15 · 20). Captures : `~/Downloads/azura-captures-passe-2/`.
 - 14 sept. 2026, 23:10 : passe 1 d'Astra (`azura-phare-passe-1.zip`, base b08a421) intégrée via `astra/design-6` → `main`. Vérifié dans Chrome : montée crique → plateau entièrement atteignable, gardien/chèvres/paliers OK, seule la cellule du banc est bloquée (attendu) ; 285 436 triangles (277 458 avant), 14,7 ms/image contre 14,3 sur la même vue. Piège Chrome MCP : l'onglet est `hidden` donc `render()` sort tout de suite et `bench()` ne mesure rien ; forcer `Object.defineProperty(document,'hidden',{get:()=>false})` + `dispatchEvent(new Event('visibilitychange'))` avant de mesurer ou de capturer.
