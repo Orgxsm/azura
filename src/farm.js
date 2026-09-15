@@ -116,7 +116,8 @@ const close=document.createElement('button');close.className='secondary';close.t
 // Poulailler par île (case de sable plate hors des parcelles). Maillage et pose provisoires (Claude) : Astra livrera henMesh + poseHen (5 os : 0 corps, 1 tête, 2 patte G, 3 patte D, 4 queue), détectés automatiquement.
 const COOPS=[{island:'champs',x:-24,z:12.7,heading:-PI/2}];
 for(const c of COOPS){c.y=cellH(c.x,c.z);c.bones=new Float32Array(16);for(let dx=-.55;dx<=.55;dx+=HS)for(let dz=-.5;dz<=.5;dz+=HS){const i=cellIndex(c.x+dx,c.z+dz);if(i>=0)blocked[i]=1;}}
-const coopMesh=meshDyn(new Float32Array(withBone(0,()=>{const wood=color(0x9a6a3c),dark=color(0x6b4426),straw=color(0xe0c27a);
+// Poulailler : maillage cosy d'Astra (champsCoopDesign, champs.js passe 7) ; repli sur l'ancien maillage maison si la fabrique manque.
+const coopMesh=meshDyn(typeof champsCoopDesign==='function'?champsCoopDesign():new Float32Array(withBone(0,()=>{const wood=color(0x9a6a3c),dark=color(0x6b4426),straw=color(0xe0c27a);
 box([0,.14,0],[.16,.28,.16],dark);for(const [x,z] of[[-.42,-.36],[.42,-.36],[-.42,.36],[.42,.36]])box([x,.14,z],[.08,.28,.08],dark);
 box([0,.28,0],[1,.06,.86],wood);box([0,.62,0],[.94,.62,.8],tint(wood,1.05));
 box([.48,.5,0],[.02,.28,.2],C.dark);box([0,.96,0],[1.08,.06,.94],dark);roof([0,.99,0],1.12,1.0,.36,0);
