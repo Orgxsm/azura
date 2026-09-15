@@ -529,8 +529,8 @@ sceneMarks.push({id:'champs',start:verts.length/9});
 sceneMarks[sceneMarks.length-1].end=verts.length/9;
 
 sceneMarks.push({id:'phare',start:verts.length/9});
-// islands/phare.js — Île du Phare · Astra · passe 3, vires et port habité
-// Base publique : 510b5d2. Coordonnées en mètres, Y vertical, mer Y=0.
+// islands/phare.js — Île du Phare · Astra · passe 4, village miniature cosy
+// Base publique : 1c0d3e6. Coordonnées en mètres, Y vertical, mer Y=0.
 // Centre {x:34,z:-18} ; rayon nominal 12, englobant 14.
 // Enveloppe du relief : x∈[20,48], z∈[-32,-4].
 // Ponton EXISTANT géré par archipel.js : centre (34,.60,-5),
@@ -624,7 +624,7 @@ sceneMarks.push({id:'phare',start:verts.length/9});
         sculpt=Math.min(sculpt,smooth((Math.hypot(x-px,z-pz)-pr-.55)/.5));
       for(const level of[1.65,5.15,8.55]){
         const d=height-level;
-        height-=d*(1-smooth((Math.abs(d)-.36)/.58))*sculpt;
+        height-=d*(1-smooth((Math.abs(d)-.36)/1.0))*sculpt;
       }
       // Tailler le massif SOUS les escaliers : le personnage ne disparaît pas
       // dans le relief même si la carte tamponne correctement les marches.
@@ -750,43 +750,136 @@ sceneMarks.push({id:'phare',start:verts.length/9});
     for(const path of paths)stairs(path,1.3,false,true);
     // Une courte liaison de plain-pied laisse la porte et le gardien accessibles.
     stairs([[34,12.5,-23],[33.2,12.5,-23.2]],1.1,false,false);
-    house(40,3.6,-12.8,2.5,2.1,2.25,-.05,false,false);
-    house(29.7,7,-16,2.4,2.1,2.15,.03,false,false);
-    house(39.8,10.3,-20.5,2.6,2.2,2.25,.03,false,false);
+    // Constructeurs locaux : aucun changement des maisons d'Azura/Champs.
+    const cosyStats=[];
+    const ivory=color(0xf3e6d0),honey=color(0xc58b4e),coral=color(0xd9736f);
+    const tileCosy=color(0xe8925c),sage=color(0x5e9c8f);
+    // Surface de révolution à normales analytiques, sans faces aux pôles doublées.
+    function softLathe(pos,profile,col,n=12,scale=[1,1,1]) {
+      const P=(j,i)=>add(pos,[Math.cos(i/n*TAU)*profile[j][1]*scale[0],profile[j][0]*scale[1],Math.sin(i/n*TAU)*profile[j][1]*scale[2]]);
+      const N=(j,i)=>{
+        const a=profile[Math.max(0,j-1)],b=profile[Math.min(profile.length-1,j+1)];
+        return norm([Math.cos(i/n*TAU)*(b[0]-a[0])/scale[0],-(b[1]-a[1])/scale[1],Math.sin(i/n*TAU)*(b[0]-a[0])/scale[2]]);
+      };
+      for(let j=0;j<profile.length-1;j++)for(let i=0;i<n;i++){
+        if(profile[j][1]>0)tri(P(j,i),P(j+1,i+1),P(j,i+1),col,[N(j,i),N(j+1,i+1),N(j,i+1)]);
+        if(profile[j+1][1]>0)tri(P(j,i),P(j+1,i),P(j+1,i+1),col,[N(j,i),N(j+1,i),N(j+1,i+1)]);
+      }
+    }
+    function cosyBall(pos,size,col,n=8) {
+      softLathe(pos,n<=6?[[-1,0],[0,1],[.65,.75],[.82,0]]:[[-1,0],[-.65,.76],[0,1],[.64,.78],[.82,.42],[.82,0]],col,n,size);
+    }
+    // Rectangle arrondi extrudé : trois points par coin, bourrelet haut et bas.
+    function cushion(P,w,d,h,col,small=false) {
+      const outline=[]; const steps=small?2:3; const r=Math.min(.18,w*.25,d*.25);
+      for(let k=0;k<4;k++)for(let j=0;j<steps;j++){
+        const a=k*Math.PI/2+j*Math.PI/(2*(steps-1));
+        outline.push([(w/2-r)*Math.sign(Math.cos(k*Math.PI/2+Math.PI/4))+r*Math.cos(a),
+          (d/2-r)*Math.sign(Math.sin(k*Math.PI/2+Math.PI/4))+r*Math.sin(a)]);
+      }
+      const bevel=Math.min(.10,h*.25);
+      const rows=small?[[0,.9],[h,.9]]:[[0,.94],[bevel,1],[h-bevel,1],[h,.94]];
+      for(let j=0;j<rows.length-1;j++)for(let i=0;i<outline.length;i++){
+        const pt=(q,k)=>P([outline[k%outline.length][0]*rows[q][1],rows[q][0],outline[k%outline.length][1]*rows[q][1]]);
+        quad(pt(j,i),pt(j+1,i),pt(j+1,i+1),pt(j,i+1),col);
+      }
+      for(let i=0;i<outline.length;i++)tri(P([0,h,0]),P([outline[(i+1)%outline.length][0]*.94,h,outline[(i+1)%outline.length][1]*.94]),P([outline[i][0]*.94,h,outline[i][1]*.94]),col);
+    }
+    // Porte/cadre : retour d'embrasure de 25 cm et contour arrondi épais.
+    function cosyOpening(P,w,h,col,door=false) {
+      const shape=[[-w/2,0],[w/2,0],[w/2,h-w/2]];
+      for(let i=1;i<=6;i++){const a=i*Math.PI/6;shape.push([Math.cos(a)*w/2,h-w/2+Math.sin(a)*w/2]);}
+      const back=shape.map(([x,y])=>P([x,y,0]));
+      const rim=shape.map(([x,y])=>P([x*1.18,(y-h/2)*1.07+h/2,.25]));
+      for(let i=0;i<shape.length;i++){
+        const j=(i+1)%shape.length;
+        tri(P([0,h/2,.008]),back[i],back[j],col);
+        quad(back[i],rim[i],rim[j],back[j],ivory);
+      }
+      if(door)cosyBall(P([w*.3,h*.43,.09]),[.07,.07,.07],honey,6);
+      else{
+        cylinder(P([-w*.4,h*.45,.03]),P([w*.4,h*.45,.03]),.035,.035,ivory,5);
+        cylinder(P([0,.08,.03]),P([0,h-.07,.03]),.035,.035,ivory,5);
+      }
+    }
+    function cosyHouse(x,y,z,w,d,h,rot,variant) {
+      const first=verts.length,count=triangles,chimneyStart=chimneys.length;
+      // Garder l'aléa et les enregistrements exacts du constructeur existant.
+      house(x,y,z,w,d,h,rot,false,false);verts.length=first;triangles=count;
+      h=Math.min(h,w-.30);
+      const P=q=>transform(q,[x,y,z],rot),shutter=[sage,color(0x7c8fc7),coral][variant];
+      cushion(P,w-.30,d-.30,h,[ivory,color(0xf6dcc4),color(0xe9eedc)][variant]);
+      // Toiture bombée : écailles arrondies partagées, débord 41 cm depuis le crépi (emprise historique conservée).
+      const half=w/2+.26,depth=d/2+.26,rise=half*.64;
+      const roofP=(side,t,z)=>P([side*t*half,h+rise*(1-t)+.10*Math.sin(Math.PI*t)+.06*Math.cos(z/depth*Math.PI/2),z]);
+      for(const side of[-1,1]){
+        for(let row=0;row<2;row++)for(let col=0;col<4;col++){
+          const t=row/2,u=(row+1)/2,za=-depth+col*depth/2,zb=za+depth/2;
+          const a=roofP(side,t,za),b=roofP(side,t,zb),c=roofP(side,u,zb),e=roofP(side,u,za);
+          const m=add(roofP(side,(t+u)/2,(za+zb)/2),[0,.055,0]);
+          const colour=(row+col)%3===0?color(0xd97b57):tileCosy;
+          const edge=[a,b,roofP(side,u-.06,zb),roofP(side,u,zb-.075),roofP(side,u,za+.075),roofP(side,u-.06,za)];
+          for(let k=0;k<edge.length;k++)tri(edge[k],m,edge[(k+1)%edge.length],colour);
+        }
+        quad(roofP(side,0,-depth),roofP(side,0,depth),roofP(side,1,depth),roofP(side,1,-depth),tileCosy);
+        for(const zz of[-depth,depth]){
+          const a=roofP(side,0,zz),b=roofP(side,1,zz);
+          cylinder(a,b,.095,.095,tileCosy,6);
+          tri(P([0,h,zz]),b,a,ivory);
+        }
+        cylinder(roofP(side,1,-depth),roofP(side,1,depth),.10,.10,tileCosy,6);
+      }
+      cylinder(P([0,h+rise,-depth]),P([0,h+rise,depth]),.13,.13,tileCosy,7);
+      cosyOpening(q=>P([q[0]-.30,q[1],d/2-.145+q[2]]),1.2,2.1,shutter,true);
+      // Grande fenêtre de côté ; cadres et volets épais, jardinière intégrée.
+      for(const side of[-1,1]){
+        const W=q=>P([side*(w/2-.142+q[2]),.8+q[1],q[0]]);
+        cosyOpening(W,.65,.87,color(0x91bec5));
+        for(const k of[-1,1])cushion(q=>W([q[0]+k*.48,q[1]+.08,q[2]+.03]),.20,.10,.68,shutter,true);
+        cushion(q=>W([q[0],q[1]-.14,q[2]+.07]),.75,.18,.16,honey,true);
+        for(const k of[-1,0,1])cosyBall(W([k*.21,.06,.09]),[.11,.11,.10],k===0?coral:color(0x8fbf6b),4);
+      }
+      // Nichoir au dos, dans l'emprise du mur ; pas de nouvel obstacle.
+      cosyBall(P([0,1.45,-d/2+.12]),[.22,.29,.14],honey,6);
+      cosyBall(P([0,1.47,-d/2+.00]),[.07,.08,.015],shutter,5);
+      for(const c of chimneys.slice(chimneyStart)){
+        softLathe(add(c,[0,-1.05,0]),[[0,.18],[.08,.23],[.90,.22],[.98,.28],[1.05,.24],[1.10,0]],ivory,6);
+      }
+      cosyStats.push({type:'maison',x,z,triangles:triangles-count});
+    }
+    cosyHouse(40,3.6,-12.8,2.5,2.1,2.25,-.05,0);
+    cosyHouse(29.7,7,-16,2.4,2.1,2.15,.03,1);
+    cosyHouse(39.8,10.3,-20.5,2.6,2.2,2.25,.03,2);
 
-    // Phare effilé : emprise déclarée, galerie ouverte, cage à huit montants.
+    // Phare bonbonnière : mêmes base, galerie et foyer dynamique mode 7.
     const lx=34,lz=-25.3,base=12.5,top=18.7;
     terraces.push({x:lx,y:base,z:lz,w:2.1,d:2.1,rot:0,round:true});
     houseLots.push([lx,lz,1.65]);
-    cylinder([lx,base,lz],[lx,top,lz],1.05,.80,palette.cream,28);
-    for(const y of[base+.12,base+2.05,base+4.2,top-.2])
-      cylinder([lx,y,lz],[lx,y+.15,lz],y>18?.9:1.025,y>18?.9:1.025,palette.rockLight,28);
-    archDoor([lx,base,lz+1.065],.66,1.5,0);
-    for(const y of[base+2.6,base+4.8])windowAt([lx,y,lz+.94],.34,.68,0,false);
-    cylinder([lx,top-.15,lz],[lx,top,lz],1.6,1.6,palette.rockLight,32);
-    for(let i=0;i<24;i++) {
-      const a=i/24*TAU,b=(i+1)/24*TAU;
-      const p=[lx+Math.cos(a)*1.48,top,lz+Math.sin(a)*1.48];
-      beam(p,add(p,[0,.8,0]),.027,palette.dark);
-      beam(add(p,[0,.8,0]),[lx+Math.cos(b)*1.48,top+.8,lz+Math.sin(b)*1.48],.024,palette.dark);
+    const towerProfile=[[0,1.05],[.18,1.05],[1.2,1.02],[2.2,.98],[3.3,.94],[4.4,.86],[5.4,.80],[6.2,.80]];
+    for(let j=0;j<towerProfile.length-1;j++)softLathe([lx,base,lz],towerProfile.slice(j,j+2),j===2||j===4?coral:ivory,28);
+    cosyOpening(p=>[lx+p[0],base+p[1],lz+1.03+p[2]],1.2,2.1,sage,true);
+    for(const y of[base+2.6,base+4.8])cosyOpening(p=>[lx+p[0],y+p[1],lz+.90+p[2]],.46,.78,color(0x91bec5));
+    softLathe([lx,top,lz],[[-.24,1.35],[-.14,1.6],[0,1.6],[.07,1.44]],ivory,28);
+    for(let i=0;i<16;i++){
+      const a=i/16*TAU;
+      softLathe([lx+Math.cos(a)*1.46,top,lz+Math.sin(a)*1.46],[[0,.085],[.14,.07],[.38,.11],[.64,.065],[.78,.085]],ivory,6);
     }
-    for(let i=0;i<8;i++) {
+    // Anneau ouvert : ne pas fermer la galerie par un disque.
+    softLathe([lx,top,lz],[[.72,1.46],[.76,1.53],[.84,1.46]],coral,32);
+    for(let i=0;i<8;i++){
       const a=i/8*TAU;
-      beam([lx+Math.cos(a)*.76,top,lz+Math.sin(a)*.76],
-        [lx+Math.cos(a)*.76,top+1.55,lz+Math.sin(a)*.76],.045,palette.dark);
+      cylinder([lx+Math.cos(a)*.76,top,lz+Math.sin(a)*.76],[lx+Math.cos(a)*.76,top+1.55,lz+Math.sin(a)*.76],.07,.07,honey,8);
     }
-    // Lentille ambre de secours ; le cœur dynamique mode 7 l'enveloppe une fois branché.
-    cylinder([lx,19.08,lz],[lx,19.82,lz],.25,.25,color(0xdeab55),16);
-    cylinder([lx,20.25,lz],[lx,20.38,lz],1.03,1.03,palette.trim,24);
-    cylinder([lx,20.38,lz],[lx,21.10,lz],1.03,.06,palette.tile,24);
-    beam([lx,21.1,lz],[lx,21.65,lz],.03,palette.dark);
+    softLathe([lx,19.45,lz],[[-.37,.20],[-.28,.32],[.26,.32],[.37,.20]],color(0xf3c775),16);
+    softLathe([lx,20.25,lz],[[0,.90],[.12,1.10],[.28,1.05],[.52,.76],[.78,.32],[.85,0]],coral,24);
+    cosyBall([lx,21.35,lz],[.16,.30,.16],honey,8);
 
     // ---------- Passe 1 : paysage habité, sans déplacer le parcours ----------
     // L'aléa des maisons, marches et rochers précédents est déjà consommé.
     // Ce sous-flux ne peut donc changer ni leurs variantes ni les autres îles.
     seed = 341810;
-    const leafBase=color(0x638244),leafSun=color(0x7a9e56),leafShade=color(0x4e6b36);
-    const bark=color(0x7b634b),rope=color(0xbba780);
+    const leafBase=color(0x6fa35a),leafSun=color(0x8fbf6b),leafShade=color(0x4f7f45);
+    const bark=color(0xc58b4e),rope=color(0xbba780);
     const protectedDiscs=reservedDiscs;
     const access=[...paths,[[35.8,.56,-6.2],climb[0]],
       [[34,12.5,-23],[33.2,12.5,-23.2]]];
@@ -857,27 +950,19 @@ sceneMarks.push({id:'phare',start:verts.length/9});
     }
     function leaves(p,s,c) { ellipsoid(p,s,c,9,5,.10); }
     function coastalTree(x,y,z,h,r,olive=false) {
-      const lean=olive?-.28:.38;
-      const shoulder=[x+lean*.45,y+h*.52,z-.08];
-      cylinder([x,y-.07,z],shoulder,.15,.105,bark,7);
-      const crown=[x+lean,y+h*.84,z-.18];
-      cylinder(shoulder,crown,.105,.055,bark,7);
-      // Cinq masses asymétriques, couronne étalée de pin ou olivier plus bas.
-      const lobes=[[-.58,.03,.12,.62],[.1,.21,-.4,.72],[.54,.06,.14,.65],
-        [-.14,-.08,.5,.63],[.03,.34,.03,.72]];
-      for(let i=0;i<lobes.length;i++){
-        const [dx,dy,dz,s]=lobes[i],p=add(crown,[dx*r,dy*r,dz*r]);
-        cylinder(shoulder,add(p,[0,-.14,0]),.055,.023,bark,6);
-        leaves(p,[r*s,r*(olive?.42:.31),r*s*.83],i===3?leafShade:leafBase);
-        leaves(add(p,[-.08,r*.17,-.04]),[r*s*.66,r*.16,r*s*.60],leafSun);
-      }
+      const count=triangles;
+      cylinder([x,y-.07,z],[x+.10,y+h*.52,z],.22,.15,bark,7);
+      cosyBall([x,y+h*.52,z],[r*.91,h*.20,r*.80],leafShade,8);
+      cosyBall([x+(olive?-.15:.15),y+h*.72,z-.06],[r*.81,h*.23,r*.74],leafBase,8);
+      cosyBall([x-.08,y+h*.91,z],[r*.57,h*.16,r*.56],leafSun,8);
+      cosyStats.push({type:'arbre',triangles:triangles-count});
     }
     function cypress(x,y,z,h) {
-      cylinder([x,y-.05,z],[x+.07,y+h*.65,z],.075,.025,bark,6);
-      for(let i=0;i<4;i++){
-        const t=i/3,r=.42*(1-t*.64);
-        leaves([x+.1*t,y+h*(.27+t*.57),z-.05*t],[r,h*.24,r*.85],i%2?leafBase:leafShade);
-      }
+      const count=triangles;
+      cylinder([x,y-.05,z],[x,y+h*.4,z],.15,.11,bark,6);
+      cosyBall([x,y+h*.38,z],[.39,h*.29,.34],leafShade,8);
+      cosyBall([x+.04,y+h*.68,z],[.31,h*.32,.28],leafBase,8);
+      cosyStats.push({type:'cypres',triangles:triangles-count});
     }
     function herb(x,y,z,s,flower=false) {
       // Trois feuilles pliées par touffe ; les tiges restent courtes et fines.
@@ -1150,37 +1235,7 @@ sceneMarks.push({id:'phare',start:verts.length/9});
       }
     });
 
-    // Accessoires fixés à la façade +X de la maison basse. Toute leur géométrie
-    // reste dans l'emprise DÉJÀ bloquée de cette maison (marge incluse).
-    const facadeBounds=[];
-    {
-      const pos=[40,3.6,-12.8],rot=-.05,P=p=>transform(p,pos,rot);
-      const start=verts.length,count=triangles,shutter=color(0x526b87);
-      for(const side of[-1,1]){
-        box(P([1.47,1.26,side*.46]),[.026,.73,.18],shutter,rot);
-        for(let j=0;j<5;j++)box(P([1.489,.96+j*.145,side*.46]),[.016,.035,.18],tint(shutter,1.15),rot);
-      }
-      // Treille décalée vers l'arrière, laissant la fenêtre visible.
-      for(let j=0;j<4;j++){
-        cylinder(P([1.29,.28,-.91+j*.14]),P([1.29,1.75,-.91+j*.14]),.012,.012,palette.trim,5);
-        cylinder(P([1.29,.45+j*.36,-.94]),P([1.29,.45+j*.36,-.43]),.012,.012,palette.trim,5);
-      }
-      cylinder(P([1.34,0,-.69]),P([1.34,.21,-.69]),.065,.10,palette.tile,10);
-      cylinder(P([1.34,.19,-.69]),P([1.34,.225,-.69]),.108,.108,tint(palette.tile,1.12),10);
-      for(let j=0;j<7;j++){
-        const z=-.7+.16*Math.sin(j*2.2),y=.37+j*.20;
-        leaves(P([1.32,y,z]),[.045,.13,.14],j%2?leafBase:leafSun);
-        if(j%2===0)for(let k=0;k<3;k++)ellipsoid(P([1.37,y+.02+(k%2)*.045,z-.045+k*.04]),[.025,.037,.035],color(0xb9768e),6,3,0);
-      }
-      let valid=true;
-      for(let i=start;i<verts.length;i+=9){
-        const dx=verts[i]-pos[0],dz=verts[i+2]-pos[2];
-        const x=dx*Math.cos(rot)-dz*Math.sin(rot),z=dx*Math.sin(rot)+dz*Math.cos(rot);
-        if(Math.abs(x)>1.54||Math.abs(z)>1.34)valid=false;
-      }
-      if(!valid){verts.length=start;triangles=count;}
-      else facadeBounds.push({first:start,end:verts.length});
-    }
+    // Les jardinières et volets sont désormais intégrés à cosyHouse.
   } finally {
     seed = pharePreviousSeed;
   }
