@@ -3326,7 +3326,7 @@ dot(n.x,n.z,ready?'#ffd166':'#fff8ea',ready?6:4);if(ready){c.fillStyle='#2c3f40'
 const [px,pz]=P(player.x,player.z);c.save();c.translate(px,pz);c.rotate(-player.heading);c.fillStyle='#fff';c.strokeStyle='#1d5661';c.lineWidth=2;c.beginPath();c.moveTo(0,-9);c.lineTo(6,6);c.lineTo(0,3);c.lineTo(-6,6);c.closePath();c.fill();c.stroke();c.restore();}
 
 // ---------- démarrage ----------
-function showStart(){const s=loadSave();$('#loading-title').hidden=true;$('#loading-help').hidden=true;document.querySelector('.sun').hidden=true;$('#start').hidden=false;
+function showStart(){const s=loadSave();const hide=(sel,v)=>{const el=document.querySelector(sel);if(el)el.hidden=v;};hide('#loading-title',true);hide('#loading-help',true);hide('.sun',true);if(!$('#start'))return;$('#start').hidden=false;
 if(s){$('#continue').hidden=false;$('#continue-info').textContent=`${s.name?s.name+' · ':''}🐚 ${(s.shells||[]).length}/12 · ⭐ ${Object.keys(s.discovered||{}).length+doneCount(s.quests||{})}/${TOTAL} · ${fmtTime(s.playtime||0)}`;$('#new').textContent='Nouvelle partie';$('#name').hidden=true;
 let armed=false;$('#new').onclick=()=>{if(!armed){armed=true;$('#new').textContent='Confirmer : effacer la partie sauvegardée ?';$('#name').hidden=false;return;}clearSave();startGame(null);};$('#continue').onclick=()=>startGame(s);}
 else $('#new').onclick=()=>startGame(null);
