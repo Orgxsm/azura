@@ -1,6 +1,6 @@
-// Île aux Cabanes — passe 9a, base 00a9a68. Relief et accès uniquement.
+// Île aux Cabanes — passe 9b, base 610c136. Habillage cosy, accès 9a conservés.
 // Centre [-32,38], enveloppe x [-46,-18], z [24,52]. Mer y=0.
-// Registre proposé (Claude) : id cabanes, center [-32,38], r 14,
+// Registre existant (Claude) : id cabanes, center [-32,38], r 14,
 // spawn [-23,34], landing [-23,34],
 // dock {x:-20.2,y:.65,z:30,heading:Math.atan2(3.5,-5),len:2.5,width:1.8,
 //       build:false,via:[[-17,27]]}. Ponton, abri et pirogues déjà construits.
@@ -111,5 +111,124 @@
    for(const zz of[-.5,.45])box(P([0,-.015,zz]),[.48,.07,.16],cabanesWood,rot);
   }
   cabanesCanoe(-19.8,33,.1);cabanesCanoe(-19.5,35.5,.1);cabanesCanoe(-21,38.8,-.4);
+  // Passe 9b. Toute la géométrie et les déclarations de marche 9a restent au-dessus.
+  const cabanesIvory=color(0xf3e6d0),cabanesMint=color(0x5e9c8f),cabanesRoof=color(0xd3a460);
+  const cabanesLeaf=[color(0x4f7f45),color(0x6fa35a),color(0x8fbf6b)];
+  const cabanesModels=[];
+  function cabanesCount(name,budget,draw){const first=triangles;draw();const count=triangles-first;if(count>budget)throw Error(name+' : '+count+' > '+budget);cabanesModels.push({name,triangles:count});}
+  // Une couleur exacte par boule, normales lissées, aucun appel aléatoire.
+  function cabanesOrb(p,size,col,n=10){
+   const rings=[[-1,0],[-.55,.85],[.2,1],[.8,.60],[1,0]];
+   const P=(j,i)=>[p[0]+Math.cos(i/n*TAU)*rings[j][1]*size[0],p[1]+rings[j][0]*size[1],p[2]+Math.sin(i/n*TAU)*rings[j][1]*size[2]];
+   const N=(j,i)=>norm([(P(j,i)[0]-p[0])/(size[0]*size[0]),(P(j,i)[1]-p[1])/(size[1]*size[1]),(P(j,i)[2]-p[2])/(size[2]*size[2])]);
+   for(let j=0;j<rings.length-1;j++)for(let i=0;i<n;i++){
+    if(rings[j][1]>0)tri(P(j,i),P(j+1,i+1),P(j,i+1),col,[N(j,i),N(j+1,i+1),N(j,i+1)]);
+    if(rings[j+1][1]>0)tri(P(j,i),P(j+1,i),P(j+1,i+1),col,[N(j,i),N(j+1,i),N(j+1,i+1)]);
+   }
+  }
+  for(const t of cabanesTrees)cabanesCount('canopee',1500-308,()=>{
+   for(const [dx,dy,dz,s,c] of[[-1.2,-.9,0,1,0],[1.15,-.6,.1,1,1],[0,.6,-.65,1.08,1],[0,1.5,.2,.80,2],[0,-.5,1.2,.83,1]])
+    cabanesOrb([t.x+dx,t.top+dy,t.z+dz],[2.25*s,1.60*s,2.05*s],cabanesLeaf[c],12);
+  });
+  function cabanesSoftBox(P,w,d,h,col){
+   const r=Math.min(.13,w*.2,d*.2),outline=[[-w/2+r,-d/2],[w/2-r,-d/2],[w/2,-d/2+r],[w/2,d/2-r],[w/2-r,d/2],[-w/2+r,d/2],[-w/2,d/2-r],[-w/2,-d/2+r]];
+   const rows=[[0,.94],[Math.min(.08,h*.2),1],[h-Math.min(.08,h*.2),1],[h,.94]],Q=(j,i)=>P([outline[i%8][0]*rows[j][1],rows[j][0],outline[i%8][1]*rows[j][1]]);
+   for(let j=0;j<3;j++)for(let i=0;i<8;i++)quad(Q(j,i),Q(j+1,i),Q(j+1,i+1),Q(j,i+1),col);
+   for(let i=0;i<8;i++)tri(P([0,h,0]),Q(3,i+1),Q(3,i),col);
+  }
+  function cabanesPane(P,w,h){
+   cabanesFace(P([-w/2,0,0]),P([w/2,0,0]),P([w/2,h,0]),P([-w/2,h,0]),color(0x9cbfc6),sub(P([0,0,1]),P([0,0,0])));
+   for(const x of[-w/2,0,w/2])cabanesRod(P([x,0,.035]),P([x,h,.035]),.035,cabanesIvory,4);
+   for(const y of[0,h*.5,h])cabanesRod(P([-w/2,y,.035]),P([w/2,y,.035]),.035,cabanesIvory,4);
+  }
+  function cabanesDoor(P,w,h){
+   const a=[[-w/2,0],[w/2,0],[w/2,h-w/2]];
+   for(let i=1;i<=5;i++){const t=i/5*PI;a.push([Math.cos(t)*w/2,h-w/2+Math.sin(t)*w/2]);}
+   for(let i=0;i<a.length;i++){
+    const j=(i+1)%a.length,A=P([0,h*.45,0]),B=P([...a[i],0]),C=P([...a[j],0]);
+    if(dot(cross(sub(B,A),sub(C,A)),sub(P([0,0,1]),P([0,0,0])))<0)tri(A,C,B,cabanesMint);else tri(A,B,C,cabanesMint);
+    cabanesRod(P([...a[i],.04]),P([...a[j],.04]),.05,cabanesIvory,4);
+   }
+   cabanesOrb(P([w*.28,h*.43,.065]),[.045,.045,.045],cabanesRoof,4);
+  }
+  function cabanesHut(x,y,z,w,d,h,front=1,ladder=false){
+   cabanesCount(ladder?'cabane-perchee':'cabane-sol',800,()=>{
+    const P=p=>add([x,y,z],p),F=p=>P([p[0],p[1],front*(d/2+.027+p[2])]);
+    cabanesSoftBox(P,w,d,h,cabanesWood);
+    terraces.push({x,y,z,w,d,rot:0});
+    // Planches et couvre-joints arrondis sur les quatre façades.
+    for(const side of[-1,1]){
+     for(const xx of[-w*.36,0,w*.36])cabanesRod(P([xx,.12,side*(d/2+.015)]),P([xx,h-.08,side*(d/2+.015)]),.028,cabanesRoof,4);
+     cabanesRod(P([side*(w/2+.018),.2,-d*.36]),P([side*(w/2+.018),.2,d*.36]),.055,cabanesBark,4);
+    }
+    const half=w/2+.25,depth=d/2+.22,rise=half*.65;
+    const R=(side,t,zz)=>P([side*half*t,h+rise*(1-t)+.14*Math.sin(PI*t)+.07*(1-(zz/depth)**2),zz]);
+    for(const side of[-1,1])for(let row=0;row<4;row++)for(let j=0;j<3;j++){
+     const a=-depth+j*depth*2/3,b=a+depth*2/3;cabanesFace(R(side,row/4,a),R(side,row/4,b),R(side,(row+1)/4,b),R(side,(row+1)/4,a),tint(cabanesRoof,.94+row*.025),[side,.7,0]);
+    }
+    for(const zz of[-d/2,d/2]){
+     const shape=[P([-w/2,h,zz]),P([w/2,h,zz])];
+     for(let j=0;j<=8;j++){const xx=w/2-j*w/8;shape.push(R(xx<0?-1:1,Math.abs(xx)/half,zz));}
+     for(let j=0;j<shape.length;j++){const a=P([0,h+.1,zz]),b=shape[j],c=shape[(j+1)%shape.length];if(zz<0)tri(a,c,b,cabanesWood);else tri(a,b,c,cabanesWood);}
+    }
+    for(const zz of[-depth,depth])for(const side of[-1,1])cabanesRod(R(side,0,zz),R(side,1,zz),.075,cabanesRoof,5);
+    cabanesRod(R(1,0,-depth),R(1,0,depth),.08,cabanesBark,5);
+    cabanesDoor(q=>F([q[0],q[1]+.02,q[2]]),Math.min(.85,w*.6),h*.82);
+    cabanesPane(q=>P([w/2+.025+q[2],q[1]+.8,q[0]]),Math.min(.65,d*.6),.62);
+    // Échelle décorative : projection entièrement dans l'emprise de la cabane.
+    if(ladder){const xx=-w/2-.06;
+     for(const zz of[-.22,.22])cabanesRod(P([xx,-2.7,zz]),P([xx,.35,zz]),.035,cabanesIvory,4);
+     for(let j=0;j<24;j++)cabanesRod(P([xx,-2.6+j*.12,-.22]),P([xx,-2.6+j*.12,.22]),.025,cabanesWood,4);
+    }
+   });
+  }
+  // Secteurs libres des plateformes, raccords et centres de contrôle conservés.
+  const cabanesHomes=[[-41.3,8,30.8,1.3,1.15,1.8,1,true],[-32,10,30,1.3,1.15,1.8,-1,true],[-27.35,12,36.3,1.35,1.15,1.8,-1,true],[-23, .6,37.5,1.9,1.7,1.95,-1,false],[-32.7,.6,50,1.8,1.1,1.85,-1,false]];
+  for(const a of cabanesHomes){
+   if(a[8]){cabanesSoftBox(q=>add([a[0],a[1]-.22,a[2]],q),a[3]+.12,a[4]+.12,.22,cabanesBark);}
+   cabanesHut(...a);
+  }
+  // Bourrelets sur les garde-corps existants, sans toucher leurs ouvertures.
+  for(const t of cabanesTrees)for(let i=0;i<32;i+=2){
+   const a=i/32*TAU,mid=a+PI/32,open=t.ports.some(p=>Math.abs(Math.atan2(Math.sin(Math.atan2(p[1]-t.z,p[0]-t.x)-mid),Math.cos(Math.atan2(p[1]-t.z,p[0]-t.x)-mid)))<.49);
+   if(!open)cabanesOrb([t.x+Math.cos(a)*2.4,t.deck+.86,t.z+Math.sin(a)*2.4],[.10,.10,.10],cabanesWood,6);
+  }
+  function cabanesPalm(x,y,z,h=2.7){
+   cabanesCount('palmier',250,()=>{
+    cabanesRod([x,y,z],[x+.16,y+h,z],.12,cabanesWood,8);
+    for(let i=0;i<7;i++){
+     const a=i/7*TAU,dx=Math.cos(a),dz=Math.sin(a),p=[x+.16,y+h,z],q=[p[0]+dx*.65,y+h+.18,p[2]+dz*.65],r=[p[0]+dx*1.15,y+h-.42,p[2]+dz*1.15],u=[q[0]-dz*.19,q[1],q[2]+dx*.19],v=[q[0]+dz*.19,q[1],q[2]-dx*.19];
+     tri(p,u,r,cabanesLeaf[1]);tri(p,r,u,cabanesLeaf[1]);tri(p,r,v,cabanesLeaf[2]);tri(p,v,r,cabanesLeaf[2]);
+    }
+    cabanesOrb([x+.16,y+h-.10,z],[.20,.18,.20],cabanesRoof,6);
+   });
+  }
+  for(const a of[[-42.5,.6,42.5,3],[-39.7,.6,43,2.4],[-30.2,.6,49.8,2.7],[-25.4,.6,37.4,2.5]])cabanesPalm(...a);
+  function cabanesDome(x,y,z,r=.42){
+   cabanesOrb([x,y+.30,z],[r,.30,r*.85],cabanesLeaf[1],10);
+   cabanesOrb([x+.16,y+.36,z],[r*.63,.24,r*.64],cabanesLeaf[2],8);
+  }
+  for(const a of[[-43,.6,43.5],[-40.4,.6,40.5],[-34.4,.6,49.8],[-30.1,.6,48.8],[-25.6,.6,36.5],[-22.6,.6,39.6]])cabanesDome(...a);
+  for(const [x,y,z,s] of[[-43.4,.6,42,.42],[-42.8,.6,44,.38],[-35.3,.6,49,.40],[-30,.6,50,.45],[-22.5,.6,39.5,.40],[-25.6,.6,36,.42],[-36.3,0,38.6,.65],[-33.1,0,39,.58]])cabanesOrb([x,y+s*.42,z],[s,s*.52,s*.8],cabanesGranite,10);
+  function cabanesLantern(x,y,z){
+   cabanesSoftBox(p=>add([x,y,z],p),.19,.17,.24,color(0xf3cc77));
+   for(const dx of[-.10,.10])for(const dz of[-.09,.09])cabanesRod([x+dx,y,z+dz],[x+dx,y+.26,z+dz],.016,cabanesBark,4);
+   cabanesOrb([x,y+.29,z],[.15,.07,.13],cabanesBark,8);
+   cabanesRod([x,y+.3,z],[x,y+.43,z],.018,cabanesBark,4);
+  }
+  for(const a of[[-41.95,9.2,31.35],[-31.35,11.2,29.45],[-26.68,13.2,35.74],[-23.91,1.85,36.64],[-31.83,1.8,49.42]])cabanesLantern(...a);
+  // Abri et pirogues 9a conservés : seulement deux lanternes sous l'égout.
+  for(const side of[-1,1]){const p=cabanesDockP(side*.95,.45,2.30);cabanesLantern(...p);}
+  function cabanesBasket(x,y,z){
+   cabanesOrb([x,y+.18,z],[.23,.18,.21],cabanesRoof,10);
+   for(let i=0;i<10;i++){const a=i/10*TAU,b=(i+1)/10*TAU;cabanesRod([x+Math.cos(a)*.20,y+.30,z+Math.sin(a)*.18],[x+Math.cos(b)*.20,y+.30,z+Math.sin(b)*.18],.025,cabanesIvory,4);}
+   cabanesOrb([x,y+.31,z],[.14,.065,.13],cabanesLeaf[2],6);
+  }
+  for(const a of[[-24.4,.6,37.7],[-31.4,.6,50.3],[-42,.6,43.4]])cabanesBasket(...a);
+  // Cordages au sol, loin de l'axe du ponton et des contrôles de départ.
+  for(const [x,z] of[[-22.25,34.6],[-42,43.8]])for(let r=0;r<3;r++)for(let i=0;i<16;i++){
+   const a=i/16*TAU,b=(i+1)/16*TAU,R=.13+r*.035;cabanesRod([x+R*Math.cos(a),.63,z+R*Math.sin(a)],[x+R*Math.cos(b),.63,z+R*Math.sin(b)],.014,cabanesRope,4);
+  }
+
  }finally{seed=cabanesPreviousSeed;}
 }
