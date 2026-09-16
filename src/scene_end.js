@@ -14,7 +14,7 @@ const oceanData=new Float32Array(verts);verts=[];
 // Rivière et chute du Village de la Gorge (Claude) : nappe d'eau qui suit le profil de fond documenté par Astra
 // (PASSE-10A.md), 13 cm au-dessus du lit ; la composante rouge de la couleur encode l'écume (1 = chute).
 {const bedY=z=>z<=32?-.45:(z<=34?-.45+(z-32)*.725:1+(z-34)*5/21);const riverY=z=>Math.max(bedY(z)+.13,.015);
- const foam=z=>(z>31.7&&z<34.3)?[1,.6,.7]:[.08,.6,.7];
+ const foam=z=>(z>31.9&&z<34.3)?[1,.6,.7]:(z>30.6&&z<=31.9?[.7,.6,.7]:[.08,.6,.7]);  // r : 1 = chute, .7 = bassin de réception
  for(let z=28.6;z<55;z+=.3){const z2=Math.min(z+.3,55),ya=riverY(z),yb=riverY(z2);
   for(let x=-1.65;x<1.65;x+=.33){const x2=Math.min(x+.33,1.65);quad([x,ya,z],[x,yb,z2],[x2,yb,z2],[x2,ya,z],foam((z+z2)/2));}}
  // canal d'amenée (fond 1,10 → eau 1,22) : le long de la berge est puis vers la roue

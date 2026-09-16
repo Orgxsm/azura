@@ -118,7 +118,7 @@ ${skyChunk}
 float lin(float d){float z=d*2.-1.;return 2.*uNear*uFar/(uFar+uNear-z*(uFar-uNear));}
 void main(){vec2 uv=gl_FragCoord.xy/uRes;vec3 p=vPosition;vec2 q=p.xz;vec3 view=normalize(uEye-p);vec3 sun=normalize(vec3(-25,40,30));
 float sceneZ=lin(texture(uDepth,uv).r),fragZ=lin(gl_FragCoord.z);float depth=max(sceneZ-fragZ,0.);
-float t=uTime;vec2 qf=q+uFlow*t;float fall=smoothstep(.5,1.,vFoam);
+float t=uTime;vec2 qf=q+uFlow*t;float fall=smoothstep(.8,1.,vFoam);float pool=smoothstep(.55,.72,vFoam)*(1.-fall);
 vec2 g1=vec2(cos(q.x*.63+t*.68)*.028,cos(q.y*.85+t*.87)*.03);vec2 g2=vec2(cos(q.x*1.4+q.y*1.2-t)*.03,cos(q.x*1.4+q.y*1.2-t)*.026);
 float e=.15;vec2 dn=vec2(0.);if(uDetail>.5){float n0=tn(qf*2.6+t*.25);dn=vec2(n0-tn(qf*2.6+vec2(e,0.)+t*.25),n0-tn(qf*2.6+vec2(0.,e)+t*.25))*.9;if(uDetail>1.5){float n1=tn(qf*7.+vec2(t*.5,0.));dn+=vec2(n1-tn(qf*7.+vec2(e+t*.5,0.)),n1-tn(qf*7.+vec2(0.,e+t*.4)))*.5;}}dn*=1.+1.5*min(1.,length(uFlow))+2.*fall;
 vec3 n=normalize(vec3(-(g1.x+g2.x)-dn.x*.9,1.,-(g1.y+g2.y)-dn.y*.9));
@@ -132,7 +132,9 @@ float fres=.03+.97*pow(1.-max(dot(n,view),0.),5.);col=mix(col,refl,clamp(fres*.7
 vec3 h=normalize(sun+view);float sp=pow(max(dot(n,h),0.),320.)*.7+pow(max(dot(n,h),0.),40.)*.08;vec3 sunCol=mix(vec3(.5,.55,.8)*.4,vec3(1.1,1.,.85),uDay);sunCol=mix(sunCol,sunCol*vec3(1.4,.75,.45),uDusk*.7);col+=sunCol*sp;
 float ripple=tn(q*2.+t*.16);float foamA=1.-smoothstep(.06,.48,abs(shore-.1-.17*sin(t+q.x*.8)-ripple*.28));foamA*=smoothstep(.25,.8,ripple);
 float foamD=(1.-smoothstep(.0,.35,depth))*(.55+.45*tn(qf*9.+t*.6));float foam=max(foamA*.85,foamD*.8)*mix(.35,1.,uDay);
-if(length(uFlow)>0.){float streak=tn(vec2(q.x*6.,q.y*1.6+t*2.4));foam=max(foam,.22*smoothstep(.55,.9,streak));col=mix(col,vec3(.9,.96,.98),fall*.45);foam=max(foam,fall*(.5+.5*tn(vec2(q.x*8.+t*.3,q.y*3.-t*3.2))));}
+if(length(uFlow)>0.){float streak=tn(vec2(q.x*6.,q.y*1.6+t*2.4));foam=max(foam,.22*smoothstep(.55,.9,streak));
+float fs=tn(vec2(q.x*9.+t*.4,q.y*2.2-t*3.4));col=mix(col,vec3(.86,.94,.97),fall*.3);foam=max(foam,fall*(.18+.82*smoothstep(.42,.78,fs)));
+float bub=tn(vec2(q.x*5.+t*.7,q.y*5.-t*.9));foam=max(foam,pool*(.25+.75*smoothstep(.45,.8,bub)));}
 col=mix(col,vec3(.96,.97,.93),foam);
 float band=1.-smoothstep(.03,.17,abs(shore-.7-.2*sin(t*.9+q.x*.6)));col=mix(col,vec3(.73,.96,.9),band*.15*uDay);
 col*=mix(vec3(.5,.55,.8),vec3(1.),uDay);
