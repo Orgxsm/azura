@@ -1,5 +1,5 @@
 """Azura → Unreal : crée la file Movie Render Queue MRQ_Vitrine (séquence LS_AzuraVitrine, carte Vitrine, PNG 1920×1080 30 i/s).
-Exécuter après flythrough.py :  exec(open('/Users/jl/azura/unreal/render_vitrine.py').read())
+Exécuter après flythrough.py :  exec(open(r'<dépôt>/unreal/render_vitrine.py').read())
 Le rendu lui-même se lance via build_vitrine.sh (mode -game) ou dans l'éditeur : Window → Cinematics → Movie Render Queue."""
 import unreal
 tools = unreal.AssetToolsHelpers.get_asset_tools()
@@ -15,7 +15,9 @@ job.set_editor_property('map', unreal.SoftObjectPath('/Game/Azura/Maps/Vitrine.V
 job.set_editor_property('job_name', 'Azura vitrine')
 cfg = job.get_configuration()
 out = cfg.find_or_add_setting_by_class(unreal.MoviePipelineOutputSetting)
-out.set_editor_property('output_directory', unreal.DirectoryPath('/Users/jl/azura/export/render/'))
+import os
+RENDER = os.path.join(os.path.abspath(os.path.join(unreal.Paths.project_dir(), '..', '..')), 'export', 'render')
+out.set_editor_property('output_directory', unreal.DirectoryPath(RENDER))
 out.set_editor_property('file_name_format', 'vitrine.{frame_number}')
 out.set_editor_property('output_resolution', unreal.IntPoint(1920, 1080))
 out.set_editor_property('output_frame_rate', unreal.FrameRate(30, 1))

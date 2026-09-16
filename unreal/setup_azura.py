@@ -1,11 +1,11 @@
 """Azura → Unreal Engine 5 : script d'installation à exécuter DANS l'éditeur Unreal (Python Editor Script Plugin).
-Usage (Output Log, mode Python) :  exec(open('/Users/jl/azura/unreal/setup_azura.py').read())
+Usage (Output Log, mode Python) :  exec(open(r'<dépôt>/unreal/setup_azura.py').read())
 Il importe les .glb de export/ (une île = un Static Mesh à couleurs de sommet), crée un matériau maître
 « couleur de sommet », pose les îles à leur place, ajoute mer, soleil, ciel, brume et un PlayerStart sur Azura.
 Ré-exécutable : les acteurs portent le tag 'azura' et sont remplacés."""
 import json, os, unreal
 
-ROOT = '/Users/jl/azura'
+ROOT = os.path.abspath(os.path.join(unreal.Paths.project_dir(), '..', '..'))  # dépôt azura (le projet est dans unreal/AzuraUE)
 EXPORT = os.path.join(ROOT, 'export')
 DEST = '/Game/Azura/Meshes'
 SCENE = json.load(open(os.path.join(EXPORT, 'azura-scene.json')))

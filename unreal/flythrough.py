@@ -1,9 +1,9 @@
 """Azura → Unreal : crée la séquence de fly-through de la vitrine (LS_AzuraVitrine) avec une CineCamera
 qui passe par les 6 îles (plage d'Azura, Phare en 5 cadrages, sous la voûte de l'Arche, Cabanes, Gorge).
-À exécuter APRÈS setup_azura.py :  exec(open('/Users/jl/azura/unreal/flythrough.py').read())
+À exécuter APRÈS setup_azura.py :  exec(open(r'<dépôt>/unreal/flythrough.py').read())
 Rendu vidéo : Window → Cinematics → Movie Render Queue sur LS_AzuraVitrine (1920×1080, 30 i/s)."""
 import json, os, math, unreal
-EXPORT = '/Users/jl/azura/export'
+EXPORT = os.path.join(os.path.abspath(os.path.join(unreal.Paths.project_dir(), '..', '..')), 'export')
 AX = {int(k): v for k, v in json.load(open(os.path.join(EXPORT, 'unreal-axes.json'))).items()}
 def conv(x, y, z):
     v = [0, 0, 0]
