@@ -11,6 +11,17 @@ npcMeshes.nino=npcMeshes.nino||meshDyn(humanoid({shirt:color(0xe76f51),pants:col
 npcMeshes.margot=npcMeshes.margot||meshDyn(humanoid({shirt:color(0x8a6fb0),pants:color(0x6b5744),skin:C.skin[1],hair:color(0xb9976a),bun:true,apron:color(0xf5ead6),scale:.94}));
 const panierMesh=meshDyn(rig([[0,()=>{cylinder([0,.02,0],[0,.18,0],.12,.17,color(0xc58b4e),10);cylinder([0,.18,0],[0,.21,0],.175,.165,color(0x96704c),10);let pv=[-.17,.2,0];for(let i=1;i<=6;i++){const t=i/6,p=[-.17*Math.cos(t*PI),.2+Math.sin(t*PI)*.16,0];beam(pv,p,.014,color(0x96704c));pv=p;}
 ellipsoid([-.05,.2,.04],[.05,.045,.05],color(0xe36a3b),6,4,0);ellipsoid([.06,.2,-.03],[.045,.04,.045],color(0xf4c34d),6,4,0);ellipsoid([.01,.22,-.06],[.04,.04,.04],color(0xa8323a),6,4,0);}],[1,()=>ellipsoid([0,0,0],[.03,.03,.03],C.white,5,3,0)]]));
+// Étal du marché du matin (place d'Azura) : tréteaux, comptoir, auvent rayé, cagette de récoltes.
+const stallMesh=meshDyn(new Float32Array(withBone(0,()=>{for(const dx of[-1,1])for(const dz of[-1,1])beam([dx*.85,0,dz*.55],[dx*.85,1.95,dz*.55],.05,palette.wood);
+box([0,.82,0],[1.9,.08,1.15],palette.wood);box([0,.42,0],[1.7,.72,.95],color(0xcbba85));
+for(let i=0;i<6;i++)box([-.85+i*.34+.17,2.02,0],[.17,.035,.8],i%2?color(0xfff1d6):color(0xe36a3b));
+box([-.45,.92,.15],[.5,.12,.4],color(0x96704c));ellipsoid([-.55,1.02,.1],[.07,.06,.07],color(0xe25822),6,4,0);ellipsoid([-.38,1.02,.22],[.07,.06,.07],color(0xe25822),6,4,0);ellipsoid([.35,.98,-.1],[.2,.1,.14],color(0xf4c34d),7,4,.1);})));
+// Feu de camp de la fête du soir (crique d'Azura) : bûches, pierres, flamme émissive (os 1-2).
+const campfireMesh=meshDyn(new Float32Array(withBone(0,()=>{for(let i=0;i<5;i++){const a=i/5*TAU;beam([Math.cos(a)*.5,.05,Math.sin(a)*.5],[Math.cos(a+2.6)*.14,.24,Math.sin(a+2.6)*.14],.06,palette.wood);}
+for(let i=0;i<8;i++){const a=i/8*TAU;ellipsoid([Math.cos(a)*.6,.05,Math.sin(a)*.6],[.09,.07,.09],color(0x8a8378),6,3,0);}})));
+const campfireGlow=meshDyn(rig([[0,()=>ellipsoid([0,.3,0],[.24,.44,.24],color(0xf2a13a),7,4,.2)],[1,()=>ellipsoid([0,.24,0],[.13,.32,.13],color(0xffd166),6,4,.2)]]));
+// Faisceau tournant du phare (première version gameplay ; Astra peut raffiner) : deux plans croisés translucides le long de +X.
+const beamMesh=meshDyn(new Float32Array(withBone(0,()=>{const c=color(0xffe9b0);quad([0,-.12,0],[0,.12,0],[22,1.0,0],[22,-1.0,0],c);quad([0,0,-.12],[0,0,.12],[22,0,1.0],[22,0,-1.0],c);})));
 function makeEntity(id,mesh,x,z,o={}){const e=Object.assign({id,mesh,x,z,y:0,heading:PI,phase:0,amp:0,speed:0,bones:new Float32Array(16*6),look:0},o);e.scale=o.scale||1;e.y=cellH(x,z);return e;}
 const player=makeEntity('hero',heroMesh,SPAWN[0],SPAWN[1]);
 const npcDefs=[
@@ -68,6 +79,25 @@ const TOTAL=25;
 let dayF=1,duskF=0;
 function updateClock(dt){if(playing)game.clock+=dt;const ph=(game.clock/DAY)%1,sun=Math.sin(ph*TAU);let d=clamp((sun+.12)/.34,0,1);dayF=d*d*(3-2*d);duskF=1-clamp(Math.abs(sun)/.22,0,1);return sun;}
 function dayIcon(){const sun=Math.sin(((game.clock/DAY)%1)*TAU);return sun>.15?'☀️':sun>-.12?'🌅':'🌙';}
+
+// ---------- événements du jour : marché le matin, fête le soir (place et crique d'Azura) ----------
+const dayPhase=()=>(game.clock/DAY)%1;
+const morningMarketOn=()=>{const ph=dayPhase();return ph>=.06&&ph<.2;};
+let feteActive=false;   // lu par musicTick (tempo un peu plus vif pendant la fête)
+const feteOn=()=>{const ph=dayPhase();return ph>=.52&&ph<.72;};
+const EVENT_HOMES={marche:{pia:[-2.1,4.5],marco:[-3.0,5.2]},fete:{bastien:[-2.2,10.7],lila:[-3.9,11.4],marco:[-2.0,11.3],pia:[-4.2,10.7]}};
+const FETE_FEU=[-3.0,11.0];
+const azuraEvents={key:'',homes:null};
+function eventHomeOf(n){return (azuraEvents.homes&&azuraEvents.homes[n.id])||n.home;}
+function updateEvents(){const key=morningMarketOn()?'marche':feteOn()?'fete':'';feteActive=key==='fete';
+if(key!==azuraEvents.key){azuraEvents.key=key;azuraEvents.homes=key?EVENT_HOMES[key]:null;
+if(playing&&key==='marche')toast('🎪 Le marché du matin s\'installe sur la place d\'Azura !');
+if(playing&&key==='fete')toast('🏮 Ce soir, feu de camp et musique à la crique d\'Azura !');}
+// Application continue : les PNJ concernés marchent vers leur place (cibles d'idle via eventHomeOf) ;
+// dès que le joueur est loin (d'eux ET de la destination), on les téléporte pour rattraper les coincés.
+for(const n of npcs){if(n.cat)continue;const eh=azuraEvents.homes&&azuraEvents.homes[n.id];const dest=eh||((EVENT_HOMES.marche[n.id]||EVENT_HOMES.fete[n.id])?n.home:null);if(!dest)continue;
+if(Math.hypot(n.x-dest[0],n.z-dest[1])>4&&Math.hypot(player.x-n.x,player.z-n.z)>12&&Math.hypot(player.x-dest[0],player.z-dest[1])>12){const [x,z]=snap(dest[0],dest[1],3);n.x=x;n.z=z;n.y=cellH(x,z);n.state='idle';n.t=.5+Math.random();}}}
+function marketBonus(){return morningMarketOn()?1.2:1;}   // Pia paie 20 % de plus au marché du matin (lu par farm.js)
 
 // ---------- interface ----------
 const stats=$('#stats'),questText=$('#quest-text'),invEl=$('#inv'),promptEl=$('#prompt'),dialogEl=$('#dialog'),toastEl=$('#toast'),actionBtn=$('#action'),panel=$('#panel');
@@ -141,7 +171,7 @@ if(q.farm>=1&&Object.values(game.produce).some(v=>v>0))return wrap({lines:[q.bou
 if(q.bread===0)return wrap({lines:["Tu sens ? Mon pain sort du four. Tu veux bien m'aider ?","Porte une miche à Marco sur la plage, une à Tomas sur le ponton et une à Oro, tout en haut. Reviens me voir après."],end:()=>{game.delivered={};startQuest('bread');}});
 if(q.bread===1&&Object.keys(game.delivered).length<3)return wrap({lines:[`Il reste ${['marco','tomas','oro'].filter(k=>!game.delivered[k]).map(k=>NAMES[k]).join(' et ')} à livrer. Le pain se garde, mais pas éternellement !`]});
 if(q.bread===1)return wrap({lines:["Tout le monde a eu son pain ? Tu es un amour.","Garde la dernière miche pour toi. Et reviens quand tu veux, le four est toujours chaud."],end:()=>finishQuest('bread','Livraison de pain accomplie')});
-return wrap({lines:[pick(["Bienvenue à Azura. Ici, tout le monde se connaît.","Les escaliers sont raides, mais la vue vaut le détour.","Mon four est allumé, tu sens le pain ?","À la fête du village, on danse jusqu'au lever du soleil."])]});
+return wrap({lines:[pick(["Bienvenue à Azura. Ici, tout le monde se connaît.","Les escaliers sont raides, mais la vue vaut le détour.","Mon four est allumé, tu sens le pain ?","À la fête du village, on danse jusqu'au lever du soleil.","Le marché du matin, tu connais ? À la première heure, sur la place, j'achète tout 20 % de plus."])]});
 case'marco':if(q.treasure===0)return wrap({lines:["Regarde ce que j'ai trouvé dans un vieux tonneau : une carte, avec un poème !","« Sous le palmier qui penche vers la mer, à l'ouest de la crique, là où le sable touche la roche. »","Moi j'ai le vertige et les crabes me font peur. Va creuser, on partage !"],end:()=>startQuest('treasure')});
 if(q.treasure===1)return wrap({lines:["Alors, ce trésor ? Un palmier qui penche vers la mer, à l'ouest de la crique… Il y a une croix dans le sable, paraît-il."]});
 if(q.treasure===2&&!n.thanked){n.thanked=true;return wrap({lines:["Une ancre d'or ! On est riches ! Enfin… on est contents.","Garde-la, tu l'as bien méritée. Moi je garde le poème."]});}
@@ -149,7 +179,7 @@ return wrap({lines:[pick(["J'ai tressé ce chapeau moi-même. Le tien n'est pas 
 case'bastien':if(q.notes===0)return wrap({lines:["♪ Sur l'île d'Azura, les toits sont d'argile… ♪ Ah, bonjour !","Le vent a emporté mes trois partitions. Une vers le ponton, une vers le parvis d'Anaé, une vers le belvédère, je crois.","Sans elles, je joue toujours la même chanson. Tu veux bien les retrouver ?"],end:()=>startQuest('notes')});
 if(q.notes===1&&game.notes.size<3)return wrap({lines:[`${game.notes.size} sur 3. Elles brillent un peu, tu ne peux pas les rater.`]});
 if(q.notes===1)return wrap({lines:["Mes partitions ! ♪ Écoute celle-ci… ♪","Je l'appellerai « La ballade de "+me+" ». Elle sera jouée à la fête, promis."],end:()=>finishQuest('notes','La ballade de '+me)});
-return wrap({lines:[pick(["♪ Quand le vent tourne, la mer chante… ♪ C'est Oro qui m'a soufflé les paroles.","Le meilleur public, c'est Pistache. Il ronronne en rythme.","Un jour, je jouerai sur le voilier de Tomas, en pleine mer."])]});
+return wrap({lines:[pick(["♪ Quand le vent tourne, la mer chante… ♪ C'est Oro qui m'a soufflé les paroles.","Le meilleur public, c'est Pistache. Il ronronne en rythme.","Un jour, je jouerai sur le voilier de Tomas, en pleine mer.","Le soir, on allume un feu sur la plage et je joue jusqu'à la nuit. Viens donc !"])]});
 case'oro':if(stars()>=TOTAL&&!n.final){n.final=true;return wrap({lines:[`${me}, tu as découvert tous les secrets d'Azura, jusqu'au dernier.`,"L'île se souviendra de toi. Regarde vers la mer : ce soir, le village fait la fête en ton honneur.","Reviens quand tu veux : le vent, la mer et nous serons là."],end:()=>{game.fireworksUntil=game.playtime+40;toast('🎆 Feu d\'artifice au-dessus de la crique !');dirty=true;saveGame(true);}});}
 if(n.final)return wrap({lines:[pick(["Regarde la mer. Elle chante pour toi ce soir.","Le feu d'artifice, c'est Tomas qui le tire depuis son voilier."])],end:()=>{if(game.fireworksUntil<game.playtime)game.fireworksUntil=game.playtime+30;}});
 return wrap({lines:[pick(["Bienvenue au belvédère. Peu de gens grimpent jusqu'ici.","Écoute… Quand le vent tourne, la mer chante. Tomas ne l'a pas inventé.","Ce drapeau, je le hisse chaque matin depuis quarante ans.","Quand tu auras aidé tout le monde, reviens me voir. J'aurai quelque chose à te dire."])]});
@@ -317,7 +347,7 @@ function unstick(e){if(reach[cellIndex(e.x,e.z)]&&freeAround(e.x,e.z)>=4)return 
 function npcThink(n,dt,t){if(n.moved===false&&n.state==='walk'){n.stuckT=(n.stuckT||0)+dt;if(n.stuckT>1.5){n.stuckT=0;unstick(n);n.state='idle';n.t=.5;}}else n.stuckT=0;
 if(n.talking){n.heading=turnToward(n.heading,Math.atan2(player.x-n.x,player.z-n.z),dt*6);idleEntity(n,dt);n.look=0;}
 else if(n.cat&&game.catFollow){const dx=player.x-n.x,dz=player.z-n.z,d=Math.hypot(dx,dz);if(d>1.4){const moved=moveEntity(n,dx,dz,Math.min(3.4,player.speed+1.6),dt);if((!moved&&d>2.5)||d>9){const [x,z]=snap(player.x-Math.sin(player.heading)*.8,player.z-Math.cos(player.heading)*.8,2);n.x=x;n.z=z;n.y=cellH(x,z);}}else idleEntity(n,dt);}
-else if(n.state==='idle'){idleEntity(n,dt);n.t-=dt;if(!n.cat)n.look=Math.sin(t*.6+n.x)*.35;if(n.t<=0&&(dayF>.25||n.cat)){for(let k=0;k<6;k++){const a=Math.random()*TAU,r=Math.random()*n.leash,x=n.home[0]+Math.cos(a)*r,z=n.home[1]+Math.sin(a)*r,i=cellIndex(x,z);if(i>=0&&reach[i]){n.target=[x,z];n.state='walk';n.fails=0;break;}}n.t=1.5+Math.random()*4;}}
+else if(n.state==='idle'){idleEntity(n,dt);n.t-=dt;if(!n.cat)n.look=Math.sin(t*.6+n.x)*.35;const hm=n.cat?n.home:eventHomeOf(n);if(n.t<=0&&(dayF>.25||n.cat||hm!==n.home)){for(let k=0;k<6;k++){const a=Math.random()*TAU,r=Math.random()*Math.max(n.leash,hm!==n.home?1.2:0),x=hm[0]+Math.cos(a)*r,z=hm[1]+Math.sin(a)*r,i=cellIndex(x,z);if(i>=0&&reach[i]){n.target=[x,z];n.state='walk';n.fails=0;break;}}n.t=1.5+Math.random()*4;}}
 else{n.look=0;const dx=n.target[0]-n.x,dz=n.target[1]-n.z,d=Math.hypot(dx,dz);n.moved=d>=.15&&moveEntity(n,dx,dz,n.walk,dt);if(d<.15||!n.moved)if(d<.15||++n.fails>8){n.state='idle';n.t=1+Math.random()*3;}}
 groundEntity(n,dt);}
 function crabThink(c,dt,t){if(c.hidden)return;const dx=c.x-player.x,dz=c.z-player.z,d=Math.hypot(dx,dz);const hunted=c.goat?(game.quests.goats===1&&game.goatsCaught<3):(game.quests.crabs===1&&game.crabsCaught<3);
@@ -327,7 +357,7 @@ else{const tx=c.target[0]-c.x,tz=c.target[1]-c.z,td=Math.hypot(tx,tz);if(td<.12|
 groundEntity(c,dt);}
 const drawList=[];
 function update(dt,t){
-if(playing)game.playtime+=dt;updateClock(dt);farmUpdate(dt);
+if(playing)game.playtime+=dt;updateClock(dt);updateEvents();farmUpdate(dt);
 let ix=0,iy=0;if(playing&&!dialog&&!minigame&&panel.hidden&&shopEl.hidden&&!voyage.active&&!actGesture){ix=(keys.right?1:0)-(keys.left?1:0)+stickVec[0];iy=(keys.up?1:0)-(keys.down?1:0)+stickVec[1];}
 let mag=Math.hypot(ix,iy);if(mag>1){ix/=mag;iy/=mag;mag=1;}
 if(mag>.08){if(cam.mode!=='follow')setView('play');const f=norm([current.target[0]-eye[0],0,current.target[2]-eye[2]]),r=[-f[2],0,f[0]];const px=player.x,pz=player.z;const moved=moveEntity(player,f[0]*iy+r[0]*ix,f[2]*iy+r[2]*ix,(keys.run||mag>.97&&stickId!==null?4.3:2.7)*Math.min(1,mag*1.3),dt);if(Math.hypot(player.x-px,player.z-pz)>0)dirty=true;
@@ -365,6 +395,12 @@ for(const g of gulls){const a=t*g.w+g.ph,dir=Math.sign(g.w),x=g.cx+Math.cos(a)*g
 const root=mm(T(x,y,z),RY(heading),RZ(-dir*.25));setBone(g.bones,0,root);setBone(g.bones,1,mm(root,RZ(flap)));setBone(g.bones,2,mm(root,RZ(-flap)));drawList.push({mesh:gullMesh,bones:g.bones,n:3,mode:4});}
 // Roue du moulin de la Gorge (maillage waterwheelMesh d'Astra, os 0, axe X) : tourne en continu, centre (1.27,1.30,29.75).
 if(typeof waterwheelMesh!=='undefined'&&waterwheelMesh){setBone(gorgeWheelBones,0,mm(T(1.27,1.30,29.75),RX(-t*.9)));drawList.push({mesh:waterwheelMesh,bones:gorgeWheelBones,n:1,mode:4});}
+// Événements d'Azura : étal du marché le matin, feu de camp le soir.
+if(morningMarketOn()){setBone(stallBones,0,mm(T(-1.5,cellH(-1.5,4.9),4.9),RY(.5)));drawList.push({mesh:stallMesh,bones:stallBones,n:1,mode:4});}
+if(feteActive){const [fx,fz]=FETE_FEU,fy=cellH(fx,fz);setBone(fireBones,0,T(fx,fy,fz));drawList.push({mesh:campfireMesh,bones:fireBones,n:1,mode:4});
+const fl=.85+Math.sin(t*7.3)*.12+Math.sin(t*11.7)*.06;setBone(fireGlowBones,0,mm(T(fx,fy,fz),RY(t*.8),SC(fl)));setBone(fireGlowBones,1,mm(T(fx,fy+.06,fz),RY(-t*1.1),SC(1.7-fl)));drawList.push({mesh:campfireGlow,bones:fireGlowBones,n:2,mode:7,noShadow:true});}
+// Faisceau tournant du phare, la nuit, une fois la lampe rallumée (quête de l'huile).
+if(game.quests.oil===2&&dayF<.6){const k=Math.min(1,(.6-dayF)/.45);if(k>.05)for(let i=0;i<2;i++){setBone(beamBones[i],0,mm(T(34,12.6,-24.6),RY(t*.45+i*PI),SC(k)));drawList.push({mesh:beamMesh,bones:beamBones[i],n:1,mode:7,noShadow:true});}}
 {const b=boats.moored;setBone(b.bones,0,mm(T(b.x,b.y+Math.sin(t*1.1)*.05,b.z),RY(b.rot),RX(Math.sin(t*1.3+1)*.03),RZ(Math.sin(t*.9)*.05)));drawList.push({mesh:mooredBoat,bones:b.bones,n:1,mode:4});
 const s=boats.sail;let x,z,heading,heel=.06;if(voyage.active){x=voyage.x;z=voyage.z;heading=voyage.heading;heel=.12;}else{s.a=t*.04;x=Math.cos(s.a)*19;z=-1.3+Math.sin(s.a)*17.5;heading=Math.atan2(-Math.sin(s.a)*19,Math.cos(s.a)*17.5);}const root=mm(T(x,.5+Math.sin(t*1.4)*.08,z),RY(heading),RZ(heel+Math.sin(t*.8)*.04),RX(Math.sin(t*1.1)*.03));setBone(s.bones,0,root);setBone(s.bones,1,mm(root,RY(.35+Math.sin(t*2.6)*.06)));drawList.push({mesh:sailBoat,bones:s.bones,n:2,mode:4});}
 {const b=flagBones;setBone(b,0,mm(T(...flagBase),RY(.6+Math.sin(t*.3)*.25)));drawList.push({mesh:flagMesh,bones:b,n:1,mode:3});}
@@ -373,5 +409,5 @@ for(const l of lanterns){setBone(l.bones,0,mm(T(l.x,l.y,l.z),RY(Math.atan2(-l.x,
 if(dayF<.85){const vis=1-dayF/.85;fireflies.forEach((f,i)=>{const a=t*.35+f.ph+Math.sin(t*.9+i)*.6,x=f.cx+Math.cos(a)*f.r,z=f.cz+Math.sin(a*1.3)*f.r*.8,y=f.cy+f.h+Math.sin(t*1.7+i*2)*.3,blink=.5+.5*Math.sin(t*4+i*1.7);setBone(fireflyBones,i,mm(T(x,y,z),SC(vis*(.4+blink))));});drawList.push({mesh:fireflyMesh,bones:fireflyBones,n:14,mode:7,noShadow:true});}
 if(game.fireworksUntil>game.playtime){const age=game.playtime-(game.fireworksUntil-40);burstMeshes.forEach((m,bi)=>{const period=2.6,local=(age+bi*.65)%period,cycle=Math.floor((age+bi*.65)/period),rnd2=k=>Math.abs(Math.sin(cycle*12.9898+bi*78.233+k*37.7)*43758.5453)%1;const cx=-4+rnd2(1)*10,cz=17+rnd2(2)*8,cy=9+rnd2(3)*5;const b=burstBones[bi];if(local<.8){for(let k=0;k<12;k++)setBone(b,k,mm(T(cx,cy*local/.8+.5,cz),SC(.35)));m.boomed=false;}else{const e=(local-.8)/1.8,r=e*(2-e)*3.5;if(!m.boomed){m.boomed=true;sfx('boom');}for(let k=0;k<12;k++){const th=k/12*TAU,ph=(k%3)*1.1+bi;setBone(b,k,mm(T(cx+Math.cos(th)*Math.cos(ph)*r,cy+Math.sin(ph)*r*.7-e*e*1.5,cz+Math.sin(th)*Math.cos(ph)*r),SC(Math.max(.01,(1-e)*1.4))));}}drawList.push({mesh:m,bones:b,n:12,mode:8,noShadow:true});});}
 }
-const lighthouseBones=new Float32Array(16),flagBones=new Float32Array(16),smokeBones=chimneys.map(()=>new Float32Array(96)),burstBones=burstMeshes.map(()=>new Float32Array(16*12));
+const lighthouseBones=new Float32Array(16),flagBones=new Float32Array(16),smokeBones=chimneys.map(()=>new Float32Array(96)),burstBones=burstMeshes.map(()=>new Float32Array(16*12)),stallBones=new Float32Array(16),fireBones=new Float32Array(16),fireGlowBones=new Float32Array(32),beamBones=[new Float32Array(16),new Float32Array(16)];
 
