@@ -106,11 +106,11 @@ ${skyChunk}
 void main(){vec4 w=uInvVP*vec4(vUV*2.-1.,1.,1.);vec3 d=normalize(w.xyz/w.w-uEye);vec3 c=skyColor(d,uDay,uDusk,uTime);outColor=vec4(c*uExpo,0.);}`;
 const waterVertex=`#version 300 es
 precision highp float;precision highp int;
-layout(location=0) in vec3 aPosition;uniform mat4 uVP;uniform float uTime;out vec3 vPosition;
-void main(){vec3 p=aPosition;p.y+=.045*sin(p.x*.63+uTime*.68)+.035*sin(p.z*.85+uTime*.87)+.022*sin(p.x*1.4+p.z*1.2-uTime);vPosition=p;gl_Position=uVP*vec4(p,1.);}`;
+layout(location=0) in vec3 aPosition;layout(location=2) in vec3 aColor;uniform mat4 uVP;uniform float uTime;out vec3 vPosition;out float vFoam;
+void main(){vFoam=aColor.r;vec3 p=aPosition;p.y+=.045*sin(p.x*.63+uTime*.68)+.035*sin(p.z*.85+uTime*.87)+.022*sin(p.x*1.4+p.z*1.2-uTime);vPosition=p;gl_Position=uVP*vec4(p,1.);}`;
 const waterFragment=`#version 300 es
 precision highp float;precision highp int;
-in vec3 vPosition;uniform vec3 uEye;uniform float uTime;uniform float uDay;uniform float uDusk;uniform sampler2D uScene;uniform sampler2D uDepth;uniform sampler2D uRefl;uniform mat4 uReflVP;uniform float uHasRefl;uniform vec2 uRes;uniform float uNear;uniform float uFar;uniform float uExpo;uniform float uDetail;
+in vec3 vPosition;in float vFoam;uniform vec2 uFlow;uniform vec3 uEye;uniform float uTime;uniform float uDay;uniform float uDusk;uniform sampler2D uScene;uniform sampler2D uDepth;uniform sampler2D uRefl;uniform mat4 uReflVP;uniform float uHasRefl;uniform vec2 uRes;uniform float uNear;uniform float uFar;uniform float uExpo;uniform float uDetail;
 out vec4 outColor;
 ${noiseChunk}
 ${texNoiseChunk}
@@ -118,9 +118,9 @@ ${skyChunk}
 float lin(float d){float z=d*2.-1.;return 2.*uNear*uFar/(uFar+uNear-z*(uFar-uNear));}
 void main(){vec2 uv=gl_FragCoord.xy/uRes;vec3 p=vPosition;vec2 q=p.xz;vec3 view=normalize(uEye-p);vec3 sun=normalize(vec3(-25,40,30));
 float sceneZ=lin(texture(uDepth,uv).r),fragZ=lin(gl_FragCoord.z);float depth=max(sceneZ-fragZ,0.);
-float t=uTime;
+float t=uTime;vec2 qf=q+uFlow*t;float fall=smoothstep(.5,1.,vFoam);
 vec2 g1=vec2(cos(q.x*.63+t*.68)*.028,cos(q.y*.85+t*.87)*.03);vec2 g2=vec2(cos(q.x*1.4+q.y*1.2-t)*.03,cos(q.x*1.4+q.y*1.2-t)*.026);
-float e=.15;vec2 dn=vec2(0.);if(uDetail>.5){float n0=tn(q*2.6+t*.25);dn=vec2(n0-tn(q*2.6+vec2(e,0.)+t*.25),n0-tn(q*2.6+vec2(0.,e)+t*.25))*.9;if(uDetail>1.5){float n1=tn(q*7.+vec2(t*.5,0.));dn+=vec2(n1-tn(q*7.+vec2(e+t*.5,0.)),n1-tn(q*7.+vec2(0.,e+t*.4)))*.5;}}
+float e=.15;vec2 dn=vec2(0.);if(uDetail>.5){float n0=tn(qf*2.6+t*.25);dn=vec2(n0-tn(qf*2.6+vec2(e,0.)+t*.25),n0-tn(qf*2.6+vec2(0.,e)+t*.25))*.9;if(uDetail>1.5){float n1=tn(qf*7.+vec2(t*.5,0.));dn+=vec2(n1-tn(qf*7.+vec2(e+t*.5,0.)),n1-tn(qf*7.+vec2(0.,e+t*.4)))*.5;}}dn*=1.+1.5*min(1.,length(uFlow))+2.*fall;
 vec3 n=normalize(vec3(-(g1.x+g2.x)-dn.x*.9,1.,-(g1.y+g2.y)-dn.y*.9));
 float edge1=(length((q-vec2(0,-1.3))/vec2(12.6,11.4))-1.)*10.;float edge2=(length((q-vec2(0,7.8))/vec2(6.8,5.1))-1.)*5.;float shore=min(edge1,edge2);float shallow=exp(-max(shore,0.)*.25);
 vec2 ruv=uv+n.xz*.035*clamp(depth,0.,1.);if(lin(texture(uDepth,ruv).r)<fragZ)ruv=uv;vec3 refr=texture(uScene,ruv).rgb;
@@ -131,7 +131,8 @@ if(uHasRefl>.5){vec4 rp=uReflVP*vec4(p,1.);vec2 rv=rp.xy/rp.w*.5+.5+n.xz*.06;if(
 float fres=.03+.97*pow(1.-max(dot(n,view),0.),5.);col=mix(col,refl,clamp(fres*.7,0.,.7));
 vec3 h=normalize(sun+view);float sp=pow(max(dot(n,h),0.),320.)*.7+pow(max(dot(n,h),0.),40.)*.08;vec3 sunCol=mix(vec3(.5,.55,.8)*.4,vec3(1.1,1.,.85),uDay);sunCol=mix(sunCol,sunCol*vec3(1.4,.75,.45),uDusk*.7);col+=sunCol*sp;
 float ripple=tn(q*2.+t*.16);float foamA=1.-smoothstep(.06,.48,abs(shore-.1-.17*sin(t+q.x*.8)-ripple*.28));foamA*=smoothstep(.25,.8,ripple);
-float foamD=(1.-smoothstep(.0,.35,depth))*(.55+.45*tn(q*9.+t*.6));float foam=max(foamA*.85,foamD*.8)*mix(.35,1.,uDay);
+float foamD=(1.-smoothstep(.0,.35,depth))*(.55+.45*tn(qf*9.+t*.6));float foam=max(foamA*.85,foamD*.8)*mix(.35,1.,uDay);
+if(length(uFlow)>0.){float streak=tn(vec2(q.x*6.,q.y*1.6+t*2.4));foam=max(foam,.22*smoothstep(.55,.9,streak));col=mix(col,vec3(.9,.96,.98),fall*.45);foam=max(foam,fall*(.5+.5*tn(vec2(q.x*8.+t*.3,q.y*3.-t*3.2))));}
 col=mix(col,vec3(.96,.97,.93),foam);
 float band=1.-smoothstep(.03,.17,abs(shore-.7-.2*sin(t*.9+q.x*.6)));col=mix(col,vec3(.73,.96,.9),band*.15*uDay);
 col*=mix(vec3(.5,.55,.8),vec3(1.),uDay);
@@ -190,7 +191,7 @@ try{flatProgram=program(flatV,flatF);mainProgram=program(vertex,fragment);mainSt
 catch(e){document.querySelector('#error').hidden=false;document.querySelector('#loading').style.display='none';console.error(e);throw e;}
 
 function mesh(data){let vao=gl.createVertexArray();gl.bindVertexArray(vao);let buffer=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,buffer);gl.bufferData(gl.ARRAY_BUFFER,data,gl.STATIC_DRAW);for(let i=0;i<3;i++){gl.enableVertexAttribArray(i);gl.vertexAttribPointer(i,3,gl.FLOAT,false,36,i*12);}gl.bindVertexArray(null);return{vao,count:data.length/9};}
-const solid=mesh(sceneData),ocean=mesh(oceanData),clouds=mesh(cloudData);
+const solid=mesh(sceneData),ocean=mesh(oceanData),clouds=mesh(cloudData),river=mesh(riverData);
 // Texture de bruit tuilée 256² : R bruit de valeur, G fbm 4 octaves, B bruit ×4, A aléa. Remplace le bruit calculé au pixel.
 const noiseTex=(()=>{const N=256,d=new Uint8Array(N*N*4);const hsh=(x,y)=>{x=((x%N)+N)%N;y=((y%N)+N)%N;let h=(x*374761393+y*668265263)|0;h=Math.imul(h^(h>>>13),1274126177);return((h^(h>>>16))>>>0)/4294967296;};
 const vn=(px,py,f)=>{const sx=px*f/N,sy=py*f/N;const x0=Math.floor(sx),y0=Math.floor(sy),tx=sx-x0,ty=sy-y0,u=tx*tx*(3-2*tx),v=ty*ty*(3-2*ty);const P=f;const g=(a,b)=>hsh(((a%P)+P)%P*97,((b%P)+P)%P*57);return(g(x0,y0)*(1-u)+g(x0+1,y0)*u)*(1-v)+(g(x0,y0+1)*(1-u)+g(x0+1,y0+1)*u)*v;};
