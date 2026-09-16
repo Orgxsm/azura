@@ -3358,6 +3358,7 @@ const fireflies=Array.from({length:14},(_,i)=>({cx:i<7?-.6:-3.3,cz:i<7?-1.5:2.9,
 const fireflyBones=new Float32Array(16*14);
 const summitTower={x:.8,y:13.5,z:-6.8,r:1.12,h:4.2};
 const flagBase=[summitTower.x,summitTower.y+summitTower.h+summitTower.r*.72+.28,summitTower.z];
+const gorgeWheelBones=new Float32Array(16);
 const boats={moored:{x:-6,y:.53,z:14.1,rot:-.13,bones:new Float32Array(16)},sail:{a:0,bones:new Float32Array(32)}};
 const chestBones=new Float32Array(32),crossBones=new Float32Array(16);
 
@@ -3651,6 +3652,8 @@ if(game.quests.treasure===1&&!game.dug){setBone(crossBones,0,T(digSpot.x,digSpot
 if(game.dug){const root=T(digSpot.x,digSpot.y,digSpot.z);setBone(chestBones,0,root);setBone(chestBones,1,mm(root,piv([0,.32,-.2],RX(-1.9))));drawList.push({mesh:chestMesh,bones:chestBones,n:2,mode:4});}
 for(const g of gulls){const a=t*g.w+g.ph,dir=Math.sign(g.w),x=g.cx+Math.cos(a)*g.R,z=g.cz+Math.sin(a)*g.R,y=g.h+Math.sin(t*.7+g.ph)*.8,heading=Math.atan2(-Math.sin(a)*dir,Math.cos(a)*dir);const glide=Math.sin(t*.45+g.ph)>.2?.12:1,flap=Math.sin(t*9+g.ph)*.6*glide;
 const root=mm(T(x,y,z),RY(heading),RZ(-dir*.25));setBone(g.bones,0,root);setBone(g.bones,1,mm(root,RZ(flap)));setBone(g.bones,2,mm(root,RZ(-flap)));drawList.push({mesh:gullMesh,bones:g.bones,n:3,mode:4});}
+// Roue du moulin de la Gorge (maillage waterwheelMesh d'Astra, os 0, axe X) : tourne en continu, centre (1.27,1.30,29.75).
+if(typeof waterwheelMesh!=='undefined'&&waterwheelMesh){setBone(gorgeWheelBones,0,mm(T(1.27,1.30,29.75),RX(-t*.9)));drawList.push({mesh:waterwheelMesh,bones:gorgeWheelBones,n:1,mode:4});}
 {const b=boats.moored;setBone(b.bones,0,mm(T(b.x,b.y+Math.sin(t*1.1)*.05,b.z),RY(b.rot),RX(Math.sin(t*1.3+1)*.03),RZ(Math.sin(t*.9)*.05)));drawList.push({mesh:mooredBoat,bones:b.bones,n:1,mode:4});
 const s=boats.sail;let x,z,heading,heel=.06;if(voyage.active){x=voyage.x;z=voyage.z;heading=voyage.heading;heel=.12;}else{s.a=t*.04;x=Math.cos(s.a)*19;z=-1.3+Math.sin(s.a)*17.5;heading=Math.atan2(-Math.sin(s.a)*19,Math.cos(s.a)*17.5);}const root=mm(T(x,.5+Math.sin(t*1.4)*.08,z),RY(heading),RZ(heel+Math.sin(t*.8)*.04),RX(Math.sin(t*1.1)*.03));setBone(s.bones,0,root);setBone(s.bones,1,mm(root,RY(.35+Math.sin(t*2.6)*.06)));drawList.push({mesh:sailBoat,bones:s.bones,n:2,mode:4});}
 {const b=flagBones;setBone(b,0,mm(T(...flagBase),RY(.6+Math.sin(t*.3)*.25)));drawList.push({mesh:flagMesh,bones:b,n:1,mode:3});}
