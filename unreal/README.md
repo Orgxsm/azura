@@ -11,3 +11,6 @@
 7. Play : le personnage du template marche sur les îles (collision complexe). Envoyer à Claude les captures et l'Output Log en cas d'erreur.
 8. Vitrine vidéo : exécuter ensuite `exec(open('/Users/jl/azura/unreal/flythrough.py').read())` (crée la caméra et la séquence `LS_AzuraVitrine`, ≈ 61 s à travers les 6 îles), puis Window → Cinematics → Movie Render Queue → ajouter la séquence → rendu 1920×1080, 30 i/s, en .mp4 ou .png.
 9. Matériaux : chaque île importe des slots `M_feuille`, `M_crepi`, `M_sable`, `M_roche`, `M_tuile`, `M_bois`, `M_vitre`, `M_autre` (+ `M_eau` pour la rivière). Le script applique partout le matériau à couleurs de sommet ; Astra fournira des matériaux stylisés par slot (UV planaires disponibles, 1 unité = 1 m).
+
+## Variante sans ouvrir l'éditeur (Claude s'en charge)
+Une fois le moteur installé par le Launcher, `zsh unreal/build_vitrine.sh` fait tout : export glTF, projet `unreal/AzuraUE` (Blueprint, plugins Python + Movie Render Pipeline), import et mise en scène, séquence, file de rendu, rendu PNG 1920×1080 puis `export/azura-vitrine.mp4`. Étapes possibles une par une : `setup`, `fly`, `queue`, `render`, `video`.

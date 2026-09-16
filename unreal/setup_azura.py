@@ -107,8 +107,17 @@ def detect_mapping(actor, bounds_json):
         return unreal.Vector(*v)
     return conv
 
+MAP = '/Game/Azura/Maps/Vitrine'
+def open_or_create_level():
+    if unreal.EditorAssetLibrary.does_asset_exist(MAP):
+        unreal.EditorLevelLibrary.load_level(MAP)
+    else:
+        unreal.EditorAssetLibrary.make_directory('/Game/Azura/Maps')
+        unreal.EditorLevelLibrary.new_level(MAP)
+
 def main():
     unreal.EditorAssetLibrary.make_directory('/Game/Azura'); unreal.EditorAssetLibrary.make_directory(DEST)
+    open_or_create_level()
     mat = vertex_color_material(); eau = water_material()
     clear_previous()
     conv = None
