@@ -30,6 +30,8 @@ for(let z=z0;z<=z1;z+=HS)for(let x=x0;x<=x1;x+=HS){const i=cellIndex(x,z);if(i<0
 // Les emprises des maisons et des tours sont interdites : on ne grimpe jamais sur un toit.
 const blocked=new Uint8Array(HN*HN);
 for(let i=0;i<HN*HN;i++){const d=foliageTop[i]-H[i];if(d>.45&&d<1.7&&stairDist[i]>=1e9&&H[i]>SEA)blocked[i]=1;}
+// Chute de la Gorge (z 31,6–34,4) : interdite à la marche ; le reste de la rivière se traverse à gué.
+for(let z=31.6;z<=34.4;z+=HS)for(let x=-1.7;x<=1.7;x+=HS){const i=cellIndex(x,z);if(i>=0&&stairDist[i]>=1e9)blocked[i]=1;}
 for(const p of platforms)for(let z=p.z-p.r;z<=p.z+p.r;z+=HS)for(let x=p.x-p.r;x<=p.x+p.r;x+=HS){const i=cellIndex(x,z);if(i>=0&&Math.hypot(x-p.x,z-p.z)<=p.r)blocked[i]=0;}
 for(const t of terraces){const m=t.round?.15:.3,R=Math.max(t.w,t.d)/2+m+HS,c=Math.cos(t.rot),sn=Math.sin(t.rot);for(let z=t.z-R;z<=t.z+R;z+=HS)for(let x=t.x-R;x<=t.x+R;x+=HS){const i=cellIndex(x,z);if(i<0)continue;const dx=x-t.x,dz=z-t.z;let inside;if(t.round)inside=Math.hypot(dx,dz)<=t.w/2+m;else{const lx=dx*c-dz*sn,lz=dx*sn+dz*c;inside=Math.abs(lx)<=t.w/2+m&&Math.abs(lz)<=t.d/2+m;}if(inside)blocked[i]=1;}}
 

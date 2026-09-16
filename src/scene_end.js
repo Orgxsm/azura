@@ -11,6 +11,15 @@ const sceneData=new Float32Array(verts);verts=[];
 // Ocean geometry is animated entirely in the GPU.
 for(let x=-100;x<100;x+=2)for(let z=-100;z<100;z+=2)quad([x,0,z],[x,0,z+2],[x+2,0,z+2],[x+2,0,z],color(0x159db5));
 const oceanData=new Float32Array(verts);verts=[];
+// Rivière et chute du Village de la Gorge (Claude) : nappe d'eau qui suit le profil de fond documenté par Astra
+// (PASSE-10A.md), 13 cm au-dessus du lit ; la composante rouge de la couleur encode l'écume (1 = chute).
+{const bedY=z=>z<=32?-.45:(z<=34?-.45+(z-32)*.725:1+(z-34)*5/21);const riverY=z=>Math.max(bedY(z)+.13,.015);
+ const foam=z=>(z>31.9&&z<34.3)?[1,.6,.7]:(z>30.6&&z<=31.9?[.7,.6,.7]:[.08,.6,.7]);  // r : 1 = chute, .7 = bassin de réception
+ for(let z=28.6;z<55;z+=.3){const z2=Math.min(z+.3,55),ya=riverY(z),yb=riverY(z2);
+  for(let x=-1.65;x<1.65;x+=.33){const x2=Math.min(x+.33,1.65);quad([x,ya,z],[x,yb,z2],[x2,yb,z2],[x2,ya,z],foam((z+z2)/2));}}
+ // canal d'amenée (fond 1,10 → eau 1,22) : le long de la berge est puis vers la roue
+ const cy=1.22;quad([1.93,cy,34.5],[2.37,cy,34.5],[2.37,cy,31.45],[1.93,cy,31.45],[.08,.6,.7]);quad([1.05,cy,31.45],[2.37,cy,31.45],[2.37,cy,31.05],[1.05,cy,31.05],[.08,.6,.7]);}
+const riverData=new Float32Array(verts);verts=[];
 // Atmosphere is kept behind the environment; soft geometry clouds catch warm light.
 for(let i=0;i<18;i++){let x=range(-75,75),z=range(-90,-45),y=range(19,36);for(let j=0;j<4;j++)ellipsoid([x+j*range(2,4),y+range(-1,2),z],[range(3,7),range(2,3.5),range(2.5,4)],color(0xfffcf1),12,7,.02);}
 const cloudData=new Float32Array(verts);verts=[];

@@ -2598,6 +2598,15 @@ const sceneData=new Float32Array(verts);verts=[];
 // Ocean geometry is animated entirely in the GPU.
 for(let x=-100;x<100;x+=2)for(let z=-100;z<100;z+=2)quad([x,0,z],[x,0,z+2],[x+2,0,z+2],[x+2,0,z],color(0x159db5));
 const oceanData=new Float32Array(verts);verts=[];
+// Rivière et chute du Village de la Gorge (Claude) : nappe d'eau qui suit le profil de fond documenté par Astra
+// (PASSE-10A.md), 13 cm au-dessus du lit ; la composante rouge de la couleur encode l'écume (1 = chute).
+{const bedY=z=>z<=32?-.45:(z<=34?-.45+(z-32)*.725:1+(z-34)*5/21);const riverY=z=>Math.max(bedY(z)+.13,.015);
+ const foam=z=>(z>31.9&&z<34.3)?[1,.6,.7]:(z>30.6&&z<=31.9?[.7,.6,.7]:[.08,.6,.7]);  // r : 1 = chute, .7 = bassin de réception
+ for(let z=28.6;z<55;z+=.3){const z2=Math.min(z+.3,55),ya=riverY(z),yb=riverY(z2);
+  for(let x=-1.65;x<1.65;x+=.33){const x2=Math.min(x+.33,1.65);quad([x,ya,z],[x,yb,z2],[x2,yb,z2],[x2,ya,z],foam((z+z2)/2));}}
+ // canal d'amenée (fond 1,10 → eau 1,22) : le long de la berge est puis vers la roue
+ const cy=1.22;quad([1.93,cy,34.5],[2.37,cy,34.5],[2.37,cy,31.45],[1.93,cy,31.45],[.08,.6,.7]);quad([1.05,cy,31.45],[2.37,cy,31.45],[2.37,cy,31.05],[1.05,cy,31.05],[.08,.6,.7]);}
+const riverData=new Float32Array(verts);verts=[];
 // Atmosphere is kept behind the environment; soft geometry clouds catch warm light.
 for(let i=0;i<18;i++){let x=range(-75,75),z=range(-90,-45),y=range(19,36);for(let j=0;j<4;j++)ellipsoid([x+j*range(2,4),y+range(-1,2),z],[range(3,7),range(2,3.5),range(2.5,4)],color(0xfffcf1),12,7,.02);}
 const cloudData=new Float32Array(verts);verts=[];
@@ -3128,11 +3137,11 @@ ${skyChunk}
 void main(){vec4 w=uInvVP*vec4(vUV*2.-1.,1.,1.);vec3 d=normalize(w.xyz/w.w-uEye);vec3 c=skyColor(d,uDay,uDusk,uTime);outColor=vec4(c*uExpo,0.);}`;
 const waterVertex=`#version 300 es
 precision highp float;precision highp int;
-layout(location=0) in vec3 aPosition;uniform mat4 uVP;uniform float uTime;out vec3 vPosition;
-void main(){vec3 p=aPosition;p.y+=.045*sin(p.x*.63+uTime*.68)+.035*sin(p.z*.85+uTime*.87)+.022*sin(p.x*1.4+p.z*1.2-uTime);vPosition=p;gl_Position=uVP*vec4(p,1.);}`;
+layout(location=0) in vec3 aPosition;layout(location=2) in vec3 aColor;uniform mat4 uVP;uniform float uTime;out vec3 vPosition;out float vFoam;
+void main(){vFoam=aColor.r;vec3 p=aPosition;p.y+=.045*sin(p.x*.63+uTime*.68)+.035*sin(p.z*.85+uTime*.87)+.022*sin(p.x*1.4+p.z*1.2-uTime);vPosition=p;gl_Position=uVP*vec4(p,1.);}`;
 const waterFragment=`#version 300 es
 precision highp float;precision highp int;
-in vec3 vPosition;uniform vec3 uEye;uniform float uTime;uniform float uDay;uniform float uDusk;uniform sampler2D uScene;uniform sampler2D uDepth;uniform sampler2D uRefl;uniform mat4 uReflVP;uniform float uHasRefl;uniform vec2 uRes;uniform float uNear;uniform float uFar;uniform float uExpo;uniform float uDetail;
+in vec3 vPosition;in float vFoam;uniform vec2 uFlow;uniform vec3 uEye;uniform float uTime;uniform float uDay;uniform float uDusk;uniform sampler2D uScene;uniform sampler2D uDepth;uniform sampler2D uRefl;uniform mat4 uReflVP;uniform float uHasRefl;uniform vec2 uRes;uniform float uNear;uniform float uFar;uniform float uExpo;uniform float uDetail;
 out vec4 outColor;
 ${noiseChunk}
 ${texNoiseChunk}
@@ -3140,9 +3149,9 @@ ${skyChunk}
 float lin(float d){float z=d*2.-1.;return 2.*uNear*uFar/(uFar+uNear-z*(uFar-uNear));}
 void main(){vec2 uv=gl_FragCoord.xy/uRes;vec3 p=vPosition;vec2 q=p.xz;vec3 view=normalize(uEye-p);vec3 sun=normalize(vec3(-25,40,30));
 float sceneZ=lin(texture(uDepth,uv).r),fragZ=lin(gl_FragCoord.z);float depth=max(sceneZ-fragZ,0.);
-float t=uTime;
+float t=uTime;vec2 qf=q+uFlow*t;float fall=smoothstep(.8,1.,vFoam);float pool=smoothstep(.55,.72,vFoam)*(1.-fall);
 vec2 g1=vec2(cos(q.x*.63+t*.68)*.028,cos(q.y*.85+t*.87)*.03);vec2 g2=vec2(cos(q.x*1.4+q.y*1.2-t)*.03,cos(q.x*1.4+q.y*1.2-t)*.026);
-float e=.15;vec2 dn=vec2(0.);if(uDetail>.5){float n0=tn(q*2.6+t*.25);dn=vec2(n0-tn(q*2.6+vec2(e,0.)+t*.25),n0-tn(q*2.6+vec2(0.,e)+t*.25))*.9;if(uDetail>1.5){float n1=tn(q*7.+vec2(t*.5,0.));dn+=vec2(n1-tn(q*7.+vec2(e+t*.5,0.)),n1-tn(q*7.+vec2(0.,e+t*.4)))*.5;}}
+float e=.15;vec2 dn=vec2(0.);if(uDetail>.5){float n0=tn(qf*2.6+t*.25);dn=vec2(n0-tn(qf*2.6+vec2(e,0.)+t*.25),n0-tn(qf*2.6+vec2(0.,e)+t*.25))*.9;if(uDetail>1.5){float n1=tn(qf*7.+vec2(t*.5,0.));dn+=vec2(n1-tn(qf*7.+vec2(e+t*.5,0.)),n1-tn(qf*7.+vec2(0.,e+t*.4)))*.5;}}dn*=1.+1.5*min(1.,length(uFlow))+2.*fall;
 vec3 n=normalize(vec3(-(g1.x+g2.x)-dn.x*.9,1.,-(g1.y+g2.y)-dn.y*.9));
 float edge1=(length((q-vec2(0,-1.3))/vec2(12.6,11.4))-1.)*10.;float edge2=(length((q-vec2(0,7.8))/vec2(6.8,5.1))-1.)*5.;float shore=min(edge1,edge2);float shallow=exp(-max(shore,0.)*.25);
 vec2 ruv=uv+n.xz*.035*clamp(depth,0.,1.);if(lin(texture(uDepth,ruv).r)<fragZ)ruv=uv;vec3 refr=texture(uScene,ruv).rgb;
@@ -3153,7 +3162,10 @@ if(uHasRefl>.5){vec4 rp=uReflVP*vec4(p,1.);vec2 rv=rp.xy/rp.w*.5+.5+n.xz*.06;if(
 float fres=.03+.97*pow(1.-max(dot(n,view),0.),5.);col=mix(col,refl,clamp(fres*.7,0.,.7));
 vec3 h=normalize(sun+view);float sp=pow(max(dot(n,h),0.),320.)*.7+pow(max(dot(n,h),0.),40.)*.08;vec3 sunCol=mix(vec3(.5,.55,.8)*.4,vec3(1.1,1.,.85),uDay);sunCol=mix(sunCol,sunCol*vec3(1.4,.75,.45),uDusk*.7);col+=sunCol*sp;
 float ripple=tn(q*2.+t*.16);float foamA=1.-smoothstep(.06,.48,abs(shore-.1-.17*sin(t+q.x*.8)-ripple*.28));foamA*=smoothstep(.25,.8,ripple);
-float foamD=(1.-smoothstep(.0,.35,depth))*(.55+.45*tn(q*9.+t*.6));float foam=max(foamA*.85,foamD*.8)*mix(.35,1.,uDay);
+float foamD=(1.-smoothstep(.0,.35,depth))*(.55+.45*tn(qf*9.+t*.6));float foam=max(foamA*.85,foamD*.8)*mix(.35,1.,uDay);
+if(length(uFlow)>0.){float streak=tn(vec2(q.x*6.,q.y*1.6+t*2.4));foam=max(foam,.22*smoothstep(.55,.9,streak));
+float fs=tn(vec2(q.x*9.+t*.4,q.y*2.2-t*3.4));col=mix(col,vec3(.86,.94,.97),fall*.3);foam=max(foam,fall*(.18+.82*smoothstep(.42,.78,fs)));
+float bub=tn(vec2(q.x*5.+t*.7,q.y*5.-t*.9));foam=max(foam,pool*(.25+.75*smoothstep(.45,.8,bub)));}
 col=mix(col,vec3(.96,.97,.93),foam);
 float band=1.-smoothstep(.03,.17,abs(shore-.7-.2*sin(t*.9+q.x*.6)));col=mix(col,vec3(.73,.96,.9),band*.15*uDay);
 col*=mix(vec3(.5,.55,.8),vec3(1.),uDay);
@@ -3212,7 +3224,7 @@ try{flatProgram=program(flatV,flatF);mainProgram=program(vertex,fragment);mainSt
 catch(e){document.querySelector('#error').hidden=false;document.querySelector('#loading').style.display='none';console.error(e);throw e;}
 
 function mesh(data){let vao=gl.createVertexArray();gl.bindVertexArray(vao);let buffer=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,buffer);gl.bufferData(gl.ARRAY_BUFFER,data,gl.STATIC_DRAW);for(let i=0;i<3;i++){gl.enableVertexAttribArray(i);gl.vertexAttribPointer(i,3,gl.FLOAT,false,36,i*12);}gl.bindVertexArray(null);return{vao,count:data.length/9};}
-const solid=mesh(sceneData),ocean=mesh(oceanData),clouds=mesh(cloudData);
+const solid=mesh(sceneData),ocean=mesh(oceanData),clouds=mesh(cloudData),river=mesh(riverData);
 // Texture de bruit tuilée 256² : R bruit de valeur, G fbm 4 octaves, B bruit ×4, A aléa. Remplace le bruit calculé au pixel.
 const noiseTex=(()=>{const N=256,d=new Uint8Array(N*N*4);const hsh=(x,y)=>{x=((x%N)+N)%N;y=((y%N)+N)%N;let h=(x*374761393+y*668265263)|0;h=Math.imul(h^(h>>>13),1274126177);return((h^(h>>>16))>>>0)/4294967296;};
 const vn=(px,py,f)=>{const sx=px*f/N,sy=py*f/N;const x0=Math.floor(sx),y0=Math.floor(sy),tx=sx-x0,ty=sy-y0,u=tx*tx*(3-2*tx),v=ty*ty*(3-2*ty);const P=f;const g=(a,b)=>hsh(((a%P)+P)%P*97,((b%P)+P)%P*57);return(g(x0,y0)*(1-u)+g(x0+1,y0)*u)*(1-v)+(g(x0,y0+1)*(1-u)+g(x0+1,y0+1)*u)*v;};
@@ -3256,6 +3268,8 @@ for(let z=z0;z<=z1;z+=HS)for(let x=x0;x<=x1;x+=HS){const i=cellIndex(x,z);if(i<0
 // Les emprises des maisons et des tours sont interdites : on ne grimpe jamais sur un toit.
 const blocked=new Uint8Array(HN*HN);
 for(let i=0;i<HN*HN;i++){const d=foliageTop[i]-H[i];if(d>.45&&d<1.7&&stairDist[i]>=1e9&&H[i]>SEA)blocked[i]=1;}
+// Chute de la Gorge (z 31,6–34,4) : interdite à la marche ; le reste de la rivière se traverse à gué.
+for(let z=31.6;z<=34.4;z+=HS)for(let x=-1.7;x<=1.7;x+=HS){const i=cellIndex(x,z);if(i>=0&&stairDist[i]>=1e9)blocked[i]=1;}
 for(const p of platforms)for(let z=p.z-p.r;z<=p.z+p.r;z+=HS)for(let x=p.x-p.r;x<=p.x+p.r;x+=HS){const i=cellIndex(x,z);if(i>=0&&Math.hypot(x-p.x,z-p.z)<=p.r)blocked[i]=0;}
 for(const t of terraces){const m=t.round?.15:.3,R=Math.max(t.w,t.d)/2+m+HS,c=Math.cos(t.rot),sn=Math.sin(t.rot);for(let z=t.z-R;z<=t.z+R;z+=HS)for(let x=t.x-R;x<=t.x+R;x+=HS){const i=cellIndex(x,z);if(i<0)continue;const dx=x-t.x,dz=z-t.z;let inside;if(t.round)inside=Math.hypot(dx,dz)<=t.w/2+m;else{const lx=dx*c-dz*sn,lz=dx*sn+dz*c;inside=Math.abs(lx)<=t.w/2+m&&Math.abs(lz)<=t.d/2+m;}if(inside)blocked[i]=1;}}
 
@@ -4060,7 +4074,7 @@ gl.bindFramebuffer(gl.FRAMEBUFFER,RT.aoBlur.fbo);gl.useProgram(blurProgram);bind
 // composition (AO) puis eau avec réfraction/profondeur/reflets
 gl.bindFramebuffer(gl.FRAMEBUFFER,RT.comp.fbo);gl.viewport(0,0,W,H2);gl.useProgram(compositeProgram);bindTex(0,RT.scene.tex,compLoc.uScene);bindTex(1,Q.ssao?RT.aoBlur.tex:RT.scene.tex,compLoc.uAO);gl.uniform1f(compLoc.uAOStrength,Q.ssao?.6:0);fsQuad();
 if(Q.water!==false){gl.enable(gl.DEPTH_TEST);gl.depthMask(false);gl.useProgram(waterProgram);gl.uniformMatrix4fv(waterLoc.uVP,false,vp);gl.uniform1f(waterLoc.uTime,t);gl.uniform3fv(waterLoc.uEye,eye);gl.uniform1f(waterLoc.uDay,dayF);gl.uniform1f(waterLoc.uDusk,duskF);gl.uniform2f(waterLoc.uRes,W,H2);gl.uniform1f(waterLoc.uNear,NEAR);gl.uniform1f(waterLoc.uFar,FAR);gl.uniform1f(waterLoc.uHasRefl,reflVP?1:0);gl.uniform1f(waterLoc.uExpo,EXPO);gl.uniform1f(waterLoc.uDetail,Q.waterDetail??2);if(reflVP)gl.uniformMatrix4fv(waterLoc.uReflVP,false,reflVP);
-bindTex(0,RT.scene.tex,waterLoc.uScene);bindTex(1,RT.depth.tex,waterLoc.uDepth);bindTex(2,RT.refl.tex,waterLoc.uRefl);bindTex(3,noiseTex,waterLoc.uNoise);gl.bindVertexArray(ocean.vao);gl.drawArrays(gl.TRIANGLES,0,ocean.count);gl.bindVertexArray(null);}
+bindTex(0,RT.scene.tex,waterLoc.uScene);bindTex(1,RT.depth.tex,waterLoc.uDepth);bindTex(2,RT.refl.tex,waterLoc.uRefl);bindTex(3,noiseTex,waterLoc.uNoise);gl.uniform2f(waterLoc.uFlow,0,0);gl.bindVertexArray(ocean.vao);gl.drawArrays(gl.TRIANGLES,0,ocean.count);gl.uniform2f(waterLoc.uFlow,0,1.1);gl.bindVertexArray(river.vao);gl.drawArrays(gl.TRIANGLES,0,river.count);gl.bindVertexArray(null);}
 gl.disable(gl.DEPTH_TEST);gl.depthMask(true);
 // bloom
 if(Q.bloom){gl.bindFramebuffer(gl.FRAMEBUFFER,RT.bloomA.fbo);gl.viewport(0,0,RT.bloomA.w,RT.bloomA.h);gl.useProgram(brightProgram);bindTex(0,RT.comp.tex,brightLoc.uTex);fsQuad();
