@@ -1,11 +1,20 @@
-{
-	"FileVersion": 3,
-	"EngineAssociation": "5.4",
-	"Category": "",
-	"Description": "Azura — vitrine visuelle (îles importées depuis le jeu WebGL)",
-	"Plugins": [
-		{ "Name": "PythonScriptPlugin", "Enabled": true },
-		{ "Name": "MovieRenderPipeline", "Enabled": true },
-		{ "Name": "Interchange", "Enabled": true }
-	]
+﻿{
+    "FileVersion":  3,
+    "EngineAssociation":  "5.7",
+    "Category":  "",
+    "Description":  "Azura â€” vitrine visuelle (Ã®les importÃ©es depuis le jeu WebGL)",
+    "Plugins":  [
+                    {
+                        "Name":  "PythonScriptPlugin",
+                        "Enabled":  true
+                    },
+                    {
+                        "Name":  "MovieRenderPipeline",
+                        "Enabled":  true
+                    },
+                    {
+                        "Name":  "Interchange",
+                        "Enabled":  true
+                    }
+                ]
 }

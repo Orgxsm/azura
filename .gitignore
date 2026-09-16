@@ -2,3 +2,8 @@
 *.tmp
 node_modules/
 export/render/
+export/*.log
+unreal/AzuraUE/Saved/
+unreal/AzuraUE/Intermediate/
+unreal/AzuraUE/DerivedDataCache/
+unreal/AzuraUE/Content/

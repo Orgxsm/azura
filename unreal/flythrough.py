@@ -1,57 +1,98 @@
-"""Azura → Unreal : crée la séquence de fly-through de la vitrine (LS_AzuraVitrine) avec une CineCamera
-qui passe par les 6 îles (plage d'Azura, Phare en 5 cadrages, sous la voûte de l'Arche, Cabanes, Gorge).
-À exécuter APRÈS setup_azura.py :  exec(open(r'<dépôt>/unreal/flythrough.py').read())
-Rendu vidéo : Window → Cinematics → Movie Render Queue sur LS_AzuraVitrine (1920×1080, 30 i/s)."""
-import json, os, math, unreal
-EXPORT = os.path.join(os.path.abspath(os.path.join(unreal.Paths.project_dir(), '..', '..')), 'export')
-AX = {int(k): v for k, v in json.load(open(os.path.join(EXPORT, 'unreal-axes.json'))).items()}
-def conv(x, y, z):
-    v = [0, 0, 0]
-    for k, val in enumerate([x, y, z]):
-        j, s = AX[k]; v[j] = val * 100 * s
-    return unreal.Vector(*v)
-def look_at(eye, target):
-    d = target - eye
-    yaw = math.degrees(math.atan2(d.y, d.x)); pitch = math.degrees(math.atan2(d.z, math.hypot(d.x, d.y)))
-    return unreal.Rotator(0, pitch, yaw)  # roll, pitch, yaw
-# (position de l'œil en mètres glTF, cible, durée en secondes jusqu'au point suivant)
-SHOTS = [
- ([-4, 6, 26], [0, 2, 8], 5),       # plage d'Azura depuis la mer
- ([8, 12, 22], [0, 4, 0], 5),       # village d'Azura
- ([34, 4, 8], [34, 2, -8], 4),      # arrivée au Phare
- ([38, 8, -2], [35.5, 4.5, -12.5], 4),  # village du Phare
- ([30, 12, -12], [34.5, 8.5, -16.5], 4), # montée
- ([34, 20, -6], [34, 15, -22], 4),  # révélation du phare
- ([36, 16, -30], [34, 13, -24], 5), # panorama depuis le sommet
- ([32, 3, 50], [32, 4, 36], 5),     # approche de l'Arche par le sud
- ([32, 3, 40], [32, 5, 28], 4),     # sous la voûte
- ([-18, 12, 50], [-32, 7, 36], 6),  # Cabanes
- ([6, 8, 22], [0, 5.5, 41], 5),     # Gorge depuis le ponton
- ([-4, 12, 30], [1.3, 1.5, 30], 4), # moulin et chute
- ([0, 40, 0], [0, 0, 20], 6),       # vue d'ensemble de l'archipel
-]
+"""Azura → Unreal : sequence de fly-through LS_AzuraVitrine.
+Les plans sont calcules depuis les bounds REELS des iles dans la carte Vitrine
+(plan large d'ouverture, un passage par ile, plan large final) : cadrage garanti.
+Executer APRES setup_azura.py :  exec(open(r'<depot>/unreal/flythrough.py').read())"""
+import math, unreal
+
 FPS = 30
+ILES = ['azura', 'phare', 'arche', 'cabanes', 'gorge', 'champs']
+
+unreal.EditorLevelLibrary.load_level('/Game/Azura/Maps/Vitrine')
+for a in unreal.EditorLevelLibrary.get_all_level_actors():
+    if a.get_actor_label() == 'Azura_CameraVitrine':
+        unreal.EditorLevelLibrary.destroy_actor(a)
+if unreal.EditorAssetLibrary.does_asset_exist('/Game/Azura/LS_AzuraVitrine'):
+    unreal.EditorAssetLibrary.delete_asset('/Game/Azura/LS_AzuraVitrine')
+
+def log(*a): unreal.log('[Azura] ' + ' '.join(str(x) for x in a))
+
+# --- bounds des iles ---
+bounds = {}
+for a in unreal.EditorLevelLibrary.get_all_level_actors():
+    lbl = a.get_actor_label()
+    if lbl.startswith('Azura_') and lbl[6:] in ILES:
+        o, e = a.get_actor_bounds(False)
+        bounds[lbl[6:]] = (unreal.Vector(o.x, o.y, o.z), unreal.Vector(e.x, e.y, e.z))
+        log('bounds', lbl[6:], 'centre', (round(o.x), round(o.y), round(o.z)), 'demi', (round(e.x), round(e.y), round(e.z)))
+manquantes = [i for i in ILES if i not in bounds]
+if manquantes:
+    raise RuntimeError('iles introuvables dans la carte : %s' % manquantes)
+
+centre_g = unreal.Vector(
+    sum(bounds[i][0].x for i in ILES) / len(ILES),
+    sum(bounds[i][0].y for i in ILES) / len(ILES),
+    sum(bounds[i][0].z for i in ILES) / len(ILES))
+rayon_g = max(max(abs(bounds[i][0].x - centre_g.x) + bounds[i][1].x,
+                  abs(bounds[i][0].y - centre_g.y) + bounds[i][1].y) for i in ILES)
+
+def norm2d(v):
+    d = math.hypot(v.x, v.y) or 1.0
+    return unreal.Vector(v.x / d, v.y / d, 0)
+
+# --- plans : liste de cles (oeil, cible, duree jusqu'a la cle suivante en s) ---
+# chaque ile : 6 s d'orbite lente autour d'elle (30 degres) puis 2 s de transit vers la suivante
+SHOTS = []
+SHOTS.append((unreal.Vector(centre_g.x, centre_g.y - 2.4 * rayon_g, centre_g.z + 1.2 * rayon_g), centre_g, 3))
+SHOTS.append((unreal.Vector(centre_g.x, centre_g.y - 2.0 * rayon_g, centre_g.z + 0.95 * rayon_g), centre_g, 3))  # lente poussee
+for ile in ILES:
+    c, e = bounds[ile]
+    r = max(e.x, e.y)
+    dehors = norm2d(unreal.Vector(c.x - centre_g.x, c.y - centre_g.y, 0))
+    if abs(dehors.x) < 0.01 and abs(dehors.y) < 0.01:
+        dehors = unreal.Vector(0, -1, 0)
+    a0 = math.atan2(dehors.y, dehors.x)
+    cible = unreal.Vector(c.x, c.y, c.z + 0.25 * e.z)
+    for j, (ang, dur) in enumerate([(a0 - 0.26, 6), (a0 + 0.26, 2)]):  # orbite 30 degres puis transit
+        oeil = unreal.Vector(c.x + math.cos(ang) * 2.3 * r, c.y + math.sin(ang) * 2.3 * r, c.z + e.z + 0.65 * r)
+        SHOTS.append((oeil, cible, dur))
+# final : large depuis l'est, en prenant de la hauteur
+SHOTS.append((unreal.Vector(centre_g.x + 2.3 * rayon_g, centre_g.y, centre_g.z + 1.1 * rayon_g), centre_g, 4))
+SHOTS.append((unreal.Vector(centre_g.x + 2.5 * rayon_g, centre_g.y, centre_g.z + 1.6 * rayon_g), centre_g, 3))
+
+def look_at(eye, target):
+    d = unreal.Vector(target.x - eye.x, target.y - eye.y, target.z - eye.z)
+    yaw = math.degrees(math.atan2(d.y, d.x))
+    pitch = math.degrees(math.atan2(d.z, math.hypot(d.x, d.y)))
+    return pitch, yaw
+
 tools = unreal.AssetToolsHelpers.get_asset_tools()
 seq = tools.create_asset('LS_AzuraVitrine', '/Game/Azura', unreal.LevelSequence, unreal.LevelSequenceFactoryNew())
 seq.set_display_rate(unreal.FrameRate(FPS, 1))
 cam = unreal.EditorLevelLibrary.spawn_actor_from_class(unreal.CineCameraActor, unreal.Vector(0, 0, 0))
 cam.set_actor_label('Azura_CameraVitrine'); cam.tags = ['azura']
-cam.get_cine_camera_component().set_editor_property('current_focal_length', 28.0)
+cam.get_cine_camera_component().set_editor_property('current_focal_length', 24.0)
 binding = seq.add_possessable(cam)
 track = binding.add_track(unreal.MovieScene3DTransformTrack)
 section = track.add_section()
 total = int(sum(s[2] for s in SHOTS) * FPS)
 section.set_range(0, total)
-ch = section.get_all_channels()  # 0-2 position, 3-5 rotation, 6-8 échelle
+ch = section.get_all_channels()  # 0-2 position, 3-5 rotation (roll, pitch, yaw), 6-8 echelle
 f = 0
+yaw_prec = None
 for eye, target, dur in SHOTS:
-    e = conv(*eye); t = conv(*target); r = look_at(e, t)
-    for i, val in enumerate([e.x, e.y, e.z, r.roll, r.pitch, r.yaw]):
+    pitch, yaw = look_at(eye, target)
+    if yaw_prec is not None:  # continuite du yaw : pas de tour complet entre deux plans
+        while yaw - yaw_prec > 180: yaw -= 360
+        while yaw - yaw_prec < -180: yaw += 360
+    yaw_prec = yaw
+    for i, val in enumerate([eye.x, eye.y, eye.z, 0.0, pitch, yaw]):
         ch[i].add_key(unreal.FrameNumber(f), val, interpolation=unreal.MovieSceneKeyInterpolation.AUTO)
     f += int(dur * FPS)
 for i in range(6, 9): ch[i].add_key(unreal.FrameNumber(0), 1.0)
 cut = seq.add_track(unreal.MovieSceneCameraCutTrack)
-cs = cut.add_section(); cs.set_range(0, total); cs.set_camera_binding_id(binding.get_binding_id())
+cs = cut.add_section(); cs.set_range(0, total)
+cs.set_camera_binding_id(unreal.MovieSceneSequenceExtensions.get_binding_id(seq, binding))
 seq.set_playback_end(total)
 unreal.EditorAssetLibrary.save_loaded_asset(seq)
-unreal.log('[Azura] séquence LS_AzuraVitrine créée : %d s' % (total // FPS))
+unreal.EditorLevelLibrary.save_current_level()  # la camera doit exister dans la carte sauvegardee pour le rendu -game
+log('sequence LS_AzuraVitrine creee : %d s, %d plans' % (total // FPS, len(SHOTS)))
