@@ -51,6 +51,22 @@ def vertex_color_material():
     unreal.EditorAssetLibrary.save_asset(path)
     return mat
 
+def water_material():
+    path = '/Game/Azura/M_AzuraEau'
+    if unreal.EditorAssetLibrary.does_asset_exist(path):
+        return unreal.EditorAssetLibrary.load_asset(path)
+    mat = unreal.AssetToolsHelpers.get_asset_tools().create_asset('M_AzuraEau', '/Game/Azura', unreal.Material, unreal.MaterialFactoryNew())
+    mat.set_editor_property('blend_mode', unreal.BlendMode.BLEND_TRANSLUCENT)
+    lib = unreal.MaterialEditingLibrary
+    col = lib.create_material_expression(mat, unreal.MaterialExpressionConstant3Vector, -500, 0); col.set_editor_property('constant', unreal.LinearColor(0.16, 0.55, 0.72, 1))
+    op = lib.create_material_expression(mat, unreal.MaterialExpressionConstant, -500, 200); op.set_editor_property('r', 0.72)
+    rough = lib.create_material_expression(mat, unreal.MaterialExpressionConstant, -500, 300); rough.set_editor_property('r', 0.08)
+    lib.connect_material_property(col, '', unreal.MaterialProperty.MP_BASE_COLOR)
+    lib.connect_material_property(op, '', unreal.MaterialProperty.MP_OPACITY)
+    lib.connect_material_property(rough, '', unreal.MaterialProperty.MP_ROUGHNESS)
+    lib.recompile_material(mat); unreal.EditorAssetLibrary.save_asset(path)
+    return mat
+
 def prepare_mesh(mesh, mat):
     body = mesh.get_editor_property('body_setup')
     if body:
@@ -83,6 +99,7 @@ def detect_mapping(actor, bounds_json):
         sign = 1 if abs(mn[j] - bounds_json['min'][k] * 100) < abs(mn[j] + bounds_json['max'][k] * 100) else -1
         mapping[k] = (j, sign)
     log('axes glTF->Unreal', mapping)
+    json.dump({str(k): v for k, v in mapping.items()}, open(os.path.join(EXPORT, 'unreal-axes.json'), 'w'))
     def conv(x, y, z):
         v = [0, 0, 0]
         for k, val in enumerate([x, y, z]):
@@ -92,14 +109,14 @@ def detect_mapping(actor, bounds_json):
 
 def main():
     unreal.EditorAssetLibrary.make_directory('/Game/Azura'); unreal.EditorAssetLibrary.make_directory(DEST)
-    mat = vertex_color_material()
+    mat = vertex_color_material(); eau = water_material()
     clear_previous()
     conv = None
     bounds = None
     for entry in SCENE['meshes']:
         meshes = import_glb(entry['id'])
         for m in meshes:
-            prepare_mesh(m, mat)
+            prepare_mesh(m, eau if entry['id'] == 'riviere' else mat)
             actor = spawn_mesh(m, 'Azura_' + entry['id'])
             if entry['id'] == 'azura' and conv is None:
                 # bornes glTF d'Azura lues dans le .glb (accessor 0) pour calibrer les axes
@@ -110,7 +127,7 @@ def main():
     # mer : grand plan bleu translucide à y=0
     plane = unreal.EditorAssetLibrary.load_asset('/Engine/BasicShapes/Plane')
     sea = unreal.EditorLevelLibrary.spawn_actor_from_object(plane, unreal.Vector(0, 0, 0))
-    sea.set_actor_label('Azura_Mer'); sea.tags = ['azura']; sea.set_actor_scale3d(unreal.Vector(300, 300, 1))
+    sea.set_actor_label('Azura_Mer'); sea.tags = ['azura']; sea.set_actor_scale3d(unreal.Vector(300, 300, 1)); sea.static_mesh_component.set_material(0, eau)
     # lumière, ciel, brume
     sun = unreal.EditorLevelLibrary.spawn_actor_from_class(unreal.DirectionalLight, unreal.Vector(0, 0, 3000), unreal.Rotator(-42, 30, 0))
     sun.set_actor_label('Azura_Soleil'); sun.tags = ['azura']

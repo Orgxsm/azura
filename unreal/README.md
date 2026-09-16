@@ -9,3 +9,5 @@
    Le script importe les 7 maillages, crée le matériau à couleurs de sommet, pose les îles, la mer, le soleil, le ciel, la brume et le point de départ.
 6. Project Settings → Rendering : désactiver Lumen (Dynamic Global Illumination : None, Reflections : Screen Space) et Nanite si l'éditeur rame sur le Mac Intel.
 7. Play : le personnage du template marche sur les îles (collision complexe). Envoyer à Claude les captures et l'Output Log en cas d'erreur.
+8. Vitrine vidéo : exécuter ensuite `exec(open('/Users/jl/azura/unreal/flythrough.py').read())` (crée la caméra et la séquence `LS_AzuraVitrine`, ≈ 61 s à travers les 6 îles), puis Window → Cinematics → Movie Render Queue → ajouter la séquence → rendu 1920×1080, 30 i/s, en .mp4 ou .png.
+9. Matériaux : chaque île importe des slots `M_feuille`, `M_crepi`, `M_sable`, `M_roche`, `M_tuile`, `M_bois`, `M_vitre`, `M_autre` (+ `M_eau` pour la rivière). Le script applique partout le matériau à couleurs de sommet ; Astra fournira des matériaux stylisés par slot (UV planaires disponibles, 1 unité = 1 m).
