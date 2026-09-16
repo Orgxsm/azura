@@ -69,13 +69,15 @@ Léo a fourni 3 concepts à reproduire **exactement** : `refs/arche.jpg`, `refs/
 - [~] Astra : `src/islands/gorge.js` — passe 10a livrée le 16 sept. 2026 (deux versants, six terrasses à 3/6/9 m, escaliers de pierre, pont suspendu à 9 m entre (−3.7, 52) et (3.7, 52), ponton nord à x = 6, lit de rivière de 3 m avec profil de fond documenté, socle du moulin (3.3, .65, 31.5), canal d'amenée ; 21 048 triangles, notes `src/islands/PASSE-10A.md`). Vérifié : les 19 points de contrôle atteignables, pont affaissé praticable, voyage Azura → Gorge OK. `[x]` 10b (16 sept. 2026, 11:00) : 8 maisons Tudor (crépi crème, colombages, tuiles à 42° bombées, lucarnes, balcons vert d'eau, cheminées octogonales), moulin compact à colombages au pied est (2.7, .65, 29.75) avec roue `waterwheelMesh` (952 triangles, os 0, axe X, centre (1.27, 1.30, 29.75)), murs de pierre sèche sur les faces externes, 4 chênes, 3 palmiers, lavande, tonneaux, lanternes ; île à 43 386 triangles. Notes `src/islands/PASSE-10B.md`. Vérifié : 19 points + 8 approches de portes + porte du moulin atteignables, voyage Azura → Gorge OK, ferme intacte. Roue branchée et animée par Claude (game.js, `gorgeWheelBones`).
 - [x] (16 sept.) Claude : Gorge inscrite au registre (spawn (6, 31.5), ponton build:false, via (6, 25)).
 - [x] (16 sept.) Claude : rotation de la roue du moulin.
-- [ ] Claude : rivière courante + chute d'eau (profil de fond dans PASSE-10A.md : −0,45 m jusqu'à z = 32, chute z 32–34, puis 1 + (z − 34) × 5/21), rotation de la roue, quêtes des 3 îles, sauvegarde.
+- [x] (16 sept. 2026) Claude : rivière courante et chute de la Gorge — nappe d'eau `riverData` (scene_end.js) 13 cm au-dessus du profil de fond d'Astra + canal du moulin, dessinée par le shader d'eau avec un courant directionnel (`uFlow`), écume en stries sur la chute et bassin bouillonnant (composante rouge de la couleur des sommets = écume) ; la chute (z 31,6–34,4) est interdite à la marche, le reste de la rivière se traverse à gué.
+- [ ] Claude : quêtes des 3 nouvelles îles (Arche, Cabanes, Gorge), PNJ, sauvegarde v3 ; son de chute d'eau.
 
 ### Plus tard
 - [ ] Îlot Sauvage, Baie des Pêcheurs.
 - [ ] Événements jour/nuit (marché le matin, fête le soir).
 
 ## Notes
+- 16 sept. 2026, 12:20 : rivière et chute de la Gorge en ligne (`claude/gorge-river` → `main`). Captures : `~/Downloads/azura-captures-riviere/`.
 - 16 sept. 2026, 11:00 : passe 10b (Gorge habillée) intégrée (`astra/design-18` → `main`) : fin de la phase 3 côté Astra (6 îles). 303 010 triangles, 318 805 cellules atteignables. Quota hebdomadaire d'Astra à 8 %.
 - 16 sept. 2026, 10:45 : passe 10a (Gorge, relief) intégrée (`astra/design-17` → `main`). 281 624 triangles, 330 026 cellules atteignables (le lit de rivière à sec est marchable en attendant l'eau).
 - 16 sept. 2026, 10:30 : passe 9b (Cabanes habillée) intégrée (`astra/design-16` → `main`) après une nuit bloquée : le bac à sable de Claude Code refusait ~/Downloads (« Operation not permitted »), résolu en copiant le zip avec le bac à sable désactivé. 260 576 triangles, 231 777 cellules atteignables.
